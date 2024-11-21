@@ -156,22 +156,36 @@ function comment(bp, args)
     local lines = {}
     local curData = {}
     -- gather cursor data and lines to (un)comment
-    for i = 0,#bp.Buf:getCursors()-1 do
-        local cursor = bp.Buf:getCursor(i)        
+    for i = 1,#bp.Buf:getCursors() do
+        local cursor = bp.Buf:getCursor(i-1)
         local hasSelection = cursor:HasSelection()
-        table.insert(curData, {
-            sel = -cursor.CurSelection,
-            curpos = -cursor.Loc,
-            cursor = cursor,
-            hasSelection = hasSelection
-        })
+        local staticEnd = false
+        local startSel = 1
+        local endSel = 2
         if hasSelection then
-            for lineN = cursor.CurSelection[1].Y, cursor.CurSelection[2].Y do
+            if cursor.CurSelection[1]:GreaterThan(-cursor.CurSelection[2]) then
+                startSel = 2
+                endSel = 1
+            end
+            for lineN = cursor.CurSelection[startSel].Y, cursor.CurSelection[endSel].Y do
                 lines[lineN] = true
+            end
+            if cursor.CurSelection[endSel].X == 0 then
+                lines[cursor.CurSelection[endSel].Y] = nil
+                staticEnd = true
             end
         else
             lines[cursor.Y] = true
         end
+        table.insert(curData, {
+            sel = -cursor.CurSelection,
+            curpos = -cursor.Loc,
+            cursor = cursor,
+            hasSelection = hasSelection,
+            staticEnd = staticEnd,
+            startSel = startSel,
+            endSel = endSel
+        })
     end
     -- (un)comment selected lines
     local commented = toggleCommentSelection(bp, lines, commentRegex)
@@ -180,10 +194,11 @@ function comment(bp, args)
     for i=1,#curData do
         local cursor = curData[i].cursor
         if curData[i].hasSelection then
-            cursor.CurSelection[1].Y = curData[i].sel[1].Y
-            cursor.CurSelection[2].Y = curData[i].sel[2].Y
-            cursor.CurSelection[1].X = curData[i].sel[1].X + displacement
-            cursor.CurSelection[2].X = curData[i].sel[2].X + displacement
+            local sel, startSel, endSel = curData[i].sel, curData[i].startSel, curData[i].endSel
+            cursor.CurSelection[startSel].X = sel[startSel].X + displacement
+            cursor.CurSelection[startSel].Y = sel[startSel].Y
+            cursor.CurSelection[endSel].X = sel[endSel].X + (curData[i].staticEnd and 0 or displacement)
+            cursor.CurSelection[endSel].Y = sel[endSel].Y
         else
             cursor.Y = curData[i].curpos.Y
             cursor.X = curData[i].curpos.X + displacement
