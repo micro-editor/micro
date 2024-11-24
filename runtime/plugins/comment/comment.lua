@@ -159,20 +159,25 @@ function comment(bp, args)
     for i = 1,#bp.Buf:getCursors() do
         local cursor = bp.Buf:getCursor(i-1)
         local hasSelection = cursor:HasSelection()
-        local staticEnd = false
-        local startSel = 1
-        local endSel = 2
+        local excludedEnd = nil
         if hasSelection then
-            if cursor.CurSelection[1]:GreaterThan(-cursor.CurSelection[2]) then
+            local startSel = 1
+            local endSel = 2
+            if cursor.CurSelection[startSel]:GreaterThan(-cursor.CurSelection[endSel]) then
                 startSel = 2
                 endSel = 1
             end
-            for lineN = cursor.CurSelection[startSel].Y, cursor.CurSelection[endSel].Y do
-                lines[lineN] = true
-            end
+            local fromLineNo = cursor.CurSelection[startSel].Y
+            local toLineNo = cursor.CurSelection[endSel].Y
+
+            -- don't indent the line after when selection ends in a newline
             if cursor.CurSelection[endSel].X == 0 then
-                lines[cursor.CurSelection[endSel].Y] = nil
-                staticEnd = true
+                excludedEnd = endSel
+                toLineNo = toLineNo - 1
+            end
+
+            for lineN = fromLineNo,toLineNo do
+                lines[lineN] = true
             end
         else
             lines[cursor.Y] = true
@@ -182,9 +187,7 @@ function comment(bp, args)
             curpos = -cursor.Loc,
             cursor = cursor,
             hasSelection = hasSelection,
-            staticEnd = staticEnd,
-            startSel = startSel,
-            endSel = endSel
+            excludedEnd = excludedEnd,
         })
     end
     -- (un)comment selected lines
@@ -194,11 +197,10 @@ function comment(bp, args)
     for i=1,#curData do
         local cursor = curData[i].cursor
         if curData[i].hasSelection then
-            local sel, startSel, endSel = curData[i].sel, curData[i].startSel, curData[i].endSel
-            cursor.CurSelection[startSel].X = sel[startSel].X + displacement
-            cursor.CurSelection[startSel].Y = sel[startSel].Y
-            cursor.CurSelection[endSel].X = sel[endSel].X + (curData[i].staticEnd and 0 or displacement)
-            cursor.CurSelection[endSel].Y = sel[endSel].Y
+            for j=1,2 do
+                cursor.CurSelection[j].Y = curData[i].sel[j].Y
+                cursor.CurSelection[j].X = curData[i].sel[j].X + (j == curData[i].excludedEnd and 0 or displacement)
+            end
         else
             cursor.Y = curData[i].curpos.Y
             cursor.X = curData[i].curpos.X + displacement
