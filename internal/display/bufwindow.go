@@ -622,7 +622,8 @@ func (w *BufWindow) displayBuffer() {
 			}
 
 			if highlight {
-				if w.Buf.HighlightSearch && w.Buf.SearchMatch(bloc) {
+				highlightSearchMatch := w.Buf.HighlightSearch && w.Buf.SearchMatch(bloc)
+				if highlightSearchMatch {
 					style = config.DefStyle.Reverse(true)
 					if s, ok := config.Colorscheme["hlsearch"]; ok {
 						style = s
@@ -647,6 +648,12 @@ func (w *BufWindow) displayBuffer() {
 
 						if s, ok := config.Colorscheme["selection"]; ok {
 							style = s
+						}
+
+						if highlightSearchMatch {
+							if s, ok := config.Colorscheme["hlsearch.selection"]; ok {
+								style = s
+							}
 						}
 					}
 
