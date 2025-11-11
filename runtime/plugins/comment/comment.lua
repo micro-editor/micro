@@ -1,4 +1,4 @@
-VERSION = "1.1.0"
+VERSION = "1.0.0"
 
 local util = import("micro/util")
 local config = import("micro/config")
@@ -105,15 +105,6 @@ function uncommentLine(bp, lineN, commentRegex)
     if string.match(line, commentRegex) then
         uncommentedLine = string.match(line, commentRegex)
         bp.Buf:Replace(buffer.Loc(0, lineN), buffer.Loc(#line, lineN), util.GetLeadingWhitespace(line) .. uncommentedLine)
-    end
-end
-
--- unused
-function toggleCommentLine(bp, lineN, commentRegex)
-    if isCommented(bp, lineN, commentRegex) then
-        uncommentLine(bp, lineN, commentRegex)
-    else
-        commentLine(bp, lineN, #util.GetLeadingWhitespace(bp.Buf:Line(lineN)))
     end
 end
 
