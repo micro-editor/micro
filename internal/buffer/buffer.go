@@ -527,7 +527,9 @@ func (b *Buffer) Fini() {
 	if !b.Modified() {
 		b.Serialize()
 	}
-	b.CancelBackup()
+	if !b.Shared() {
+		b.CancelBackup()
+	}
 
 	if b.Type == BTStdout {
 		fmt.Fprint(util.Stdout, string(b.Bytes()))
