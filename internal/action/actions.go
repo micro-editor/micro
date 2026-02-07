@@ -828,6 +828,26 @@ func (h *BufPane) Delete() bool {
 	return true
 }
 
+// DeleteSelections checks for any active cursors selections and
+// if there are it deletes them and returns true. It returns false when
+// there are no selections.
+func (h *BufPane) DeleteSelections() bool {
+	hasSelection := false
+	for _, c := range h.Buf.GetCursors() {
+		if c.HasSelection() {
+			c.DeleteSelection()
+			c.ResetSelection()
+			hasSelection = true
+		}
+	}
+
+	if hasSelection {
+		h.Relocate()
+		return true
+	}
+	return false
+}
+
 // IndentSelection indents the current selection
 func (h *BufPane) IndentSelection() bool {
 	if h.Cursor.HasSelection() {
