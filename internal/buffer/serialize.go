@@ -29,12 +29,16 @@ func (b *Buffer) Serialize() error {
 		return nil
 	}
 
+	buffer := SerializedBuffer{
+		Cursor:  b.GetActiveCursor().Loc,
+		ModTime: b.ModTime,
+	}
+	if b.Settings["saveundo"].(bool) {
+		buffer.EventHandler = b.EventHandler
+	}
+
 	var buf bytes.Buffer
-	err := gob.NewEncoder(&buf).Encode(SerializedBuffer{
-		b.EventHandler,
-		b.GetActiveCursor().Loc,
-		b.ModTime,
-	})
+	err := gob.NewEncoder(&buf).Encode(buffer)
 	if err != nil {
 		return err
 	}
@@ -76,7 +80,7 @@ func (b *Buffer) Unserialize() error {
 			b.StartCursor = buffer.Cursor
 		}
 
-		if b.Settings["saveundo"].(bool) {
+		if b.Settings["saveundo"].(bool) && buffer.EventHandler != nil {
 			// We should only use last time's eventhandler if the file wasn't modified by someone else in the meantime
 			if b.ModTime == buffer.ModTime {
 				b.EventHandler = buffer.EventHandler
