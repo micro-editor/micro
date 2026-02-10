@@ -525,10 +525,10 @@ func (b *Buffer) Close() {
 // Fini should be called when a buffer is closed and performs
 // some cleanup
 func (b *Buffer) Fini() {
-	if !b.Modified() {
-		b.Serialize()
-	}
 	if !b.Shared() {
+		if !b.Modified() {
+			b.Serialize()
+		}
 		b.CancelBackup()
 	}
 
