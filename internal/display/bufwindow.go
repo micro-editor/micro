@@ -79,7 +79,7 @@ func (w *BufWindow) GetView() *View {
 	return w.View
 }
 
-// GetView sets the view.
+// SetView sets the view.
 func (w *BufWindow) SetView(view *View) {
 	w.View = view
 }
