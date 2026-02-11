@@ -355,9 +355,9 @@ func NewBufferFromString(text, path string, btype BufType) *Buffer {
 // Places the cursor at startcursor. If startcursor is -1, -1 places the
 // cursor at an autodetected location (based on savecursor or :LINE:COL)
 func NewBuffer(r io.Reader, size int64, path string, btype BufType, cmd Command) *Buffer {
-	absPath, err := filepath.Abs(path)
-	if err != nil {
-		absPath = path
+	absPath := path
+	if btype == BTDefault && path != "" {
+		absPath = util.ResolvePath(path)
 	}
 
 	b := new(Buffer)
@@ -391,6 +391,7 @@ func NewBuffer(r io.Reader, size int64, path string, btype BufType, cmd Command)
 		}
 		config.UpdatePathGlobLocals(b.Settings, absPath)
 
+		var err error
 		b.encoding, err = htmlindex.Get(b.Settings["encoding"].(string))
 		if err != nil {
 			b.encoding = unicode.UTF8
@@ -489,7 +490,7 @@ func NewBuffer(r io.Reader, size int64, path string, btype BufType, cmd Command)
 		}
 	}
 
-	err = config.RunPluginFn("onBufferOpen", luar.New(ulua.L, b))
+	err := config.RunPluginFn("onBufferOpen", luar.New(ulua.L, b))
 	if err != nil {
 		screen.TermMessage(err)
 	}

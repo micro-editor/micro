@@ -285,10 +285,7 @@ func (b *Buffer) saveToFile(filename string, withSudo bool, autoSave bool) error
 		return errors.New("Error: " + filename + " is not a regular file and cannot be saved")
 	}
 
-	absFilename, err := filepath.Abs(filename)
-	if err != nil {
-		return err
-	}
+	absFilename := util.ResolvePath(filename)
 
 	// Get the leading path to the file | "." is returned if there's no leading path provided
 	if dirname := filepath.Dir(absFilename); dirname != "." {
