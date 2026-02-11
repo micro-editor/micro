@@ -489,6 +489,40 @@ func DetermineEscapePath(dir string, path string) (string, string) {
 	return url, ""
 }
 
+// ResolvePath provides the absolute file path for the given relative file path
+// as well as resolves symlinks in both. It returns the relative path with
+// symlinks resolved and the absolute path with symlinks resolved. If it fails
+// to get the absolute path or to resolve symlinks, it returns unresolved path
+// in place of resolved one. The only exception is the case in which the target
+// file doesn't exist. We leave the path handling to EvalSymlinks() and use the
+// path causing the error as target path.
+func ResolvePath(path string) (string, string) {
+	resolvedPath, err := filepath.EvalSymlinks(path)
+	if err == nil {
+		path = resolvedPath
+	} else if errors.Is(err, fs.ErrNotExist) {
+		if e, ok := err.(*fs.PathError); ok {
+			path = e.Path
+		}
+	}
+
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		absPath = path
+	}
+
+	resolvedPath, err = filepath.EvalSymlinks(absPath)
+	if err == nil {
+		absPath = resolvedPath
+	} else if errors.Is(err, fs.ErrNotExist) {
+		if e, ok := err.(*fs.PathError); ok {
+			absPath = e.Path
+		}
+	}
+
+	return path, absPath
+}
+
 // GetLeadingWhitespace returns the leading whitespace of the given byte array
 func GetLeadingWhitespace(b []byte) []byte {
 	ws := []byte{}
