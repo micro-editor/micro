@@ -355,9 +355,16 @@ func NewBufferFromString(text, path string, btype BufType) *Buffer {
 // Places the cursor at startcursor. If startcursor is -1, -1 places the
 // cursor at an autodetected location (based on savecursor or :LINE:COL)
 func NewBuffer(r io.Reader, size int64, path string, btype BufType, cmd Command) *Buffer {
-	absPath, err := filepath.Abs(path)
-	if err != nil {
-		absPath = path
+	var err error
+	absPath := path
+	if btype == BTDefault && path != "" {
+		// Ignore the returned error, since the checks are already performed in
+		// NewBufferFromFileWithCommand()
+		path, _ = filepath.EvalSymlinks(path)
+		absPath, err = filepath.Abs(path)
+		if err != nil {
+			absPath = path
+		}
 	}
 
 	b := new(Buffer)
@@ -524,10 +531,12 @@ func (b *Buffer) Close() {
 // Fini should be called when a buffer is closed and performs
 // some cleanup
 func (b *Buffer) Fini() {
-	if !b.Modified() {
-		b.Serialize()
+	if !b.Shared() {
+		if !b.Modified() {
+			b.Serialize()
+		}
+		b.CancelBackup()
 	}
-	b.CancelBackup()
 
 	if b.Type == BTStdout {
 		fmt.Fprint(util.Stdout, string(b.Bytes()))

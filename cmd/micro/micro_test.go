@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/go-errors/errors"
@@ -157,8 +158,10 @@ func openFile(file string) {
 
 func findBuffer(file string) *buffer.Buffer {
 	var buf *buffer.Buffer
+	file, _ = filepath.EvalSymlinks(file)
+	file, _ = filepath.Abs(file)
 	for _, b := range buffer.OpenBuffers {
-		if b.Path == file {
+		if b.AbsPath == file {
 			buf = b
 		}
 	}

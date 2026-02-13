@@ -285,6 +285,8 @@ func (b *Buffer) saveToFile(filename string, withSudo bool, autoSave bool) error
 		return errors.New("Error: " + filename + " is not a regular file and cannot be saved")
 	}
 
+	// Ignore the returned error, since the checks are already performed above
+	filename, _ = filepath.EvalSymlinks(filename)
 	absFilename, err := filepath.Abs(filename)
 	if err != nil {
 		return err
