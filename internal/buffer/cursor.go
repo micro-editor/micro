@@ -601,24 +601,13 @@ func (c *Cursor) SubWordLeft() {
 
 // RuneUnder returns the rune under the given x position
 func (c *Cursor) RuneUnder(x int) rune {
-	line := c.buf.LineBytes(c.Y)
-	if len(line) == 0 || x >= util.CharacterCount(line) {
+	line := c.buf.LineCharacters(c.Y)
+	if len(line) == 0 || x >= len(line) {
 		return '\n'
 	} else if x < 0 {
 		x = 0
 	}
-	i := 0
-	for len(line) > 0 {
-		r, _, size := util.DecodeCharacter(line)
-		line = line[size:]
-
-		if i == x {
-			return r
-		}
-
-		i++
-	}
-	return '\n'
+	return line[x].combc[0]
 }
 
 func (c *Cursor) StoreVisualX() {
