@@ -117,6 +117,11 @@ func (n *Node) SetPropScale(b bool) {
 	n.propScale = b
 }
 
+// Parent returns this node's parent
+func (n *Node) Parent() *Node {
+	return n.parent
+}
+
 // Children returns this node's children
 func (n *Node) Children() []*Node {
 	return n.children
@@ -140,15 +145,26 @@ func (n *Node) GetNode(id uint64) *Node {
 	return nil
 }
 
-func (n *Node) vResizeSplit(i int, size int) bool {
+// vResizeSplit resizes a node vertically on the given side
+func (n *Node) vResizeSplit(i int, size int, bottom bool) bool {
 	if i < 0 || i >= len(n.children) {
 		return false
 	}
 	var c1, c2 *Node
-	if i == len(n.children)-1 {
-		c1, c2 = n.children[i-1], n.children[i]
-	} else {
+	if bottom {
+		if i == len(n.children)-1 {
+			return false
+		}
 		c1, c2 = n.children[i], n.children[i+1]
+	} else {
+		if i == 0 {
+			return false
+		}
+		c1, c2 = n.children[i-1], n.children[i]
+		size = c1.H + c2.H - size
+	}
+	if size <= 0 || size >= n.H {
+		return false
 	}
 	toth := c1.H + c2.H
 	if size >= toth {
@@ -161,15 +177,27 @@ func (n *Node) vResizeSplit(i int, size int) bool {
 	n.alignSizes(n.W, n.H)
 	return true
 }
-func (n *Node) hResizeSplit(i int, size int) bool {
+
+// hResizeSplit resizes a node horizontally on the given side
+func (n *Node) hResizeSplit(i int, size int, right bool) bool {
 	if i < 0 || i >= len(n.children) {
 		return false
 	}
 	var c1, c2 *Node
-	if i == len(n.children)-1 {
-		c1, c2 = n.children[i-1], n.children[i]
-	} else {
+	if right {
+		if i == len(n.children)-1 {
+			return false
+		}
 		c1, c2 = n.children[i], n.children[i+1]
+	} else {
+		if i == 0 {
+			return false
+		}
+		c1, c2 = n.children[i-1], n.children[i]
+		size = c1.W + c2.W - size
+	}
+	if size <= 0 || size >= n.W {
+		return false
 	}
 	totw := c1.W + c2.W
 	if size >= totw {
@@ -183,12 +211,8 @@ func (n *Node) hResizeSplit(i int, size int) bool {
 	return true
 }
 
-// ResizeSplit resizes a certain split to a given size
-func (n *Node) ResizeSplit(size int) bool {
-	// TODO: `size < 0` does not work for some reason
-	if size <= 0 {
-		return false
-	}
+// ResizeSplit resizes a node to a given size in the specified direction
+func (n *Node) ResizeSplit(size int, right_or_bottom bool) bool {
 	if len(n.parent.children) <= 1 {
 		// cannot resize a lone node
 		return false
@@ -200,9 +224,11 @@ func (n *Node) ResizeSplit(size int) bool {
 		}
 	}
 	if n.parent.Kind == STVert {
-		return n.parent.vResizeSplit(ind, size)
+		return n.parent.vResizeSplit(ind, size, right_or_bottom)
+	} else if n.parent.Kind == STHoriz {
+		return n.parent.hResizeSplit(ind, size, right_or_bottom)
 	}
-	return n.parent.hResizeSplit(ind, size)
+	return false
 }
 
 // Resize sets this node's size and resizes all children accordingly

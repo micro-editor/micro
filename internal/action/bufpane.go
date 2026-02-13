@@ -314,10 +314,14 @@ func (h *BufPane) Tab() *Tab {
 	return h.tab
 }
 
-func (h *BufPane) ResizePane(size int) {
+// ResizePane resizes the pane to a given size in the specified direction
+func (h *BufPane) ResizePane(size int, right_or_bottom bool) bool {
 	n := h.tab.GetNode(h.splitID)
-	n.ResizeSplit(size)
-	h.tab.Resize()
+	r := n.ResizeSplit(size, right_or_bottom)
+	if r {
+		h.tab.Resize()
+	}
+	return r
 }
 
 // PluginCB calls all plugin callbacks with a certain name and displays an
