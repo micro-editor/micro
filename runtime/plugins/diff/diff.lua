@@ -10,7 +10,16 @@ function onBufferOpen(buf)
 		local _, err = os.Stat(buf.AbsPath)
 		if err == nil then
 			local dirName, fileName = filepath.Split(buf.AbsPath)
-			local diffBase, err = shell.ExecCommand("git", "-C", dirName, "show", "HEAD:./" .. fileName)
+			
+			local autocrlf, err = shell.ExecCommand("git", "-C", dirName, "config", "get", "core.autocrlf")
+			
+			local diffBase
+			if not err and string.match(autocrlf, "true") then
+				diffBase, err = shell.ExecCommand("git", "-C", dirName, "cat-file", "--filters", "HEAD:./" .. fileName)
+			else
+				diffBase, err = shell.ExecCommand("git", "-C", dirName, "show", "HEAD:./" .. fileName)
+			end
+			
 			if err ~= nil then
 				diffBase = buf:Bytes()
 			end
