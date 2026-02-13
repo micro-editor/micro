@@ -252,6 +252,7 @@ SelectToParagraphNext
 InsertNewline
 Backspace
 Delete
+DeleteSelections
 InsertTab
 Save
 SaveAll
@@ -559,8 +560,8 @@ conventions for text editing defaults.
     "Enter":          "InsertNewline",
     "Ctrl-h":         "Backspace",
     "Backspace":      "Backspace",
-    "Alt-CtrlH":      "DeleteWordLeft",
-    "Alt-Backspace":  "DeleteWordLeft",
+    "Alt-CtrlH":      "DeleteSelections|DeleteWordLeft",
+    "Alt-Backspace":  "DeleteSelections|DeleteWordLeft",
     "Tab":            "Autocomplete|IndentSelection|InsertTab",
     "Backtab":        "OutdentSelection|OutdentLine",
     "Ctrl-o":         "OpenFile",
@@ -693,8 +694,8 @@ are given below:
         "CtrlH":          "Backspace",
         "Backspace":      "Backspace",
         "OldBackspace":   "Backspace",
-        "Alt-CtrlH":      "DeleteWordLeft",
-        "Alt-Backspace":  "DeleteWordLeft",
+        "Alt-CtrlH":      "DeleteSelections|DeleteWordLeft",
+        "Alt-Backspace":  "DeleteSelections|DeleteWordLeft",
         "Tab":            "CommandComplete",
         "Backtab":        "CycleAutocompleteBack",
         "Ctrl-z":         "Undo",
