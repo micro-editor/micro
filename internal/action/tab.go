@@ -2,6 +2,7 @@ package action
 
 import (
 	luar "layeh.com/gopher-luar"
+	"time"
 
 	"github.com/micro-editor/micro/v2/internal/buffer"
 	"github.com/micro-editor/micro/v2/internal/config"
@@ -17,6 +18,15 @@ import (
 type TabList struct {
 	*display.TabWindow
 	List []*Tab
+
+	// captures whether the mouse is released
+	release bool
+	// captures whether the last mouse click occurred on the tab bar
+	tbClick bool
+	// captures whether a tab is being dragged within the tab bar
+	tabDrag bool
+	// timestamp of the last non-tab click within the tab bar
+	tbLastClick time.Time
 }
 
 // NewTabList creates a TabList from a list of buffers by creating a Tab
@@ -35,6 +45,7 @@ func NewTabList(bufs []*buffer.Buffer) *TabList {
 	}
 	tl.TabWindow = display.NewTabWindow(w, 0)
 	tl.Names = make([]string, len(bufs))
+	tl.release = true
 
 	return tl
 }
@@ -75,6 +86,19 @@ func (t *TabList) RemoveTab(id uint64) {
 	}
 }
 
+// MoveTab moves the specified tab to the given index
+func (tl *TabList) MoveTab(t *Tab, i int) {
+	if i == tl.Active() || i < 0 || i >= len(tl.List) {
+		return
+	}
+	tl.RemoveTab(t.Panes[0].ID())
+	tl.List = append(tl.List, nil)
+	copy(tl.List[i+1:], tl.List[i:])
+	tl.List[i] = t
+	tl.Resize()
+	tl.UpdateNames()
+}
+
 // Resize resizes all elements within the tab list
 // One thing to note is that when there is only 1 tab
 // the tab bar should not be drawn so resizing must take
@@ -105,40 +129,130 @@ func (t *TabList) HandleEvent(event tcell.Event) {
 		t.Resize()
 	case *tcell.EventMouse:
 		mx, my := e.Position()
-		switch e.Buttons() {
-		case tcell.Button1:
-			if my == t.Y && len(t.List) > 1 {
-				if mx == 0 {
-					t.Scroll(-4)
-				} else if mx == t.Width-1 {
-					t.Scroll(4)
-				} else {
-					ind := t.LocFromVisual(buffer.Loc{mx, my})
-					if ind != -1 {
-						t.SetActive(ind)
-					}
-				}
-				return
-			}
-		case tcell.ButtonNone:
+		if e.Buttons() == tcell.ButtonNone {
+			t.release = true
+			t.tbClick = false
+			t.tabDrag = false
 			if t.List[t.Active()].release {
 				// Mouse release received, while already released
 				t.ResetMouse()
 				return
 			}
-		case tcell.WheelUp:
-			if my == t.Y && len(t.List) > 1 {
+		} else if my == t.Y && len(t.List) > 1 {
+			switch e.Buttons() {
+			case tcell.Button1:
+				if !t.release && !t.tabDrag {
+					// Invalid tab bar dragging
+					return
+				}
+				isDrag := !t.release
+				t.release = false
+				t.tbClick = true
+				switch mx {
+				case 0:
+					t.Scroll(-4)
+				case t.Width - 1:
+					t.Scroll(4)
+				default:
+					i := t.LocFromVisual(buffer.Loc{mx, my})
+					if i != -1 {
+						t.tabDrag = true
+						if i != t.Active() {
+							if isDrag {
+								t.MoveTab(t.List[t.Active()], i)
+							}
+							t.SetActive(i)
+						}
+					} else {
+						if isDrag {
+							if i = len(t.List) - 1; i != t.Active() {
+								t.MoveTab(t.List[t.Active()], i)
+								t.SetActive(i)
+							}
+						} else {
+							if time.Since(t.tbLastClick)/time.Millisecond < config.DoubleClickThreshold {
+								t.List[t.Active()].CurPane().AddTab()
+								t.tbLastClick = time.Time{}
+							} else {
+								t.tbLastClick = time.Now()
+							}
+						}
+					}
+				}
+			case tcell.Button3:
+				if !t.release {
+					// Tab bar dragging
+					return
+				}
+				t.release = false
+				t.tbClick = true
+
+				if i := t.LocFromVisual(buffer.Loc{mx, my}); i == -1 {
+					t.List[t.Active()].CurPane().AddTab()
+				} else {
+					anyModified := false
+					for _, p := range t.List[i].Panes {
+						if bp, ok := p.(*BufPane); ok {
+							if bp.Buf.Modified() {
+								anyModified = true
+								break
+							}
+						}
+					}
+
+					removeTab := func() {
+						panes := append([]Pane(nil), t.List[i].Panes...)
+						for _, p := range panes {
+							switch t := p.(type) {
+							case *BufPane:
+								t.ForceQuit()
+							case *RawPane:
+								t.Quit()
+							case *TermPane:
+								t.Quit()
+							}
+						}
+					}
+
+					a := t.Active()
+					if anyModified {
+						t.SetActive(i)
+						InfoBar.YNPrompt("Discard unsaved changes? (y,n,esc)", func(yes, canceled bool) {
+							if !canceled {
+								if yes {
+									removeTab()
+									if i <= a {
+										a--
+									}
+								}
+								t.SetActive(a)
+							}
+						})
+						t.release = true
+						t.tbClick = false
+						t.tabDrag = false
+					} else {
+						removeTab()
+						if i <= a {
+							t.SetActive(a - 1)
+						}
+					}
+					return
+				}
+			case tcell.WheelUp:
 				t.Scroll(4)
-				return
-			}
-		case tcell.WheelDown:
-			if my == t.Y && len(t.List) > 1 {
+			case tcell.WheelDown:
 				t.Scroll(-4)
-				return
 			}
+			return
+		} else if t.release {
+			// Click outside tab bar
+			t.release = false
 		}
 	}
-	t.List[t.Active()].HandleEvent(event)
+	if t.release || !t.tbClick {
+		t.List[t.Active()].HandleEvent(event)
+	}
 }
 
 // Display updates the names and then displays the tab bar
