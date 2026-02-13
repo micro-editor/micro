@@ -114,6 +114,15 @@ func (eh *EventHandler) DoTextEvent(t *TextEvent, useUndo bool) {
 
 // ExecuteTextEvent runs a text event
 func ExecuteTextEvent(t *TextEvent, buf *SharedBuffer) {
+	b, err := config.RunPluginFnBool(nil, "onBeforeTextEvent", luar.New(ulua.L, buf), luar.New(ulua.L, t))
+	if err != nil {
+		screen.TermMessage(err)
+	}
+
+	if !b {
+		return
+	}
+
 	if t.EventType == TextEventInsert {
 		for _, d := range t.Deltas {
 			buf.insert(d.Start, d.Text)
@@ -240,15 +249,6 @@ func (eh *EventHandler) Execute(t *TextEvent) {
 		eh.RedoStack = new(TEStack)
 	}
 	eh.UndoStack.Push(t)
-
-	b, err := config.RunPluginFnBool(nil, "onBeforeTextEvent", luar.New(ulua.L, eh.buf), luar.New(ulua.L, t))
-	if err != nil {
-		screen.TermMessage(err)
-	}
-
-	if !b {
-		return
-	}
 
 	ExecuteTextEvent(t, eh.buf)
 }
