@@ -1,0 +1,50 @@
+filetype: mcfunction
+
+detect:
+  filename: "\\.mcfunction$"
+
+rules:
+  - comment: "#.*$"
+
+  # === JSON ===
+  - string: "\"([^\"\\\\]|\\\\.)*\""
+  - special: "\"(text|color|bold|italic|underlined|strikethrough|obfuscated|extra|translate|with|score|name|objective)\"\\s*:"
+
+  # === ENTITY / SELECTORS ===
+  - type: "@[pares]"
+  - special: "@[pares]\\[[^\\]]*\\]"
+
+  # === NUMBERS / BOOL ===
+  - number: "\\b-?[0-9]+\\b"
+  - constant: "\\b(true|false)\\b"
+
+  # === AXES ===
+  - special: "[~^]"
+
+  # === IDENTIFIERS ===
+  - identifier: "\\bminecraft:[a-z0-9_./]+\\b"
+  - identifier: "\\b[a-z0-9_]+:[a-z0-9_./]+\\b"
+
+  # === EFFECTS ===
+  - constant: "\\b(speed|slowness|haste|mining_fatigue|strength|instant_health|instant_damage|jump_boost|nausea|regeneration|resistance|fire_resistance|water_breathing|invisibility|blindness|night_vision|hunger|weakness|poison|wither|health_boost|absorption|saturation|glowing|levitation|luck|unluck|slow_falling|conduit_power|dolphins_grace|bad_omen|hero_of_the_village|darkness)\\b"
+
+  # === DANGEROUS COMMANDS ===
+  - error: "\\b(kill|tp|teleport|clear|effect clear|data merge|item replace|loot spawn)\\s+@([ae])\\b"
+  - error: "\\b(kill|tp|teleport|clear|effect clear)\\s+@([ae])\\[.*?\\]"
+  - error: "\\b(scoreboard players reset)\\s+@([ae])\\b"
+  - error: "\\b(execute)\\b.*\\b(run)\\b.*\\b(kill|tp|teleport|clear)\\s+@([ae])\\b"
+
+  # === MAIN COMMANDS ===
+  - statement: "\\b(effect|execute|item|scoreboard|data|tag|tp|teleport|give|say|tellraw|summon|kill|function|schedule|loot|damage|attribute|bossbar|title|particle|playsound|stopsound|fill|setblock|clone|clear)\\b"
+
+  # === SUBCOMMANDS ===
+  - preproc: "\\b(give|clear|run|if|unless|store|as|at|positioned|facing|align|anchored|rotated|matches|modify|merge|get|set|add|remove|append|prepend|insert|entity|block|storage)\\b"
+
+  # === SCORE / CONDITIONS ===
+  - special: "\\b(score|scores|range|limit|distance|dx|dy|dz|x|y|z|level|sort|type|name|team|tag)\\b"
+
+  # === SLOTS ===
+  - identifier: "\\b[a-z0-9_]+:(mainhand|offhand|head|chest|legs|feet)\\b"
+
+  # === SYMBOLS ===
+  - symbol: "[{}\\[\\](),=]"
