@@ -1622,11 +1622,11 @@ func (h *BufPane) paste(clip string) {
 	}
 
 	if h.Cursor.HasSelection() {
-		h.Cursor.DeleteSelection()
-		h.Cursor.ResetSelection()
+		h.Buf.Replace(h.Cursor.CurSelection[0], h.Cursor.CurSelection[1], clip)
+	} else {
+		h.Buf.Insert(h.Cursor.Loc, clip)
 	}
 
-	h.Buf.Insert(h.Cursor.Loc, clip)
 	// h.Cursor.Loc = h.Cursor.Loc.Move(Count(clip), h.Buf)
 	h.freshClip = false
 	InfoBar.Message("Pasted clipboard")

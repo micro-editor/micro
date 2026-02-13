@@ -527,6 +527,18 @@ func HasTrailingWhitespace(b []byte) bool {
 	return IsWhitespace(r)
 }
 
+// GetTextLengthAfterLastLinebreak returns the length of the remaining
+// characters after the last line break in the given byte array and whether it
+// contains line breaks.
+// If no line breaks were found, it returns the length of all characters in the byte array.
+func GetTextLengthAfterLastLinebreak(text []byte) (int, bool) {
+	lastnl := bytes.LastIndex(text, []byte{'\n'})
+	if lastnl >= 0 {
+		return CharacterCount(text[lastnl+1:]), true
+	}
+	return CharacterCount(text), false
+}
+
 // IntOpt turns a float64 setting to an int
 func IntOpt(opt any) int {
 	return int(opt.(float64))
