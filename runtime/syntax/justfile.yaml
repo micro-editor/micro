@@ -2,39 +2,108 @@
 filetype: 'justfile'
 
 detect:
-    filename: "(^\\.?[Jj]ustfile|\\.just)$"
+    filename: "(\\.?[Jj]ustfile|\\.just)$"
     header: "^#!.*/(env +)?[bg]?just --justfile"
 
 rules:
-    - preproc: "\\<(ifeq|ifdef|ifneq|ifndef|else|endif)\\>"
-    - statement: "^(export|include|override)\\>"
-    - symbol.operator: "^[^:=	]+:"
-    - symbol.operator: "([=,%]|\\+=|\\?=|:=|&&|\\|\\|)"
-    - statement: "\\$\\((abspath|addprefix|addsuffix|and|basename|call|dir)[[:space:]]"
-    - statement: "\\$\\((error|eval|filter|filter-out|findstring|firstword)[[:space:]]"
-    - statement: "\\$\\((flavor|foreach|if|info|join|lastword|notdir|or)[[:space:]]"
-    - statement: "\\$\\((origin|patsubst|realpath|shell|sort|strip|suffix)[[:space:]]"
-    - statement: "\\$\\((value|warning|wildcard|word|wordlist|words)[[:space:]]"
-    # default functions - probably shouldn't be overwritten by assignment
-    - statement: "\\b(arch|os|os_family|env_var|invocation_directory|justfile|justfile_directory|just_executable|lowercase|quote|replace|trim|trim_end|trim_end|trim_end_match|trim_end_matches|trim_start|trim_start_match|trim_start_matches|uppercase)\\b"
-    - identifier: "^.+:"
-    - identifier: "[()$]"
+    - identifier: "^[a-zA-Z_][a-zA-Z0-9_-]*"
+    - symbol.brackets: "[\\{\\}]"
+
+    # Alias
+    - identifier: "^alias\\s+[a-zA-Z_][a-zA-Z0-9_-]*\\s*:=\\s*[a-zA-Z_][a-zA-Z0-9_-]*$"
+    - statement: "^(alias|export)\\b"
+
+    # Functions
+    - statement: "\\b(arch|os|os_family|invocation_directory|justfile|justfile_directory|just_executable|uuid)\\b"
+    # Env
+    - statement: "\\b(env|env_var|env_var_or_default)\\b"
+    # String manipulation
+    - statement: "\\b(quote|replace|replace_regex|trim_end_matches|trim_end_match|trim_end|trim_start_matches|trim_start_match|trim_start|trim|capitalize|uppercamelcase|lowercamelcase|lowercase|shoutykebabcase|shoutysnakecase|snakecase|titlecase|uppercase|kebabcase)\\b"
+    # Path manipulation
+    - statement: "\\b(absolute_path|extension|file_name|file_stem|parent_directory|without_extension|clean|join|path_exists)\\b"
+    # Other misc functions
+    - statement: "\\b(error|sha256|sha256_file|semver_matches)\\b"
+
+    - statement: "\\b(if|else)\\b"
+    - statement: "\\{\\{|\\}\\}"
+
+    # Infix operators only highlighted when surrounded by whitespace
+    # to reduce false positives
+    - symbol.operator: "\\s[/+]|==|!=\\s"
+
+    # Recipe
+    - identifier: "^\\S.*?:(\\s|$)"
+    - symbol.operator: "^\\s*[@-]*"
+    # Reset to default after recipe identifier
+    - default: "\\s.*:( |$)"
+
+    # Variadic parameters
+    - special: "\\s+[*+]\\$?[a-zA-Z_][a-zA-Z0-9_-]*"
+
+    # Environment variables
+    - special: "\\$[A-Za-z0-9_]+"
+
+    - symbol.operator: ":=?"
+
+    # Attribute
+    - symbol.brackets:
+        start: "^\\["
+        end: "\\]"
+        rules:
+            - symbol.tag: "\\b(no-cd|no-exit-message|linux|macos|unix|windows|private)\\b"
+            - statement: ","
+
+    # Built-in settings
+    - statement:
+        start: "^set\\b"
+        end: "$"
+        rules:
+            - default: ".*"
+            - identifier: "\\b(allow-duplicate-recipes|dotenv-filename|dotenv-load|dotenv-path|export|fallback|ignore-comments|positional-arguments|shell|tempdir|windows-powershell|windows-shell)\\b"
+            - statement: ":="
+            - bracket: "\\[|\\]"
+            - statement: ","
+            - constant.bool: "\\b(true|false)\\b"
+            # these are not perfect but they work for the simple cases
+            - constant.string: "\"\"\".*\"\"\""
+            - constant.string: "'''.*'''"
+            - constant.string: "\".*?\""
+            - constant.string: "'.*?'"
+
+    - constant.string:
+        start: "\"\"\""
+        end: "\"\"\""
+        rules: []
+
+    - constant.string:
+        start: "'''"
+        end: "'''"
+        rules: []
+
     - constant.string:
         start: "\""
         end: "\""
         skip: "\\\\."
         rules:
             - constant.specialChar: "\\\\."
+
     - constant.string:
         start: "'"
         end: "'"
         skip: "\\\\."
         rules:
             - constant.specialChar: "\\\\."
-    - identifier: "\\$+(\\{[^} ]+\\}|\\([^) ]+\\))"
-    - identifier: "\\$[@^<*?%|+]|\\$\\([@^<*?%+-][DF]\\)"
-    - identifier: "\\$\\$|\\\\.?"
+
+    # Command evaluation using backticks
+    - constant.string:
+        start: "`"
+        end: "`"
+        skip: "\\\\."
+        rules:
+            - symbol.operator: "\\|"
+
     - comment:
         start: "#"
         end: "$"
-        rules: []
+        rules:
+            - todo: "(TODO|FIXME):?"
