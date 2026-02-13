@@ -83,7 +83,8 @@ func (t *TabList) Resize() {
 	w, h := screen.Screen.Size()
 	iOffset := config.GetInfoBarOffset()
 	InfoBar.Resize(w, h-1)
-	if len(t.List) > 1 {
+	globalTabAlwaysShow := config.GetGlobalOption("tabalwaysshow").(bool)
+	if len(t.List) > 1 || globalTabAlwaysShow {
 		for _, p := range t.List {
 			p.Y = 1
 			p.Node.Resize(w, h-1-iOffset)
@@ -144,7 +145,8 @@ func (t *TabList) HandleEvent(event tcell.Event) {
 // Display updates the names and then displays the tab bar
 func (t *TabList) Display() {
 	t.UpdateNames()
-	if len(t.List) > 1 {
+	globalTabAlwaysShow := config.GetGlobalOption("tabalwaysshow").(bool)
+	if len(t.List) > 1 || globalTabAlwaysShow {
 		t.TabWindow.Display()
 	}
 }
