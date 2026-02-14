@@ -1,0 +1,23 @@
+filetype: conf
+detect:
+    filename: "(\\.(conf)$|\\.(cfg)$)"
+rules:
+    - special: "^[[:space:]]*\\[.*\\]$"
+    - identifier: "^[[:space:]]*[^=]*="
+    - statement: "[=;]"
+    - constant.string:
+        start: "\""
+        end: "\""
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\."
+    - comment:
+        start: "#"
+        end: "$"
+        rules:
+            - todo: "(TODO|XXX|FIXME):?"
+    - comment:
+            start: ";"
+            end: "$"
+            rules:
+                - todo: "(TODO|XXX|FIXME):?"
