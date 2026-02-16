@@ -1,0 +1,7 @@
+filetype: scons
+
+detect:
+    filename: "SCons(cript|truct)$"
+
+rules:
+    - include: "python"
