@@ -961,13 +961,19 @@ func (h *BufPane) SaveAll() bool {
 	return true
 }
 
-// SaveCB performs a save and does a callback at the very end (after all prompts have been resolved)
+// SaveCB performs a save and does a callback at the very end
+// after all prompts have been resolved with yes or no and no error occured.
 func (h *BufPane) SaveCB(action string, callback func()) bool {
+	cb := func(bool) {
+		if callback != nil {
+			callback()
+		}
+	}
 	// If this is an empty buffer, ask for a filename
 	if h.Buf.Path == "" {
-		h.SaveAsCB(action, callback)
+		h.saveAsCB(action, cb)
 	} else {
-		noPrompt := h.saveBufToFile(h.Buf.Path, action, callback)
+		noPrompt := h.saveBufToFile(h.Buf.Path, action, cb)
 		if noPrompt {
 			return true
 		}
@@ -980,9 +986,9 @@ func (h *BufPane) Save() bool {
 	return h.SaveCB("Save", nil)
 }
 
-// SaveAsCB performs a save as and does a callback at the very end (after all prompts have been resolved)
-// The callback is only called if the save was successful
-func (h *BufPane) SaveAsCB(action string, callback func()) bool {
+// saveAsCB performs a save as and does a callback at the very end
+// after all prompts have been resolved with yes or no and no error occured.
+func (h *BufPane) saveAsCB(action string, callback func(bool)) bool {
 	InfoBar.Prompt("Filename: ", "", "Save", nil, func(resp string, canceled bool) {
 		if !canceled {
 			// the filename might or might not be quoted, so unquote first then join the strings.
@@ -1012,7 +1018,11 @@ func (h *BufPane) SaveAsCB(action string, callback func()) bool {
 				InfoBar.YNPrompt(
 					fmt.Sprintf("The file %s already exists in the directory, would you like to overwrite? Y/n", fileinfo.Name()),
 					func(yes, canceled bool) {
-						if yes && !canceled {
+						if !yes && !canceled {
+							if callback != nil {
+								callback(false)
+							}
+						} else if yes && !canceled {
 							noPrompt := h.saveBufToFile(filename, action, callback)
 							if noPrompt {
 								h.completeAction(action)
@@ -1026,15 +1036,27 @@ func (h *BufPane) SaveAsCB(action string, callback func()) bool {
 	return false
 }
 
+// SaveAsCB is the same as saveAsCB,
+// but the callback is only called if the save was successful
+func (h *BufPane) SaveAsCB(action string, callback func()) bool {
+	cb := func(success bool) {
+		if callback != nil && success {
+			callback()
+		}
+	}
+	return h.saveAsCB(action, cb)
+}
+
 // SaveAs saves the buffer to disk with the given name
 func (h *BufPane) SaveAs() bool {
 	return h.SaveAsCB("SaveAs", nil)
 }
 
 // This function saves the buffer to `filename` and changes the buffer's path and name
-// to `filename` if the save is successful
-// The callback is only called if the save was successful
-func (h *BufPane) saveBufToFile(filename string, action string, callback func()) bool {
+// to `filename` if the save is successful.
+// The callback is called after all prompts have been resolved with yes or no
+// and no error occured.
+func (h *BufPane) saveBufToFile(filename string, action string, callback func(bool)) bool {
 	err := h.Buf.SaveAs(filename)
 	if err != nil {
 		if errors.Is(err, fs.ErrPermission) {
@@ -1050,7 +1072,7 @@ func (h *BufPane) saveBufToFile(filename string, action string, callback func())
 				} else {
 					InfoBar.Message("Saved " + filename)
 					if callback != nil {
-						callback()
+						callback(true)
 					}
 				}
 			}
@@ -1060,7 +1082,11 @@ func (h *BufPane) saveBufToFile(filename string, action string, callback func())
 				InfoBar.YNPrompt(
 					fmt.Sprintf("Permission denied. Do you want to save this file using %s? (y,n)", config.GlobalSettings["sucmd"].(string)),
 					func(yes, canceled bool) {
-						if yes && !canceled {
+						if !yes && !canceled {
+							if callback != nil {
+								callback(false)
+							}
+						} else if yes && !canceled {
 							saveWithSudo()
 							h.completeAction(action)
 						}
@@ -1074,7 +1100,7 @@ func (h *BufPane) saveBufToFile(filename string, action string, callback func())
 	} else {
 		InfoBar.Message("Saved " + filename)
 		if callback != nil {
-			callback()
+			callback(true)
 		}
 	}
 	return true
