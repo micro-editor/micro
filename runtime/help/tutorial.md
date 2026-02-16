@@ -1,33 +1,65 @@
 # Tutorial
 
-This is a brief intro to micro's configuration system that will give some
-simple examples showing how to configure settings, rebind keys, and use
-`init.lua` to configure micro to your liking.
+This is a brief intro to `micro` workflow with simple examples how to configure
+settings, keys, and use `init.lua`.
 
 Hopefully you'll find this useful.
 
-See `> help defaultkeys` for a list an explanation of the default keybindings.
+## Command mode
 
-### Settings
+Press `Ctrl-e` to open micro's command prompt. Typing `help tutorial` will open
+this documentation.
 
-In micro, your settings are stored in `~/.config/micro/settings.json`, a file
-that is created the first time you run micro. It is a json file which holds all
-the settings and their values. To change an option, you can either change the
-value in the `settings.json` file, or you can type it in directly while using
-micro.
+For the rest of the docs `> help tutoral` indicates pressing `Ctrl-e`.
 
-Press Ctrl-e to go to command mode, and type `set option value` (in the
-future, I will use `> set option value` to indicate pressing Ctrl-e). The change
-will take effect immediately and will also be saved to the `settings.json` file
-so that the setting will stick even after you close micro.
+## Default keyboard shortcuts
 
-You can also set options locally which means that the setting will only have
-the value you give it in the buffer you set it in. For example, if you have two
-splits open, and you type `> setlocal tabsize 2`, the tabsize will only be 2 in
-the current buffer. Also micro will not save this local change to the
-`settings.json` file. However, you can still set options locally in the
-`settings.json` file. For example, if you want the `tabsize` to be 2 only in
-Ruby files, and 4 otherwise, you could put the following in `settings.json`:
+Enter `> help defaultkeys` for a list of the default keybindings.
+
+## Simple workflow: Move content from one file to another
+
+For this example, we edit micro's own codebase, and move contents between files.
+
+Press `Ctrl-o` and enter filename to open the file in the current view
+(use `Tab` key to help with autocompletion)
+```
+> open internal/config/plugin_manager.go
+```
+Then from the command prompt (`Ctrl-e`) open a second file in a vertical split
+```
+> vsplit internal/config/plugin.go
+```
+Use `Ctrl-w` ("jump to next split" shortcut) to switch to the first file and
+cut the `PluginInfo` structure into clipboard using `Ctrl-x`.
+
+Press `Ctrl-w` again to switch back to second file and paste the clipboard
+content using `Ctrl-v`.
+
+Now press `Ctrl-s` (or `F2`) to save current file and `Ctrl-q` to close it.
+
+To preview the changes, run `git diff` by pressing `Ctrl-b` ("shell mode")
+and entering the command. You will see changes only to the second file
+`plugin.go`, because the first file is not saved yet.
+
+Hit `Ctrl-q` again and micro will prompt if you want to save the first file
+before closing. Press `y` and you're done.
+
+Congratulations with completing your first mouseless tutorial with micro.
+
+## Settings
+
+In micro, your settings are stored in `~/.config/micro/settings.json`, which
+is created on the first run. It can be edited directly, or you can invoke
+`> set option value` command from `micro`. With the command changes are
+applied  immediately and then saved into `settings.json`.
+
+Options can also be set without saving them, using `setlocal` command. Local
+means the setting is not global. For example, if you have two splits open,
+and you type `> setlocal tabsize 2`, the tabsize will only be 2 in the
+current buffer, and micro will not update `settings.json` file.
+
+You can also set options for specific file types in `settings.json`. If you
+want the `tabsize` to be 2 only in Ruby files, and 4 otherwise:
 
 ```json
 {
@@ -40,10 +72,9 @@ Ruby files, and 4 otherwise, you could put the following in `settings.json`:
 
 Micro will set the `tabsize` to 2 only in files which match the glob `*.rb`.
 
-If you would like to know more about all the available options, see the
-`options` topic (`> help options`).
+See `> help options` to read about all the available options.
 
-### Keybindings
+### Setting keybindings
 
 Keybindings work in much the same way as options. You configure them using the
 `~/.config/micro/bindings.json` file.
