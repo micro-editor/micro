@@ -1587,23 +1587,31 @@ func (h *BufPane) MoveLinesDown() bool {
 // Paste whatever is in the system clipboard into the buffer
 // Delete and paste if the user has a selection
 func (h *BufPane) Paste() bool {
-	clip, err := clipboard.ReadMulti(clipboard.ClipboardReg, h.Cursor.Num, h.Buf.NumCursors())
-	if err != nil {
-		InfoBar.Error(err)
-	} else {
-		h.paste(clip)
-	}
-	h.Relocate()
-	return true
+	return h.pasteReg(clipboard.ClipboardReg)
 }
 
 // PastePrimary pastes from the primary clipboard (only use on linux)
 func (h *BufPane) PastePrimary() bool {
-	clip, err := clipboard.ReadMulti(clipboard.PrimaryReg, h.Cursor.Num, h.Buf.NumCursors())
+	return h.pasteReg(clipboard.PrimaryReg)
+}
+
+func (h *BufPane) pasteReg(reg clipboard.Register) bool {
+	clips, err := clipboard.ReadMulti(reg)
 	if err != nil {
 		InfoBar.Error(err)
 	} else {
-		h.paste(clip)
+		if h.Buf.NumCursors() != len(clips) {
+			// If cursor clipboard length doesn't match number of cursors, paste each cursor
+			// clipboard to a newline
+			for i, clip := range clips {
+				h.paste(clip)
+				if i != len(clips)-1 {
+					h.InsertNewline()
+				}
+			}
+		} else {
+			h.paste(clips[h.Cursor.Num])
+		}
 	}
 	h.Relocate()
 	return true
