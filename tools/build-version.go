@@ -43,8 +43,9 @@ func main() {
 	version, err := semver.ParseTolerant(versionStr)
 	if err != nil {
 		// no version tag found so just return what ever we can find.
-		log.Printf("semver.ParseTolerant(%s): %v", versionStr, err)
-		fmt.Println("0.0.0-unknown")
+		defaultVersionStr := "0.0.0-unknown"
+		log.Printf("semver.ParseTolerant(%s): %v, defaulting to %s", versionStr, err, defaultVersionStr)
+		fmt.Println(defaultVersionStr)
 		return
 	}
 	if ahead == nil {
