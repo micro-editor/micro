@@ -1,0 +1,53 @@
+# Adwaita (GTK4) Dark theme
+# Adapted from the built-in Darcula theme
+# Hex codes sourced from adwaita.nvim
+
+# Foreground / Background
+color-link default "#DEDDDA,#1D1D1D"
+
+# Code Elements
+color-link comment "#5E5C64"
+color-link identifier "#FFA348"
+
+color-link constant "#7D8AC7"
+color-link constant.string "#5BC8AF"
+color-link constant.string.char "#33B2A4"
+color-link constant.specialChar "#F66151"
+
+color-link statement "bold #FFA348"
+color-link symbol "#DEDDA"
+color-link symbol.brackets "#D970D5"
+
+color-link preproc "#FFA348"
+color-link type "bold #5BC8AF"
+color-link special "#7D8AC7"
+color-link underlined "#F8E45C"
+
+# UI
+color-link error "bold #E01B24"
+color-link todo "bold #F8E45C"
+
+color-link hlsearch "#3D3846,#F5C211"
+color-link statusline "#303030,#DEDDDA"
+color-link tabbar "#303030,#DEDDDA"
+
+color-link indent-char "#F66151"
+color-link line-number "#5E5C64"
+color-link current-line-number "#9A9996,#303030"
+
+color-link diff-added "#33B2A4"
+color-link diff-modified "#FF7800"
+color-link diff-deleted "#F66151"
+
+color-link gutter-error "#E01B24"
+color-link gutter-warning "#F8E45C"
+color-link cursor-line "#303030"
+color-link color-column "#303030"
+
+#No extended types; Plain brackets.
+color-link type.extended "default"
+
+color-link symbol.tag "#5BC8AF"
+color-link match-brace "bold #DEDDDA"
+color-link tab-error "#E01B24"
+color-link trailingws "#F66151"
