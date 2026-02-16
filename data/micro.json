@@ -21,6 +21,11 @@
             "type": "boolean",
             "default": false
         },
+        "background": {
+            "description": "Whether to display the theme's background color\nhttps://github.com/zyedidia/micro/blob/master/runtime/help/options.md#options",
+            "type": "boolean",
+            "default": false
+        },
         "backup": {
             "description": "Whether to backup all open buffers\nhttps://github.com/micro-editor/micro/blob/master/runtime/help/options.md#options",
             "type": "boolean",

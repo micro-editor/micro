@@ -581,7 +581,7 @@ func doSetGlobalOptionNative(option string, nativeValue any) error {
 	config.ModifiedSettings[option] = true
 	delete(config.VolatileSettings, option)
 
-	if option == "colorscheme" {
+	if option == "colorscheme" || option == "background" {
 		// LoadSyntaxFiles()
 		config.InitColorscheme()
 		for _, b := range buffer.OpenBuffers {
