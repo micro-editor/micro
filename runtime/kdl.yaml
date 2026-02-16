@@ -1,0 +1,55 @@
+filetype: 'kdl'
+
+detect:
+  filename: "\\.kdl$"
+
+rules:
+  # Punctuation
+  - symbol.operator: '='
+  - symbol.brackets: '[{}]'
+  # Strings
+  - constant.string:
+      start: '"'
+      end: '"'
+      skip: '(\\\\\|\\")'
+      rules:
+        - constant.specialChar: '\\u[[:xdigit:]]{1,6}'
+        - constant.specialChar: '\\[btnfr"\\]'
+  # Raw Strings
+  # These definitions are not correct, ideally `#` should be same count for both begin and end, but it should be programmable as captured \1
+  # In my understanding, this is a micro editor restriction. See https://github.com/zyedidia/micro/blob/21bb61c5ff3cd4cd11adbd521657df90d50f54c7/runtime/syntax/jsonnet.yaml#L61-L78
+  # So, I defined some typical cases here, supporting only for 0-3 "#"
+  - constant.string:
+      start: '\br"'
+      end: '"'
+      rules: []
+  - constant.string:
+      start: '\br#"'
+      end: '"#'
+      rules: []
+  - constant.string:
+      start: '\br##"'
+      end: '"##'
+      rules: []
+  - constant.string:
+      start: '\br###"'
+      end: '"###'
+      rules: []
+  # Integer
+  - constant.number: '[-+]?(\d+)'
+  # Float
+  - constant.number: '[-+]?(\d+)\.\d*'
+  # Boolean and inf, nan without sign
+  - constant.bool.true: '\btrue\b'
+  - constant.bool.false: '\bfalse\b'
+  - constant: '\bnull\b'
+  # Comments
+  - comment:
+      start: '//'
+      end: '$'
+      rules:
+        - todo: '(TODO|FIXME|XXX|NOTE)'
+  # Not supporting "Slashdash comments"
+  # https://github.com/kdl-org/kdl/blob/de1dbd2c330c9193b836499db241787484627c3b/SPEC.md#L77-L79
+  # vscode extension realizes this with lookahead and lookbehind, the regex feature cannot be used in micro
+  # It is hard to support much of the use case, so it is omitted
