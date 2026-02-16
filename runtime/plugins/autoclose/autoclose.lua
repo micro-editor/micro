@@ -10,6 +10,39 @@ function charAt(str, i)
     return uutil.RuneAt(str, i-1)
 end
 
+function preInsertNewlineAct(bp)
+    local curLine = bp.Buf:Line(bp.Cursor.Y)
+    local curRune = charAt(curLine, bp.Cursor.X)
+    local nextRune = charAt(curLine, bp.Cursor.X+1)
+    local ws = uutil.GetLeadingWhitespace(curLine)
+
+    for j = 1, #autoNewlinePairs do
+        if curRune == charAt(autoNewlinePairs[j], 1) then
+            if nextRune == charAt(autoNewlinePairs[j], 2) then
+                bp.Buf:Insert(-bp.Cursor.Loc, "\n" .. ws)
+                bp:StartOfLine()
+                bp:CursorLeft()
+                bp:InsertNewline()
+                bp:InsertTab()
+                return
+            end
+        end
+    end
+    
+    bp:InsertNewline()
+    return
+end
+
+function preBackspaceAct(bp)
+    for i = 1, #autoclosePairs do
+        local curLine = bp.Buf:Line(bp.Cursor.Y)
+        if charAt(curLine, bp.Cursor.X+1) == charAt(autoclosePairs[i], 2) and charAt(curLine, bp.Cursor.X) == charAt(autoclosePairs[i], 1) then
+            bp:Delete()
+            return
+        end
+    end
+end
+
 function onRune(bp, r)
     for i = 1, #autoclosePairs do
         if r == charAt(autoclosePairs[i], 2) then
@@ -38,38 +71,29 @@ function onRune(bp, r)
             end
         end
     end
-    return true
 end
 
 function preInsertNewline(bp)
-    local curLine = bp.Buf:Line(bp.Cursor.Y)
-    local curRune = charAt(curLine, bp.Cursor.X)
-    local nextRune = charAt(curLine, bp.Cursor.X+1)
-    local ws = uutil.GetLeadingWhitespace(curLine)
-
-    for i = 1, #autoNewlinePairs do
-        if curRune == charAt(autoNewlinePairs[i], 1) then
-            if nextRune == charAt(autoNewlinePairs[i], 2) then
-                bp.Buf:Insert(-bp.Cursor.Loc, "\n" .. ws)
-                bp:StartOfLine()
-                bp:CursorLeft()
-                bp:InsertNewline()
-                bp:InsertTab()
-                return false
-            end
-        end
+    local activeCursorNum = bp.Buf:GetActiveCursor().Num
+    local inserted = false
+    for i = 1,#bp.Buf:getCursors() do
+        bp.Cursor = bp.Buf:GetCursor(i-1)
+        preInsertNewlineAct(bp)
     end
+    bp.Cursor = bp.Buf:GetCursor(activeCursorNum)
 
-    return true
+    return false
 end
 
 function preBackspace(bp)
-    for i = 1, #autoclosePairs do
-        local curLine = bp.Buf:Line(bp.Cursor.Y)
-        if charAt(curLine, bp.Cursor.X+1) == charAt(autoclosePairs[i], 2) and charAt(curLine, bp.Cursor.X) == charAt(autoclosePairs[i], 1) then
-            bp:Delete()
-        end
+    local activeCursorNum = bp.Buf:GetActiveCursor().Num
+    local inserted = false
+    for i = 1,#bp.Buf:getCursors() do
+        bp.Cursor = bp.Buf:GetCursor(i-1)
+        preBackspaceAct(bp)
+        bp:Backspace()
     end
+    bp.Cursor = bp.Buf:GetCursor(activeCursorNum)
 
-    return true
+    return false
 end
