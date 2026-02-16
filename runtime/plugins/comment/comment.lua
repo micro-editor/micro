@@ -84,77 +84,33 @@ end
 function isCommented(bp, lineN, commentRegex)
     local line = bp.Buf:Line(lineN)
     local regex = commentRegex:gsub("%s+", "%s*")
-    if string.match(line, regex) then
-        return true
-    end
-    return false
+    return string.match(line, regex)
 end
 
 function commentLine(bp, lineN, indentLen)
-    updateCommentType(bp.Buf)
-
     local line = bp.Buf:Line(lineN)
     local commentType = bp.Buf.Settings["comment.type"]
-    local sel = -bp.Cursor.CurSelection
-    local curpos = -bp.Cursor.Loc
-    local index = string.find(commentType, "%%s") - 1
     local indent = string.sub(line, 1, indentLen)
     local trimmedLine = string.sub(line, indentLen + 1)
     trimmedLine = trimmedLine:gsub("%%", "%%%%")
     local commentedLine = commentType:gsub("%%s", trimmedLine)
     bp.Buf:Replace(buffer.Loc(0, lineN), buffer.Loc(#line, lineN), indent .. commentedLine)
-    if bp.Cursor:HasSelection() then
-        bp.Cursor.CurSelection[1].Y = sel[1].Y
-        bp.Cursor.CurSelection[2].Y = sel[2].Y
-        bp.Cursor.CurSelection[1].X = sel[1].X
-        bp.Cursor.CurSelection[2].X = sel[2].X
-    else
-        bp.Cursor.X = curpos.X + index
-        bp.Cursor.Y = curpos.Y
-    end
-    bp.Cursor:Relocate()
-    bp.Cursor:StoreVisualX()
 end
 
 function uncommentLine(bp, lineN, commentRegex)
-    updateCommentType(bp.Buf)
-
     local line = bp.Buf:Line(lineN)
-    local commentType = bp.Buf.Settings["comment.type"]
-    local sel = -bp.Cursor.CurSelection
-    local curpos = -bp.Cursor.Loc
-    local index = string.find(commentType, "%%s") - 1
     if not string.match(line, commentRegex) then
         commentRegex = commentRegex:gsub("%s+", "%s*")
     end
     if string.match(line, commentRegex) then
         uncommentedLine = string.match(line, commentRegex)
         bp.Buf:Replace(buffer.Loc(0, lineN), buffer.Loc(#line, lineN), util.GetLeadingWhitespace(line) .. uncommentedLine)
-        if bp.Cursor:HasSelection() then
-            bp.Cursor.CurSelection[1].Y = sel[1].Y
-            bp.Cursor.CurSelection[2].Y = sel[2].Y
-            bp.Cursor.CurSelection[1].X = sel[1].X
-            bp.Cursor.CurSelection[2].X = sel[2].X
-        else
-            bp.Cursor.X = curpos.X - index
-            bp.Cursor.Y = curpos.Y
-        end
-    end
-    bp.Cursor:Relocate()
-    bp.Cursor:StoreVisualX()
-end
-
-function toggleCommentLine(bp, lineN, commentRegex)
-    if isCommented(bp, lineN, commentRegex) then
-        uncommentLine(bp, lineN, commentRegex)
-    else
-        commentLine(bp, lineN, #util.GetLeadingWhitespace(bp.Buf:Line(lineN)))
     end
 end
 
-function toggleCommentSelection(bp, startLine, endLine, commentRegex)
+function toggleCommentSelection(bp, lines, commentRegex)
     local allComments = true
-    for line = startLine, endLine do
+    for line,_ in pairs(lines) do
         if not isCommented(bp, line, commentRegex) then
             allComments = false
             break
@@ -164,7 +120,7 @@ function toggleCommentSelection(bp, startLine, endLine, commentRegex)
     -- NOTE: we assume that the indentation is either tabs only or spaces only
     local indentMin = -1
     if not allComments then
-        for line = startLine, endLine do
+        for line,_ in pairs(lines) do
             local indentLen = #util.GetLeadingWhitespace(bp.Buf:Line(line))
             if indentMin == -1 or indentLen < indentMin then
                 indentMin = indentLen
@@ -172,13 +128,14 @@ function toggleCommentSelection(bp, startLine, endLine, commentRegex)
         end
     end
 
-    for line = startLine, endLine do
+    for line,_ in pairs(lines) do
         if allComments then
             uncommentLine(bp, line, commentRegex)
         else
             commentLine(bp, line, indentMin)
         end
     end
+    return not allComments
 end
 
 function comment(bp, args)
@@ -187,22 +144,60 @@ function comment(bp, args)
     local commentType = bp.Buf.Settings["comment.type"]
     local commentRegex = "^%s*" .. commentType:gsub("%%","%%%%"):gsub("%$","%$"):gsub("%)","%)"):gsub("%(","%("):gsub("%?","%?"):gsub("%*", "%*"):gsub("%-", "%-"):gsub("%.", "%."):gsub("%+", "%+"):gsub("%]", "%]"):gsub("%[", "%["):gsub("%%%%s", "(.*)")
 
-    if bp.Cursor:HasSelection() then
-        if bp.Cursor.CurSelection[1]:GreaterThan(-bp.Cursor.CurSelection[2]) then
-            local endLine = bp.Cursor.CurSelection[1].Y
-            if bp.Cursor.CurSelection[1].X == 0 then
-                endLine = endLine - 1
+    local lines = {}
+    local curData = {}
+    -- gather cursor data and lines to (un)comment
+    for i = 1,#bp.Buf:getCursors() do
+        local cursor = bp.Buf:getCursor(i-1)
+        local hasSelection = cursor:HasSelection()
+        local excludedEnd = nil
+        if hasSelection then
+            local startSel = 1
+            local endSel = 2
+            if cursor.CurSelection[startSel]:GreaterThan(-cursor.CurSelection[endSel]) then
+                startSel = 2
+                endSel = 1
             end
-            toggleCommentSelection(bp, bp.Cursor.CurSelection[2].Y, endLine, commentRegex)
+            local fromLineNo = cursor.CurSelection[startSel].Y
+            local toLineNo = cursor.CurSelection[endSel].Y
+
+            -- don't indent the line after when selection ends in a newline
+            if cursor.CurSelection[endSel].X == 0 then
+                excludedEnd = endSel
+                toLineNo = toLineNo - 1
+            end
+
+            for lineN = fromLineNo,toLineNo do
+                lines[lineN] = true
+            end
         else
-            local endLine = bp.Cursor.CurSelection[2].Y
-            if bp.Cursor.CurSelection[2].X == 0 then
-                endLine = endLine - 1
-            end
-            toggleCommentSelection(bp, bp.Cursor.CurSelection[1].Y, endLine, commentRegex)
+            lines[cursor.Y] = true
         end
-    else
-        toggleCommentLine(bp, bp.Cursor.Y, commentRegex)
+        table.insert(curData, {
+            sel = -cursor.CurSelection,
+            curpos = -cursor.Loc,
+            cursor = cursor,
+            hasSelection = hasSelection,
+            excludedEnd = excludedEnd,
+        })
+    end
+    -- (un)comment selected lines
+    local commented = toggleCommentSelection(bp, lines, commentRegex)
+    -- restore cursors
+    local displacement = (string.find(commentType, "%%s") - 1) * (commented and 1 or -1)
+    for i=1,#curData do
+        local cursor = curData[i].cursor
+        if curData[i].hasSelection then
+            for j=1,2 do
+                cursor.CurSelection[j].Y = curData[i].sel[j].Y
+                cursor.CurSelection[j].X = curData[i].sel[j].X + (j == curData[i].excludedEnd and 0 or displacement)
+            end
+        else
+            cursor.Y = curData[i].curpos.Y
+            cursor.X = curData[i].curpos.X + displacement
+        end
+        cursor:Relocate()
+        cursor:StoreVisualX()
     end
 end
 
