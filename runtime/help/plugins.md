@@ -147,6 +147,9 @@ The packages and their contents are listed below (in Go type signatures):
 
     - `Tabs() *TabList`: returns the global tab list.
 
+    - `NewTabFromBuffer(x, y, width, height int, buf *Buffer) *Tab`: creates
+       a new tab from the given buffer with the specified dimensions and position.
+
     - `After(t time.Duration, f func())`: run function `f` in the background
        after time `t` elapses. See https://pkg.go.dev/time#Duration for the
        usage of `time.Duration`.
