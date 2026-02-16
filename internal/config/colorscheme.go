@@ -163,15 +163,15 @@ lineLoop:
 // The 'extra' can be bold, reverse, italic or underline
 func StringToStyle(str string) tcell.Style {
 	var fg, bg string
-	spaceSplit := strings.Split(str, " ")
-	split := strings.Split(spaceSplit[len(spaceSplit)-1], ",")
-	if len(split) > 1 {
-		fg, bg = split[0], split[1]
-	} else {
-		fg = split[0]
+
+	commaSplit := strings.Split(str, ",")
+	if len(commaSplit) > 1 {
+		bg = strings.TrimSpace(commaSplit[1])
 	}
-	fg = strings.TrimSpace(fg)
-	bg = strings.TrimSpace(bg)
+
+	styleFg := strings.TrimSpace(commaSplit[0])
+	spaceSplit := strings.Split(styleFg, " ")
+	fg = strings.TrimSpace(spaceSplit[len(spaceSplit)-1])
 
 	var fgColor, bgColor tcell.Color
 	var ok bool
