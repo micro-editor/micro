@@ -1,8 +1,10 @@
 package highlight
 
 import (
-	"regexp"
+	"log"
 	"strings"
+
+	"github.com/dlclark/regexp2"
 )
 
 func sliceStart(slc []byte, index int) []byte {
@@ -39,18 +41,6 @@ func sliceEnd(slc []byte, index int) []byte {
 	return slc[:totalSize]
 }
 
-// RunePos returns the rune index of a given byte index
-// This could cause problems if the byte index is between code points
-func runePos(p int, str []byte) int {
-	if p < 0 {
-		return 0
-	}
-	if p >= len(str) {
-		return CharacterCount(str)
-	}
-	return CharacterCount(str[:p])
-}
-
 // A State represents the region at the end of a line
 type State *region
 
@@ -82,30 +72,47 @@ func NewHighlighter(def *Def) *Highlighter {
 // color's group (represented as one byte)
 type LineMatch map[int]Group
 
-func findIndex(regex *regexp.Regexp, skip *regexp.Regexp, str []byte) []int {
-	var strbytes []byte
+func findIndex(regex *regexp2.Regexp, skip *regexp2.Regexp, str []byte) []int {
+	searchStr := string(str)
 	if skip != nil {
-		strbytes = skip.ReplaceAllFunc(str, func(match []byte) []byte {
-			res := make([]byte, CharacterCount(match))
-			return res
-		})
-	} else {
-		strbytes = str
+		replaced, err := skip.ReplaceFunc(searchStr, func(m regexp2.Match) string {
+			return strings.Repeat(" ", m.Length)
+		}, 0, -1)
+		if err != nil {
+			log.Printf("highlight: regex timeout in skip replace for pattern %q: %v", skip.String(), err)
+		} else {
+			searchStr = replaced
+		}
 	}
 
-	match := regex.FindIndex(strbytes)
-	if match == nil {
+	m, err := regex.FindStringMatch(searchStr)
+	if err != nil {
+		log.Printf("highlight: regex timeout finding match for pattern %q: %v", regex.String(), err)
 		return nil
 	}
-	// return []int{match.Index, match.Index + match.Length}
-	return []int{runePos(match[0], str), runePos(match[1], str)}
+	if m == nil {
+		return nil
+	}
+	return []int{charPosFromRunePos(m.Index, str), charPosFromRunePos(m.Index+m.Length, str)}
 }
 
-func findAllIndex(regex *regexp.Regexp, str []byte) [][]int {
-	matches := regex.FindAllIndex(str, -1)
-	for i, m := range matches {
-		matches[i][0] = runePos(m[0], str)
-		matches[i][1] = runePos(m[1], str)
+func findAllIndex(regex *regexp2.Regexp, str []byte) [][]int {
+	var matches [][]int
+	m, err := regex.FindStringMatch(string(str))
+	if err != nil {
+		log.Printf("highlight: regex timeout finding matches for pattern %q: %v", regex.String(), err)
+		return nil
+	}
+	for m != nil {
+		matches = append(matches, []int{
+			charPosFromRunePos(m.Index, str),
+			charPosFromRunePos(m.Index+m.Length, str),
+		})
+		m, err = regex.FindNextMatch(m)
+		if err != nil {
+			log.Printf("highlight: regex timeout finding next match for pattern %q: %v", regex.String(), err)
+			break
+		}
 	}
 	return matches
 }

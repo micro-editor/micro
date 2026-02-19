@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"regexp"
 
+	"github.com/dlclark/regexp2"
 	"gopkg.in/yaml.v2"
 )
 
@@ -38,9 +38,9 @@ type Def struct {
 
 type Header struct {
 	FileType       string
-	FileNameRegex  *regexp.Regexp
-	HeaderRegex    *regexp.Regexp
-	SignatureRegex *regexp.Regexp
+	FileNameRegex  *regexp2.Regexp
+	HeaderRegex    *regexp2.Regexp
+	SignatureRegex *regexp2.Regexp
 }
 
 type HeaderYaml struct {
@@ -62,7 +62,7 @@ type File struct {
 // the regular expression to match the pattern
 type pattern struct {
 	group Group
-	regex *regexp.Regexp
+	regex *regexp2.Regexp
 }
 
 // rules defines which patterns and regions can be used to highlight
@@ -82,9 +82,9 @@ type region struct {
 	group      Group
 	limitGroup Group
 	parent     *region
-	start      *regexp.Regexp
-	end        *regexp.Regexp
-	skip       *regexp.Regexp
+	start      *regexp2.Regexp
+	end        *regexp2.Regexp
+	skip       *regexp2.Regexp
 	rules      *rules
 }
 
@@ -109,13 +109,13 @@ func MakeHeader(data []byte) (*Header, error) {
 	signatureRegexStr := string(lines[3])
 
 	if fnameRegexStr != "" {
-		header.FileNameRegex, err = regexp.Compile(fnameRegexStr)
+		header.FileNameRegex, err = compileRegex(fnameRegexStr)
 	}
 	if err == nil && headerRegexStr != "" {
-		header.HeaderRegex, err = regexp.Compile(headerRegexStr)
+		header.HeaderRegex, err = compileRegex(headerRegexStr)
 	}
 	if err == nil && signatureRegexStr != "" {
-		header.SignatureRegex, err = regexp.Compile(signatureRegexStr)
+		header.SignatureRegex, err = compileRegex(signatureRegexStr)
 	}
 
 	if err != nil {
@@ -138,13 +138,13 @@ func MakeHeaderYaml(data []byte) (*Header, error) {
 	header.FileType = hdrYaml.FileType
 
 	if hdrYaml.Detect.FNameRegexStr != "" {
-		header.FileNameRegex, err = regexp.Compile(hdrYaml.Detect.FNameRegexStr)
+		header.FileNameRegex, err = compileRegex(hdrYaml.Detect.FNameRegexStr)
 	}
 	if err == nil && hdrYaml.Detect.HeaderRegexStr != "" {
-		header.HeaderRegex, err = regexp.Compile(hdrYaml.Detect.HeaderRegexStr)
+		header.HeaderRegex, err = compileRegex(hdrYaml.Detect.HeaderRegexStr)
 	}
 	if err == nil && hdrYaml.Detect.SignatureRegexStr != "" {
-		header.SignatureRegex, err = regexp.Compile(hdrYaml.Detect.SignatureRegexStr)
+		header.SignatureRegex, err = compileRegex(hdrYaml.Detect.SignatureRegexStr)
 	}
 
 	if err != nil {
@@ -157,7 +157,7 @@ func MakeHeaderYaml(data []byte) (*Header, error) {
 // MatchFileName will check the given file name with the stored regex
 func (header *Header) MatchFileName(filename string) bool {
 	if header.FileNameRegex != nil {
-		return header.FileNameRegex.MatchString(filename)
+		return matchString(header.FileNameRegex, filename)
 	}
 
 	return false
@@ -165,7 +165,7 @@ func (header *Header) MatchFileName(filename string) bool {
 
 func (header *Header) MatchFileHeader(firstLine []byte) bool {
 	if header.HeaderRegex != nil {
-		return header.HeaderRegex.Match(firstLine)
+		return matchBytes(header.HeaderRegex, firstLine)
 	}
 
 	return false
@@ -179,7 +179,7 @@ func (header *Header) HasFileSignature() bool {
 // MatchFileSignature will check the given line with the stored regex
 func (header *Header) MatchFileSignature(line []byte) bool {
 	if header.SignatureRegex != nil {
-		return header.SignatureRegex.Match(line)
+		return matchBytes(header.SignatureRegex, line)
 	}
 
 	return false
@@ -363,7 +363,7 @@ func parseRules(input []any, curRegion *region) (ru *rules, err error) {
 					ru.includes = append(ru.includes, object)
 				} else {
 					// Pattern
-					r, err := regexp.Compile(object)
+					r, err := compileRegex(object)
 					if err != nil {
 						return nil, err
 					}
@@ -419,7 +419,7 @@ func parseRegion(group string, regionInfo map[any]any, prevRegion *region) (r *r
 			return nil, fmt.Errorf("Empty start in %s", group)
 		}
 
-		r.start, err = regexp.Compile(start)
+		r.start, err = compileRegex(start)
 		if err != nil {
 			return nil, err
 		}
@@ -434,7 +434,7 @@ func parseRegion(group string, regionInfo map[any]any, prevRegion *region) (r *r
 			return nil, fmt.Errorf("Empty end in %s", group)
 		}
 
-		r.end, err = regexp.Compile(end)
+		r.end, err = compileRegex(end)
 		if err != nil {
 			return nil, err
 		}
@@ -449,7 +449,7 @@ func parseRegion(group string, regionInfo map[any]any, prevRegion *region) (r *r
 			return nil, fmt.Errorf("Empty skip in %s", group)
 		}
 
-		r.skip, err = regexp.Compile(skip)
+		r.skip, err = compileRegex(skip)
 		if err != nil {
 			return nil, err
 		}
