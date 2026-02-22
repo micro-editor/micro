@@ -151,6 +151,7 @@ func luaImportMicroUtil() *lua.LTable {
 	ulua.L.SetField(pkg, "RuneAt", luar.New(ulua.L, util.LuaRuneAt))
 	ulua.L.SetField(pkg, "GetLeadingWhitespace", luar.New(ulua.L, util.LuaGetLeadingWhitespace))
 	ulua.L.SetField(pkg, "IsWordChar", luar.New(ulua.L, util.LuaIsWordChar))
+	ulua.L.SetField(pkg, "IsWhitespace", luar.New(ulua.L, util.LuaIsWhitespace))
 	ulua.L.SetField(pkg, "String", luar.New(ulua.L, util.String))
 	ulua.L.SetField(pkg, "Unzip", luar.New(ulua.L, util.Unzip))
 	ulua.L.SetField(pkg, "Version", luar.New(ulua.L, util.Version))

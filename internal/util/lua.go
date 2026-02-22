@@ -39,3 +39,9 @@ func LuaIsWordChar(s string) bool {
 	r, _, _ := DecodeCharacterInString(s)
 	return IsWordChar(r)
 }
+
+// LuaIsWhitespace returns true if the first rune in a whitespace character
+func LuaIsWhitespace(s string) bool {
+	r, _, _ := DecodeCharacterInString(s)
+	return IsWhitespace(r)
+}
