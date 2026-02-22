@@ -686,6 +686,17 @@ func (h *BufPane) SelectToEnd() bool {
 	return true
 }
 
+// InsertSpace inserts a single space character
+func (h *BufPane) InsertSpace() bool {
+	if h.Cursor.HasSelection() {
+		h.Cursor.DeleteSelection()
+		h.Cursor.ResetSelection()
+	}
+	h.Buf.Insert(h.Cursor.Loc, " ")
+	h.Relocate()
+	return true
+}
+
 // InsertNewline inserts a newline plus possible some whitespace if autoindent is on
 func (h *BufPane) InsertNewline() bool {
 	// Insert a newline
