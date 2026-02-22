@@ -40,7 +40,7 @@ var statusInfo = map[string]func(*buffer.Buffer) string{
 	},
 	"modified": func(b *buffer.Buffer) string {
 		if b.Modified() {
-			return "+ "
+			return "[+] "
 		}
 		if b.Type.Readonly {
 			return "[ro] "
