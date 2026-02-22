@@ -810,37 +810,32 @@ func (h *BufPane) Delete() bool {
 
 // IndentSelection indents the current selection
 func (h *BufPane) IndentSelection() bool {
-	if h.Cursor.HasSelection() {
-		start := h.Cursor.CurSelection[0]
-		end := h.Cursor.CurSelection[1]
-		if end.Y < start.Y {
-			start, end = end, start
-			h.Cursor.SetSelectionStart(start)
-			h.Cursor.SetSelectionEnd(end)
-		}
+	if !h.Cursor.HasSelection() {
+		return false
+	}
 
-		startY := start.Y
-		endY := end.Move(-1, h.Buf).Y
-		endX := end.Move(-1, h.Buf).X
-		tabsize := int(h.Buf.Settings["tabsize"].(float64))
-		indentsize := len(h.Buf.IndentString(tabsize))
-		for y := startY; y <= endY; y++ {
-			if len(h.Buf.LineBytes(y)) > 0 {
-				h.Buf.Insert(buffer.Loc{X: 0, Y: y}, h.Buf.IndentString(tabsize))
-				if y == startY && start.X > 0 {
-					h.Cursor.SetSelectionStart(start.Move(indentsize, h.Buf))
-				}
-				if y == endY {
-					h.Cursor.SetSelectionEnd(buffer.Loc{X: endX + indentsize + 1, Y: endY})
-				}
+	start := h.Cursor.CurSelection[0]
+	end := h.Cursor.CurSelection[1]
+	if end.Y < start.Y {
+		start, end = end, start
+		h.Cursor.SetSelectionStart(start)
+		h.Cursor.SetSelectionEnd(end)
+	}
+
+	end = end.Move(-1, h.Buf)
+	tabsize := int(h.Buf.Settings["tabsize"].(float64))
+	for y := start.Y; y <= end.Y; y++ {
+		if len(h.Buf.LineBytes(y)) > 0 {
+			h.Buf.Insert(buffer.Loc{X: 0, Y: y}, h.Buf.IndentString(tabsize))
+			if y == start.Y && start.X == 0 {
+				h.Cursor.SetSelectionStart(buffer.Loc{Y: start.Y})
 			}
 		}
-		h.Buf.RelocateCursors()
-
-		h.Relocate()
-		return true
 	}
-	return false
+	h.Buf.RelocateCursors()
+
+	h.Relocate()
+	return true
 }
 
 // IndentLine moves the current line forward one indentation
