@@ -214,16 +214,28 @@ func (t *TermPane) CommandMode() {
 	})
 }
 
-// NextSplit moves to the next split
+// NextSplit changes the view to the next split
 func (t *TermPane) NextSplit() {
-	a := t.tab.active
-	if a < len(t.tab.Panes)-1 {
-		a++
-	} else {
-		a = 0
-	}
+	a := Tabs.List[Tabs.Active()]
+	a.SetActive((a.active + 1) % len(a.Panes))
+}
 
-	t.tab.SetActive(a)
+// PreviousSplit changes the view to the previous split
+func (t *TermPane) PreviousSplit() {
+	a := Tabs.List[Tabs.Active()]
+	panesLen := len(a.Panes)
+	a.SetActive((a.active + panesLen - 1) % panesLen)
+}
+
+// PreviousTab switches to the previous tab in the tab list
+func (t *TermPane) PreviousTab() {
+	tabsLen := len(Tabs.List)
+	Tabs.SetActive((Tabs.Active() + tabsLen - 1) % tabsLen)
+}
+
+// NextTab switches to the next tab in the tab list
+func (t *TermPane) NextTab() {
+	Tabs.SetActive((Tabs.Active() + 1) % len(Tabs.List))
 }
 
 // HandleCommand handles a command for the term pane
@@ -233,7 +245,10 @@ func (t *TermPane) HandleCommand(input string) {
 
 // TermKeyActions contains the list of all possible key actions the termpane could execute
 var TermKeyActions = map[string]TermKeyAction{
-	"Exit":        (*TermPane).Exit,
-	"CommandMode": (*TermPane).CommandMode,
-	"NextSplit":   (*TermPane).NextSplit,
+	"Exit":          (*TermPane).Exit,
+	"CommandMode":   (*TermPane).CommandMode,
+	"NextSplit":     (*TermPane).NextSplit,
+	"PreviousSplit": (*TermPane).PreviousSplit,
+	"NextTab":       (*TermPane).NextTab,
+	"PreviousTab":   (*TermPane).PreviousTab,
 }
