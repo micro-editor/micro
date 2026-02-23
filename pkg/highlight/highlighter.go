@@ -125,7 +125,7 @@ func (h *Highlighter) highlightRegion(highlights LineMatch, start int, canMatchE
 	searchNesting := true
 	endLoc := findIndex(curRegion.end, curRegion.skip, line)
 	if endLoc != nil {
-		if start == endLoc[0] {
+		if endLoc[0] == 0 {
 			searchNesting = false
 		} else {
 			firstLoc = endLoc
@@ -142,30 +142,21 @@ func (h *Highlighter) highlightRegion(highlights LineMatch, start int, canMatchE
 			}
 		}
 	}
-	if firstRegion != nil && firstLoc[0] != lineLen {
-		if !statesOnly {
-			highlights[start+firstLoc[0]] = firstRegion.limitGroup
-		}
-		h.highlightEmptyRegion(highlights, start+firstLoc[1], canMatchEnd, lineNum, sliceStart(line, firstLoc[1]), statesOnly)
-		h.highlightRegion(highlights, start+firstLoc[1], canMatchEnd, lineNum, sliceStart(line, firstLoc[1]), firstRegion, statesOnly)
-		return highlights
-	}
 
 	if !statesOnly {
-		fullHighlights := make([]Group, lineLen)
+		fullHighlights := make([]Group, firstLoc[0])
 		for i := 0; i < len(fullHighlights); i++ {
 			fullHighlights[i] = curRegion.group
 		}
 
 		if searchNesting {
+			line_part := sliceEnd(line, firstLoc[0])
 			for _, p := range curRegion.rules.patterns {
 				if curRegion.group == curRegion.limitGroup || p.group == curRegion.limitGroup {
-					matches := findAllIndex(p.regex, line)
+					matches := findAllIndex(p.regex, line_part)
 					for _, m := range matches {
-						if (endLoc == nil) || (m[0] < endLoc[0]) {
-							for i := m[0]; i < m[1]; i++ {
-								fullHighlights[i] = p.group
-							}
+						for i := m[0]; i < m[1]; i++ {
+							fullHighlights[i] = p.group
 						}
 					}
 				}
@@ -176,6 +167,14 @@ func (h *Highlighter) highlightRegion(highlights LineMatch, start int, canMatchE
 				highlights[start+i] = h
 			}
 		}
+	}
+
+	if firstRegion != nil && firstLoc[0] != lineLen {
+		if !statesOnly {
+			highlights[start+firstLoc[0]] = firstRegion.limitGroup
+		}
+		h.highlightRegion(highlights, start+firstLoc[1], canMatchEnd, lineNum, sliceStart(line, firstLoc[1]), firstRegion, statesOnly)
+		return highlights
 	}
 
 	loc := endLoc
