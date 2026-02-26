@@ -1,7 +1,7 @@
 filetype: git-config
 
 detect:
-    filename: "git(config|modules)$|^(.*[\\/])?\\.?git/config$"
+    filename: "git(config|modules)$|^(.*[\\/])?\\.?git[\\/]config$"
 
 rules:
     - constant: "\\<(true|false)\\>"
