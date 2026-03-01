@@ -25,6 +25,9 @@ func (b *Buffer) GetSuggestions() {
 
 // Autocomplete starts the autocomplete process
 func (b *Buffer) Autocomplete(c Completer) bool {
+	if !b.GetActiveCursor().CanAutocomplete() {
+		return false
+	}
 	b.Completions, b.Suggestions = c(b)
 	if len(b.Completions) != len(b.Suggestions) || len(b.Completions) == 0 {
 		return false
@@ -51,7 +54,7 @@ func (b *Buffer) CycleAutocomplete(forward bool) {
 
 	// cycle autocomplete for all except active cursors
 	for i, c := range b.cursors {
-		if i == b.curCursor {
+		if i == b.curCursor || !c.CanAutocomplete() {
 			continue
 		}
 
@@ -81,6 +84,20 @@ func (b *Buffer) AutocompleteSingle(c *Cursor, prevSuggestion int) {
 	}
 	
 	b.Replace(start, end, b.Completions[b.CurSuggestion])
+}
+
+func (c *Cursor) CanAutocomplete() bool {
+	if c.X == 0 {
+		return false
+	}
+
+	r := c.RuneUnder(c.X)
+	prev := c.RuneUnder(c.X - 1)
+	if !util.IsAutocomplete(prev) || util.IsWordChar(r) {
+		// don't autocomplete if cursor is within a word
+		return false
+	}
+	return true
 }
 
 // GetWord gets the most recent word separated by any separator
