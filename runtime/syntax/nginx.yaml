@@ -1,7 +1,7 @@
 filetype: nginx
 
 detect:
-    filename: "nginx.*\\.conf$|\\.nginx$|\\.sub(domain|folder).conf$"
+    filename: "nginx.*\\.conf$|\\.nginx$|\\.sub(domain|folder)\\.conf$"
     header: "^(server|upstream)[a-z ]*\\{$"
 
 rules:
