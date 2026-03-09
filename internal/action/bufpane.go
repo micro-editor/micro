@@ -148,6 +148,7 @@ func BufMapEvent(k Event, action string) {
 		actionfns = append(actionfns, afn)
 	}
 	bufAction := func(h *BufPane, te *tcell.EventMouse) bool {
+		h.Buf.ShowMatchIdx = false
 		for i, a := range actionfns {
 			var success bool
 			if _, ok := MultiActions[names[i]]; ok {
