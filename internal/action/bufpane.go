@@ -762,6 +762,7 @@ var BufKeyActions = map[string]BufKeyAction{
 	"InsertNewline":             (*BufPane).InsertNewline,
 	"Backspace":                 (*BufPane).Backspace,
 	"Delete":                    (*BufPane).Delete,
+	"DeleteSelections":          (*BufPane).DeleteSelections,
 	"InsertTab":                 (*BufPane).InsertTab,
 	"Save":                      (*BufPane).Save,
 	"SaveAll":                   (*BufPane).SaveAll,

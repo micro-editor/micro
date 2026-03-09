@@ -751,10 +751,15 @@ func (h *BufPane) Backspace() bool {
 
 // DeleteWordRight deletes the word to the right of the cursor
 func (h *BufPane) DeleteWordRight() bool {
-	h.SelectWordRight()
 	if h.Cursor.HasSelection() {
 		h.Cursor.DeleteSelection()
 		h.Cursor.ResetSelection()
+	} else {
+		h.SelectWordRight()
+		if h.Cursor.HasSelection() {
+			h.Cursor.DeleteSelection()
+			h.Cursor.ResetSelection()
+		}
 	}
 	h.Relocate()
 	return true
@@ -762,10 +767,15 @@ func (h *BufPane) DeleteWordRight() bool {
 
 // DeleteWordLeft deletes the word to the left of the cursor
 func (h *BufPane) DeleteWordLeft() bool {
-	h.SelectWordLeft()
 	if h.Cursor.HasSelection() {
 		h.Cursor.DeleteSelection()
 		h.Cursor.ResetSelection()
+	} else {
+		h.SelectWordLeft()
+		if h.Cursor.HasSelection() {
+			h.Cursor.DeleteSelection()
+			h.Cursor.ResetSelection()
+		}
 	}
 	h.Relocate()
 	return true
@@ -773,10 +783,15 @@ func (h *BufPane) DeleteWordLeft() bool {
 
 // DeleteSubWordRight deletes the sub-word to the right of the cursor
 func (h *BufPane) DeleteSubWordRight() bool {
-	h.SelectSubWordRight()
 	if h.Cursor.HasSelection() {
 		h.Cursor.DeleteSelection()
 		h.Cursor.ResetSelection()
+	} else {
+		h.SelectSubWordRight()
+		if h.Cursor.HasSelection() {
+			h.Cursor.DeleteSelection()
+			h.Cursor.ResetSelection()
+		}
 	}
 	h.Relocate()
 	return true
@@ -784,10 +799,15 @@ func (h *BufPane) DeleteSubWordRight() bool {
 
 // DeleteSubWordLeft deletes the sub-word to the left of the cursor
 func (h *BufPane) DeleteSubWordLeft() bool {
-	h.SelectSubWordLeft()
 	if h.Cursor.HasSelection() {
 		h.Cursor.DeleteSelection()
 		h.Cursor.ResetSelection()
+	} else {
+		h.SelectSubWordLeft()
+		if h.Cursor.HasSelection() {
+			h.Cursor.DeleteSelection()
+			h.Cursor.ResetSelection()
+		}
 	}
 	h.Relocate()
 	return true
@@ -806,6 +826,26 @@ func (h *BufPane) Delete() bool {
 	}
 	h.Relocate()
 	return true
+}
+
+// DeleteSelections checks for any active cursors selections and
+// if there are it deletes them and returns true. It returns false when
+// there are no selections.
+func (h *BufPane) DeleteSelections() bool {
+	hasSelection := false
+	for _, c := range h.Buf.GetCursors() {
+		if c.HasSelection() {
+			c.DeleteSelection()
+			c.ResetSelection()
+			hasSelection = true
+		}
+	}
+
+	if hasSelection {
+		h.Relocate()
+		return true
+	}
+	return false
 }
 
 // IndentSelection indents the current selection
