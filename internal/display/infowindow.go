@@ -83,6 +83,7 @@ func (i *InfoWindow) BufView() View {
 	}
 }
 
+func (i *InfoWindow) HScroll(sc, n int) int            { return sc }
 func (i *InfoWindow) Scroll(s SLoc, n int) SLoc        { return s }
 func (i *InfoWindow) Diff(s1, s2 SLoc) int             { return 0 }
 func (i *InfoWindow) SLocFromLoc(loc buffer.Loc) SLoc  { return SLoc{0, 0} }
