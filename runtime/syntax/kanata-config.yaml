@@ -1,0 +1,32 @@
+filetype: kanata
+
+detect:
+    filename: "\\.kbd$"
+
+rules:
+    - symbol.operator: "@|\\$"
+    - symbol.brackets: "[()]"
+    - constant.number: "\\b[0-9]+\\b"
+    
+    - constant.string:
+        start: "\""
+        end: "\""
+        skip: "\\\\."
+        rules: []
+
+    - constant.string:
+        start: "r#\""
+        end: "\"#"
+        rules: []
+    
+    - comment:
+        start: "#[|]"
+        end: "[|]#"
+        rules:
+            - todo: "(TODO|XXX|FIXME):?"
+    
+    - comment:
+        start: ";;"
+        end: "$"
+        rules:
+            - todo: "(TODO|XXX|FIXME):?"
