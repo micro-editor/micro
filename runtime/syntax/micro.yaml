@@ -7,17 +7,19 @@ rules:
     - statement: "\\b(syntax|color(-link)?)\\b"
     - statement: "\\b(start=|end=)\\b"
     # Simple one-liners
-    - identifier: "\\b(default|number|statement|underlined|error|todo|statusline|indent-char|cursor\\-line|color\\-column|ignore|divider|tabbar)\\b"
+    - identifier: "\\b(default|hlsearch|number|statement|error|todo|statusline|indent-char|cursor\\-line|color\\-column|ignore|divider|tabbar|match-brace|trailingws|tab\\-error)\\b"
     # Separate identifiers to keep "complex" regex clean
     - identifier: "\\b(special(Char)?)\\b"
     - identifier: "\\b((current\\-)?line\\-number)\\b"
     - identifier: "\\b(gutter\\-(info|error|warning){1})\\b"
     - identifier: "\\b(comment(\\.bright)?)\\b"
-    - identifier: "\\b(symbol(\\.(brackets|operator|tag))?)\\b"
+    - identifier: "\\b(symbol(\\.(brackets|operator|tag(\\.(extended){1})?))?)\\b"
     - identifier: "\\b(identifier(\\.(class|macro|var))?)\\b"
-    - identifier: "\\b(constant(\\.(bool(\\.(true|false){1})?|number|specialChar|string(\\.url)?){1})?)\\b"
+    - identifier: "\\b(constant(\\.(bool(\\.(true|false){1})?|number|specialChar|string(\\.url|\\.char)?){1})?)\\b"
     - identifier: "\\b(preproc(\\.shebang)?)\\b"
-    - identifier: "\\b(type(\\.keyword)?)\\b"
+    - identifier: "\\b(underlined(\\.url)?)\\b"
+    - identifier: "\\b(type(\\.keyword|\\.extended)?)\\b"
+    - identifier: "\\b(diff\\-(added|modified|deleted)?)\\b"
     - constant.number: "\\b(|h|A|0x)+[0-9]+(|h|A)+\\b"
     - constant.number: "\\b0x[0-9 a-f A-F]+\\b"
     - comment:
