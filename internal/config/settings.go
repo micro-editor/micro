@@ -55,6 +55,7 @@ var OptionChoices = map[string][]string{
 var defaultCommonSettings = map[string]any{
 	"autoindent":      true,
 	"autosu":          false,
+	"background":      true,
 	"backup":          true,
 	"backupdir":       "",
 	"basename":        false,
