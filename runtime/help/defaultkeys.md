@@ -33,6 +33,8 @@ can change it!
 | PageDown                    | Move cursor down one page                                                                 |
 | Ctrl-Home or Ctrl-UpArrow   | Move cursor to start of document                                                          |
 | Ctrl-End or Ctrl-DownArrow  | Move cursor to end of document                                                            |
+| Alt-<                       | Move cursor to opening brace in current brace scope                                       |
+| Alt->                       | Move cursor to closing brace in current brace scope                                       |
 | Ctrl-l                      | Jump to a line in the file (prompts with #)                                               |
 | Ctrl-w                      | Cycle between splits in the current tab (use `> vsplit` or `> hsplit` to create a split)  |
 
