@@ -1,16 +1,24 @@
 filetype: v
 
 detect:
+    filename: "\\.v" # both .v and .vsh can work
 
 rules:
-      # Conditionals and control flow
     - preproc: "\\b(module|import)\\b"
     - statement: "\\b(if|else|for|match|select|defer|or|unsafe)\\b"
     - statement: "\\b(break|continue|goto|return)\\b"
-    - type.keyword: "\\b(assert|const|enum|fn|struct|interface|type)\\b"
-    - type.keyword: "\\b(pub|mut|__global)\\b"
 
-    - preproc: "\\$\\b(if|else)\\b"
+    - type: "\\b(byte|u(8|16|32|64|128)|i(nt|8|16|64|128)|f(32|64))\\b"
+    - type: "\\b(bool|cha[nr]|map|rune|string)\\b"
+    - type: "\\b(any(_int|_float)?|isize|usize|(uint|byte|char|void)ptr)\\b"
+    - type.keyword: "\\b(assert|const|enum|fn|struct|union|interface|type|in)\\b"
+    - type.keyword: "\\b(as|asm|atomic|embed|go|in|is|lock|rlock|shared|sizeof|typeof)\\b"
+    - type.keyword: "\\b(pub|mut|volatile|__global)\\b"
+
+    - constant.bool: "\\b(true|false)\\b"
+    - constant.none: "\\b(none)\\b"
+
+    - preproc: "\\$\\b(if|else|for)\\b"
     - identifier.os: "\\b(mac|macos|linux|windows|freebsd|openbsd|netbsd|dragonfly|android|solaris|haiku)\\b"
     - identifier.compiler: "\\b(gcc|tinyc|clang|mingw|msvc|cplusplus)\\b"
     - identifier.platform: "\\b(amd64|aarch64|x64|x32|little_endian|big_endian)\\b"
@@ -20,18 +28,11 @@ rules:
     - identifier.function: "\\b([a-z_]+\\()"
     - symbol.operator: "\\b(i[ns])\\b|[-+/*<>!=~*%&:|,.?]"
     - symbol.attribute:
-        start: "^\\["
-        end: "\\]$"
-        rules:
-            - default: ".*"
-            - symbol: "\\b(deprecated|direct_array_access|if|inline|live|ref_only|typedef|windows_stdcall)\\b"
-
-      # Types
-    - type: "\\b(byte|u(16|32|64|128)|i(nt|8|16|64|128)|f(32|64))\\b"
-    - type: "\\b(bool|cha[nr]|map|rune|string)\\b"
-    - type: "\\b(any(_int|_float)?|size_t|(uint|byte|char|void)ptr)\\b"
-    - constant.bool: "\\b(true|false)\\b"
-    - constant.none: "\\b(none)\\b"
+          start: "^\\["
+          end: "\\]$"
+          rules:
+              - default: ".*"
+              - symbol: "\\b(deprecated|direct_array_access|if|inline|live|ref_only|typedef|windows_stdcall)\\b"
 
       # Brackets
     - symbol.brackets: "(\\{|\\})"
@@ -45,36 +46,36 @@ rules:
     - constant.number: "\\b([0-9_]+)\\b"
 
     - constant.string:
-        start: "\""
-        end: "\""
-        skip: "\\\\."
-        rules:
-            - constant.specialChar: "%."
-            - constant.specialChar: "\\\\[abefnrtv'\\\"\\\\]"
-            - constant.specialChar: "\\\\([0-7]{3}|x[A-Fa-f0-9]{2}|u[A-Fa-f0-9]{4}|U[A-Fa-f0-9]{8})"
+          start: '"'
+          end: '"'
+          skip: "\\\\."
+          rules:
+              - constant.specialChar: "%."
+              - constant.specialChar: "\\\\[abefnrtv'\\\"\\\\]"
+              - constant.specialChar: "\\\\([0-7]{3}|x[A-Fa-f0-9]{2}|u[A-Fa-f0-9]{4}|U[A-Fa-f0-9]{8})"
 
     - constant.string:
-        start: "'"
-        end: "'"
-        skip: "\\\\."
-        rules:
-            - constant.specialChar: "%."
-            - constant.specialChar: "\\\\[abefnrtv'\\\"\\\\]"
-            - constant.specialChar: "\\\\([0-7]{3}|x[A-Fa-f0-9]{2}|u[A-Fa-f0-9]{4}|U[A-Fa-f0-9]{8})"
+          start: "'"
+          end: "'"
+          skip: "\\\\."
+          rules:
+              - constant.specialChar: "%."
+              - constant.specialChar: "\\\\[abefnrtv'\\\"\\\\]"
+              - constant.specialChar: "\\\\([0-7]{3}|x[A-Fa-f0-9]{2}|u[A-Fa-f0-9]{4}|U[A-Fa-f0-9]{8})"
 
     - constant.string:
-        start: "`"
-        end: "`"
-        rules: []
+          start: "`"
+          end: "`"
+          rules: []
 
     - comment:
-        start: "//"
-        end: "$"
-        rules:
-            - todo: "(TODO|XXX|FIXME):?"
+          start: "//"
+          end: "$"
+          rules:
+              - todo: "(TODO|XXX|FIXME):?"
 
     - comment:
-        start: "/\\*"
-        end: "\\*/"
-        rules:
-            - todo: "(TODO|XXX|FIXME):?"
+          start: "/\\*"
+          end: "\\*/"
+          rules:
+              - todo: "(TODO|XXX|FIXME):?"
