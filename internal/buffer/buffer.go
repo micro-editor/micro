@@ -165,7 +165,7 @@ func (b *SharedBuffer) calcHash(out *[md5.Size]byte) {
 	h := md5.New()
 
 	if len(b.lines) > 0 {
-		h.Write(b.lines[0].data)
+		h.Write(b.lines[0].data())
 
 		for _, l := range b.lines[1:] {
 			if b.Endings == FFDos {
@@ -173,7 +173,7 @@ func (b *SharedBuffer) calcHash(out *[md5.Size]byte) {
 			} else {
 				h.Write([]byte{'\n'})
 			}
-			h.Write(l.data)
+			h.Write(l.data())
 		}
 	}
 
@@ -866,7 +866,7 @@ func (b *Buffer) UpdateRules() {
 			if header.MatchFileName(b.Path) {
 				matchedFileName = true
 			}
-			if len(fnameMatches) == 0 && header.MatchFileHeader(b.lines[0].data) {
+			if len(fnameMatches) == 0 && header.MatchFileHeader(b.lines[0].data()) {
 				matchedFileHeader = true
 			}
 		} else if header.FileType == ft {
@@ -920,7 +920,7 @@ func (b *Buffer) UpdateRules() {
 				if header.MatchFileName(b.Path) {
 					fnameMatches = append(fnameMatches, syntaxFileInfo{header, f.Name(), nil})
 				}
-				if len(fnameMatches) == 0 && header.MatchFileHeader(b.lines[0].data) {
+				if len(fnameMatches) == 0 && header.MatchFileHeader(b.lines[0].data()) {
 					headerMatches = append(headerMatches, syntaxFileInfo{header, f.Name(), nil})
 				}
 			} else if header.FileType == ft {
@@ -953,7 +953,7 @@ func (b *Buffer) UpdateRules() {
 				for _, m := range matches {
 					if m.header.HasFileSignature() {
 						for i := 0; i < limit; i++ {
-							if m.header.MatchFileSignature(b.lines[i].data) {
+							if m.header.MatchFileSignature(b.lines[i].data()) {
 								syntaxFile = m.fileName
 								if m.syntaxDef != nil {
 									b.SyntaxDef = m.syntaxDef
@@ -1130,11 +1130,11 @@ func (b *Buffer) MoveLinesUp(start int, end int) {
 	if start < 1 || start >= end || end > len(b.lines) {
 		return
 	}
-	l := string(b.LineBytes(start - 1))
+	l := b.LineString(start - 1)
 	if end == len(b.lines) {
 		b.insert(
 			Loc{
-				util.CharacterCount(b.lines[end-1].data),
+				len(b.lines[end-1].runes),
 				end - 1,
 			},
 			[]byte{'\n'},
@@ -1155,7 +1155,7 @@ func (b *Buffer) MoveLinesDown(start int, end int) {
 	if start < 0 || start >= end || end >= len(b.lines) {
 		return
 	}
-	l := string(b.LineBytes(end))
+	l := b.LineString(end)
 	b.Insert(
 		Loc{0, start},
 		l+"\n",
@@ -1196,7 +1196,7 @@ func (b *Buffer) findMatchingBrace(braceType [2]rune, start Loc, char rune) (Loc
 		}
 	} else if char == braceType[1] {
 		for y := start.Y; y >= 0; y-- {
-			l := []rune(string(b.lines[y].data))
+			l := []rune(string(b.LineBytes(y)))
 			xInit := len(l) - 1
 			if y == start.Y {
 				xInit = start.X
@@ -1281,7 +1281,14 @@ func (b *Buffer) Retab() {
 		l = bytes.TrimLeft(l, " \t")
 
 		b.Lock()
-		b.lines[i].data = append(ws, l...)
+		ws = append(ws, l...)
+		var runes []Character
+		for len(ws) > 0 {
+			combc, s := util.DecodeCombinedCharacter(ws)
+			runes = append(runes, Character{combc})
+			ws = ws[s:]
+		}
+		b.lines[i].runes = runes
 		b.Unlock()
 
 		b.MarkModified(i, i)
@@ -1317,7 +1324,7 @@ func ParseCursorLocation(cursorPositions []string) (Loc, error) {
 
 // Line returns the string representation of the given line number
 func (b *Buffer) Line(i int) string {
-	return string(b.LineBytes(i))
+	return b.LineString(i)
 }
 
 func (b *Buffer) Write(bytes []byte) (n int, err error) {
