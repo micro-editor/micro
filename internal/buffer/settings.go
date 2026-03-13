@@ -12,11 +12,22 @@ import (
 	luar "layeh.com/gopher-luar"
 )
 
+// settingAsString safely converts a settings value to string.
+// If the value is not a string (e.g. a map from a glob/ft config entry),
+// it falls back to the provided default. This prevents TypeAssertionError
+// panics when config values are unexpectedly non-string (see issue #4042).
+func settingAsString(v any, defaultVal string) string {
+	if s, ok := v.(string); ok {
+		return s
+	}
+	return defaultVal
+}
+
 func (b *Buffer) ReloadSettings(reloadFiletype bool) {
 	settings := config.ParsedSettings()
 	config.UpdatePathGlobLocals(settings, b.AbsPath)
 
-	oldFiletype := b.Settings["filetype"].(string)
+	oldFiletype := settingAsString(b.Settings["filetype"], "unknown")
 
 	_, local := b.LocalSettings["filetype"]
 	_, volatile := config.VolatileSettings["filetype"]
@@ -24,14 +35,18 @@ func (b *Buffer) ReloadSettings(reloadFiletype bool) {
 		// need to update filetype before updating other settings based on it
 		b.Settings["filetype"] = "unknown"
 		if v, ok := settings["filetype"]; ok {
-			b.Settings["filetype"] = v
+			// Only accept string values for filetype; non-string values
+			// (e.g. a map from a glob config block) are silently ignored.
+			if ft, ok := v.(string); ok {
+				b.Settings["filetype"] = ft
+			}
 		}
 	}
 
 	// update syntax rules, which will also update filetype if needed
 	b.UpdateRules()
 
-	curFiletype := b.Settings["filetype"].(string)
+	curFiletype := settingAsString(b.Settings["filetype"], "unknown")
 	if oldFiletype != curFiletype {
 		b.doCallbacks("filetype", oldFiletype, curFiletype)
 	}
