@@ -67,6 +67,7 @@ var defaultCommonSettings = map[string]any{
 	"fastdirty":       false,
 	"fileformat":      defaultFileFormat(),
 	"filetype":        "unknown",
+	"helpactions":     "Quit,Save,OpenFile,ToggleHelp,CommandMode,Cut,Find,Undo,Redo,SelectAll,Duplicate,AddTab",
 	"hlsearch":        false,
 	"hltaberrors":     false,
 	"hltrailingws":    false,
