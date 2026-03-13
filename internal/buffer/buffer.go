@@ -443,7 +443,7 @@ func NewBuffer(r io.Reader, size int64, path string, btype BufType, cmd Command)
 
 	b.UpdateRules()
 	// we know the filetype now, so update per-filetype settings
-	config.UpdateFileTypeLocals(b.Settings, b.Settings["filetype"].(string))
+	config.UpdateFileTypeLocals(b.Settings, settingAsString(b.Settings["filetype"], "unknown"))
 
 	if _, err := os.Stat(filepath.Join(config.ConfigDir, "buffers")); errors.Is(err, fs.ErrNotExist) {
 		os.Mkdir(filepath.Join(config.ConfigDir, "buffers"), os.ModePerm)
@@ -575,7 +575,7 @@ func (b *Buffer) Remove(start, end Loc) {
 
 // FileType returns the buffer's filetype
 func (b *Buffer) FileType() string {
-	return b.Settings["filetype"].(string)
+	return settingAsString(b.Settings["filetype"], "unknown")
 }
 
 // ExternallyModified returns whether the file being edited has
@@ -818,7 +818,7 @@ func (b *Buffer) UpdateRules() {
 	if !b.Type.Syntax {
 		return
 	}
-	ft := b.Settings["filetype"].(string)
+	ft := settingAsString(b.Settings["filetype"], "unknown")
 	if ft == "off" {
 		b.ClearMatches()
 		b.SyntaxDef = nil
