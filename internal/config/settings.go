@@ -131,6 +131,7 @@ var DefaultGlobalOnlySettings = map[string]any{
 	"sucmd":          "sudo",
 	"tabhighlight":   false,
 	"tabreverse":     true,
+	"tabalwaysshow":  false,
 	"xterm":          false,
 }
 
