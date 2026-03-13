@@ -9,6 +9,9 @@ configuration directory. In the documentation, we use `~/.config/micro` to
 refer to the configuration directory (even if it may in fact be somewhere else
 if you have set either of the above environment variables).
 
+Also, these options can be used in the command prompt (Ctrl+e) to apply them
+temporarily, without editing the file, with `set option value`
+
 Here are the available options:
 
 * `autoindent`: when creating a new line, use the same indentation as the
