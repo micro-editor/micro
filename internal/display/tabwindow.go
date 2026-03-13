@@ -34,7 +34,7 @@ func (w *TabWindow) LocFromVisual(vloc buffer.Loc) int {
 	for i, n := range w.Names {
 		x++
 		s := util.CharacterCountInString(n)
-		if vloc.Y == w.Y && vloc.X < x+s {
+		if vloc.Y == w.Y && vloc.X < x+s+2 {
 			return i
 		}
 		x += s
