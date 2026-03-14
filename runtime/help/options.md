@@ -671,10 +671,10 @@ Or similarly you can match with globs:
 
 ```json
 {
-    "*.go": {
+    "glob:*.go": {
         "tabstospaces": false
     },
-    "*.rb": {
+    "glob:*.rb": {
         "tabsize": 2
     },
     "tabstospaces": true,
