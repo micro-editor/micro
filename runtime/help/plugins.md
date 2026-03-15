@@ -225,9 +225,9 @@ The packages and their contents are listed below (in Go type signatures):
        given plugin in the `GlobalSettings` map.
 
     - `SetGlobalOption(option, value string) error`: sets an option to a
-       given value. This will try to convert the value into the proper
-       type for the option. Can return an error if the option name is not
-       valid, or the value can not be converted.
+       given value. Same as using the `> set` command. This will try to convert
+       the value into the proper type for the option. Can return an error if the
+       option name is not valid, or the value can not be converted.
 
     - `SetGlobalOptionNative(option string, value any) error`: sets
        an option to a given value, where the type of value is the actual
