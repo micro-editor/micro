@@ -1,0 +1,17 @@
+filetype: gleam
+
+detect:
+  filename: "\\.gleam$"
+
+rules:
+  - statement: "\\b(fn|let|case|if|else|import|pub|type|opaque|const|use)\\b"
+  - identifier: "\\b(Int|Float|String|Bool|List|Option|Result|Nil)\\b"
+  - constant: "\\b(True|False|Nil)\\b"
+  - comment:
+      start: "//"
+      end: "$"
+  - string:
+      start: "\""
+      end: "\""
+      skip: "\\\\."
+  - special: "\\b[0-9]+\\b"
