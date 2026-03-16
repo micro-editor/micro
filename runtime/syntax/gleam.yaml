@@ -1,41 +1,50 @@
-filetype: gleam
-
 detect:
   filename: "\\.gleam$"
 
 rules:
-  # 1. Base Identifier Rule (Must be first so specific types below overwrite it)
-  - identifier: "\\b[A-Z][a-zA-Z0-9_]*\\b"
+  # Keywords (from Gleam compiler token.rs)
+  - statement: "\\b(as|assert|auto|case|const|delegate|derive|echo|else|fn|if|implement|import|let|macro|opaque|panic|pub|test|todo|type|use)\\b"
 
-  # 2. Built-in Types (Overwrites the identifier rule for these exact matches; Nil removed)
+  # Built-in types (removed Nil - it is a constant)
   - type: "\\b(Int|Float|String|Bool|List|Option|Result|BitArray)\\b"
 
-  # 3. Constants (Nil safely kept here)
+  # Constants
   - constant: "\\b(True|False|Nil)\\b"
 
-  # 4. Keywords
-  - statement: "\\b(fn|let|case|if|use|import|pub|type|opaque|const|as|assert|panic|todo|echo)\\b"
+  # Type constructors / Custom types (must come after built-in types)
+  - type: "\\b[A-Z][a-zA-Z0-9_]*\\b"
 
-  # 5. Attributes / Decorators (Added for @external, @deprecated, etc.)
-  - preproc: "@[a-zA-Z0-9_]+"
+  # Attributes (@external, @deprecated, @target, etc.)
+  - preproc: "@[a-z][a-z_]*"
 
-  # 6. Operators (Moved to 'statement' for red highlighting; arithmetic, float math, and assignment added)
-  - statement: "(\\|>|->|<-|\\.\\.|<>|==|!=|<=|>=|&&|\\|\\||\\+\\.|-\\.|\\*\\.|/\\.|\\+|-|\\*|/|%|=|<|>)"
+  # Operators (using statement for consistent coloring)
+  - statement: "(\\|>|->|<-)" # Pipe and arrow
+  - statement: "(\\.\\.|<>)" # Range and concat
+  - statement: "(==|!=|<=\\.|>=\\.|<\\.|>\\.|<=|>=)" # Comparison
+  - statement: "(&&|\\|\\|)" # Logical
+  - statement: "(\\+\\.|-\\.|\\*\\.|/\\.|\\+|-|\\*|/|%)" # Arithmetic
+  - statement: "(=|<|>|!|<<|>>)" # Other
 
-  # 7. Numbers (Copied directly from Python's robust micro syntax as the maintainer requested)
-  - constant.number: "\\b0b[01]+\\b"
-  - constant.number: "\\b0o[0-7]+\\b"
-  - constant.number: "\\b0x[0-9a-fA-F]+\\b"
-  - constant.number: "\\b[0-9]+\\.[0-9]*([eE][+-]?[0-9]+)?\\b"
-  - constant.number: "\\b[0-9]+\\b"
+  # Numbers (from Python syntax with underscore support)
+  - constant.number: "\\b0b[01](_?[01])*\\b"
+  - constant.number: "\\b0o[0-7](_?[0-7])*\\b"
+  - constant.number: "\\b0x[0-9a-fA-F](_?[0-9a-fA-F])*\\b"
+  - constant.number: "\\b[0-9](_?[0-9])*(\\.[0-9](_?[0-9])*)?([eE][+-]?[0-9](_?[0-9])*)?\\b"
 
-  # 8. Strings
+  # Tuple syntax
+  - special: "#\\("
+
+  # Strings
   - constant.string:
       start: '"'
       end: '"'
       skip: "\\\\."
+      rules:
+        - constant.specialChar: "\\\\."
 
-  # 9. Comments
+  # Comments
   - comment:
       start: "//"
       end: "$"
+      rules:
+        - todo: "(TODO|FIXME|XXX):?"
