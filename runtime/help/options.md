@@ -671,6 +671,21 @@ Or similarly you can match with globs:
 
 ```json
 {
+    "glob:*.go": {
+        "tabstospaces": false
+    },
+    "glob:*.rb": {
+        "tabsize": 2
+    },
+    "tabstospaces": true,
+    "tabsize": 4
+}
+```
+
+You can also omit the `glob:` prefix before globs:
+
+```json
+{
     "*.go": {
         "tabstospaces": false
     },
@@ -681,3 +696,6 @@ Or similarly you can match with globs:
     "tabsize": 4
 }
 ```
+
+But it is generally more recommended to use the `glob:` prefix, as it avoids
+potential conflicts with option names.
