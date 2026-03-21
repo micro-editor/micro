@@ -337,6 +337,11 @@
             "type": "boolean",
             "default": true
         },
+        "tabalwaysshow": {
+            "description": "Wether to show the tab bar, even if only one tab exists\nhttps://github.com/zyedidia/micro/blob/master/runtime/help/options.md#options",
+            "type": "boolean",
+            "default": false
+        },
         "tabsize": {
             "description": "A tab size\nhttps://github.com/micro-editor/micro/blob/master/runtime/help/options.md#options",
             "type": "integer",
