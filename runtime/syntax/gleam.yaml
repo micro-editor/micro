@@ -1,0 +1,56 @@
+filetype: gleam
+
+detect:
+  filename: "\\.gleam$"
+
+rules:
+  - statement: "\\b(as|assert|auto|case|const|delegate|derive|echo|else|fn|if|implement|import|let|macro|opaque|panic|pub|test|todo|type|use)\\b"
+
+  - type: "\\b(Int|Float|String|Bool|List|Option|Result|BitArray)\\b"
+
+  - constant: "\\b(True|False|Nil)\\b"
+
+  - type: "\\b[A-Z][a-zA-Z0-9_]*\\b"
+
+  - preproc: "@[a-z][a-z_]*"
+
+  - statement: "(\\|>|->|<-)"
+  - statement: "(\\.\\.|<>)"
+  - statement: "(==|!=|<=\\.|>=\\.|<\\.|>\\.|<=|>=)"
+  - statement: "(&&|\\|\\|)"
+  - statement: "(\\+\\.|-\\.|\\*\\.|/\\.|\\+|-|\\*|/|%)"
+  - statement: "(=|<|>|!|<<|>>)"
+
+  - constant.number: "\\b0b[01](_?[01])*\\b"
+  - constant.number: "\\b0o[0-7](_?[0-7])*\\b"
+  - constant.number: "\\b0x[0-9a-fA-F](_?[0-9a-fA-F])*\\b"
+  - constant.number: "\\b[0-9](_?[0-9])*(\\.[0-9](_?[0-9])*)?([eE][+-]?[0-9](_?[0-9])*)?\\b"
+
+  - default:
+      start: "#\\("
+      end: "\\)"
+      limit-group: special
+      rules:
+        - constant.number: "\\b0b[01](_?[01])*\\b"
+        - constant.number: "\\b0o[0-7](_?[0-7])*\\b"
+        - constant.number: "\\b0x[0-9a-fA-F](_?[0-9a-fA-F])*\\b"
+        - constant.number: "\\b[0-9](_?[0-9])*(\\.[0-9](_?[0-9])*)?([eE][+-]?[0-9](_?[0-9])*)?\\b"
+        - constant.string:
+            start: '"'
+            end: '"'
+            skip: "\\\\."
+            rules:
+              - constant.specialChar: "\\\\."
+
+  - constant.string:
+      start: '"'
+      end: '"'
+      skip: "\\\\."
+      rules:
+        - constant.specialChar: "\\\\."
+
+  - comment:
+      start: "//"
+      end: "$"
+      rules:
+        - todo: "(TODO|FIXME|XXX):?"
