@@ -1,0 +1,66 @@
+filetype: snobol4
+
+detect:
+  filename: "\\.(?i:(sno|spt))$"
+
+rules:
+  - constant.number: "\\b([0-9]+)\\b"
+
+  - statement: "\\b(?i:(any|apply|arb|arbno|arg|array))\\b\\("
+  - statement: "\\b(?i:(break))\\(\\b"
+  - statement: "\\b(?i:(char|clear|code|collect|convert|copy))\\b\\("
+  - statement: "\\b(?i:(data|datatype|date|define|detach|differ|dump|dupl))\\b\\("
+  - statement: "\\b(?i:(endfile|eq|eval))\\b\\("
+  - statement: "\\b(?i:(field))\\b\\("
+  - statement: "\\b(?i:(ge|gt|ident))\\b\\("
+  - statement: "\\b(?i:(input|integer|item))\\b\\("
+  - statement: "\\b(?i:(le|len|lgt|local|lpad|lt))\\b\\("
+  - statement: "\\b(?i:(ne|notany))\\b\\("
+  - statement: "\\b(?i:(opsyn|output))\\b\\("
+  - statement: "\\b(?i:(pos|prototype))\\b\\("
+  - statement: "\\b(?i:(remdr|replace|rpad|rpos|rtab|rewind))\\b\\("
+  - statement: "\\b(?i:(size|span|stoptr))\\(\\b"
+  - statement: "\\b(?i:(tab|table|time|trace|trim|terminal))\\b\\("
+  - statement: "\\b(?i:(unload))\\b\\("
+  - statement: "\\b(?i:(value))\\b\\("
+  - statement: "\\b(?i:(breakx))\\b\\("
+  - statement: "\\b(?i:(char|chop))\\b\\("
+  - statement: "\\b(?i:(date|delete))\\b\\("
+  - statement: "\\b(?i:(exp))\\b\\("
+  - statement: "\\b(?i:(freeze|function))\\b\\("
+  - statement: "\\b(?i:(host))\\b\\("
+  - statement: "\\b(?i:(io_findunit))\\b\\("
+  - statement: "\\b(?i:(label|lpad|leq|lge|lle|llt|lne|log))\\b\\("
+  - statement: "\\b(?i:(ord))\\b\\("
+  - statement: "\\b(?i:(reverse|rpad|rsort|rename))\\b\\("
+  - statement: "\\b(?i:(serv_listen|sset|set|sort|sqrt|substr))\\b\\("
+  - statement: "\\b(?i:(thaw))\\b\\("
+  - statement: "\\b(?i:(vdiffer))\\b\\("
+
+
+  - symbol: "(\\(|\\))"
+
+  - comment:
+      start: "(#|\\*)"
+      end: "($|;)"
+      rules: []
+      
+  - constant.string:
+      start: "'"
+      end: "('|$)"
+      skip: "\""
+      rules:
+        - constant.specialChar: "\\\\."
+
+  - constant.string:
+      start: "\""
+      end: "(\"|$)"
+      skip: "'"
+      rules:
+        - constant.specialChar: "\\\\."
+
+  - special: ":(?i:(|f|s)\\([^\\)]+\\))$"
+  - special: "&\\b(?i:(abort|alphabet|anchor|arb|bal|case|code|digits|dump|errlimit|errtext|errtype|fail|fence|fnclevel|ftrace|fullscan|input|lastno|lcase|maxlngth|output|parm|rem|rtntype|stcount|stfcount|stlimit|stno|succeed|trace|trim|ucase))\\b"
+  - special: "&\\b(?i:(gtrace|line|file|lastline|lastfile))\\b"
+  - special: "(^|;)[A-Za-z]\\S*\\b"
+
