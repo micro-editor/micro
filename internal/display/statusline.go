@@ -59,6 +59,22 @@ var statusInfo = map[string]func(*buffer.Buffer) string{
 	"percentage": func(b *buffer.Buffer) string {
 		return strconv.Itoa((b.GetActiveCursor().Y + 1) * 100 / b.LinesNum())
 	},
+	"matches": func(b *buffer.Buffer) string {
+		if b.MatchCount == 0 {
+			return ""
+		}
+		var matchCount string
+		if b.MatchCount >= 1000 {
+			matchCount = "999+"
+		} else {
+			matchCount = strconv.Itoa(b.MatchCount)
+		}
+
+		if b.ShowMatchIdx && b.MatchIdx > 0 {
+			return "[" +  strconv.Itoa(b.MatchIdx) + "/" + matchCount + "] "
+		}
+		return "[" + matchCount + " matches] "
+	},
 }
 
 func SetStatusInfoFnLua(fn string) {

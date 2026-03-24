@@ -189,6 +189,61 @@ func (b *Buffer) FindNext(s string, start, end, from Loc, down bool, useRegex bo
 	return l, found, nil
 }
 
+// UpdateMatchCount updates MatchIdx and MatchCount
+func (b *Buffer) UpdateMatchCount(s string, start, end, current Loc, useRegex bool) (error) {
+	if s == "" {
+		b.MatchIdx = 0
+		b.MatchCount = 0
+		return nil
+	}
+
+	var r *regexp.Regexp
+	var err error
+
+	if !useRegex {
+		s = regexp.QuoteMeta(s)
+	}
+
+	if b.Settings["ignorecase"].(bool) {
+		r, err = regexp.Compile("(?i)" + s)
+	} else {
+		r, err = regexp.Compile(s)
+	}
+
+	if err != nil {
+		b.MatchIdx = 0
+		b.MatchCount = 0
+		return err
+	}
+
+	i := 0
+	b.MatchIdx = 0
+	loc := start
+	for {
+		match, found := b.findDown(r, loc, end)
+		if !found {
+			break
+		}
+		i++
+		if current.GreaterEqual(match[0]) && current.LessEqual(match[1]) {
+			b.MatchIdx = i
+		}
+		if i >= 1000 {
+			break
+		}
+		if match[0] != match[1] {
+			loc = match[1]
+		} else if match[1] != end {
+			loc = match[1].Move(1, b)
+		} else {
+			break
+		}
+	}
+	b.MatchCount = i
+	b.ShowMatchIdx = true
+	return nil
+}
+
 // ReplaceRegex replaces all occurrences of 'search' with 'replace' in the given area
 // and returns the number of replacements made and the number of characters
 // added or removed on the last line of the range

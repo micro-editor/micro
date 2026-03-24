@@ -261,6 +261,10 @@ type Buffer struct {
 	LastSearchRegex bool
 	// HighlightSearch enables highlighting all instances of the last successful search
 	HighlightSearch bool
+	// MatchIdx contains the index of the selected match
+	MatchIdx int
+	MatchCount int
+	ShowMatchIdx bool
 
 	// OverwriteMode indicates that we are in overwrite mode (toggled by
 	// Insert key by default) i.e. that typing a character shall replace the
