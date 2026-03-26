@@ -224,15 +224,17 @@ The packages and their contents are listed below (in Go type signatures):
     - `GetGlobalOption(name string) any`: returns the value of a
        given plugin in the `GlobalSettings` map.
 
-    - `SetGlobalOption(option, value string) error`: sets an option to a
-       given value. This will try to convert the value into the proper
-       type for the option. Can return an error if the option name is not
-       valid, or the value can not be converted.
+    - `SetGlobalOption(option, value string, writeToFile bool) error`: sets
+       an option to a given value. This will try to convert the value into the
+       proper type for the option. If `writeToFile` is `true`, the setting will
+       be persisted to `settings.json`. Can return an error if the option name
+       is not valid, or the value can not be converted.
 
-    - `SetGlobalOptionNative(option string, value any) error`: sets
-       an option to a given value, where the type of value is the actual
-       type of the value internally. Can return an error if the provided value
-       is not valid for the given option.
+    - `SetGlobalOptionNative(option string, value any, writeToFile bool) error`:
+       sets an option to a given value, where the type of value is the actual
+       type of the value internally. If `writeToFile` is `true`, the setting
+       will be persisted to `settings.json`. Can return an error if the
+       provided value is not valid for the given option.
 
     - `ConfigDir`: the path to micro's currently active config directory.
 

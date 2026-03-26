@@ -683,12 +683,12 @@ func SetGlobalOption(option, value string, writeToFile bool) error {
 	return SetGlobalOptionNative(option, nativeValue, writeToFile)
 }
 
-func SetGlobalOptionNativePlug(option string, nativeValue any) error {
-	return SetGlobalOptionNative(option, nativeValue, false)
+func SetGlobalOptionNativePlug(option string, nativeValue any, writeToFile bool) error {
+	return SetGlobalOptionNative(option, nativeValue, writeToFile)
 }
 
-func SetGlobalOptionPlug(option, value string) error {
-	return SetGlobalOption(option, value, false)
+func SetGlobalOptionPlug(option, value string, writeToFile bool) error {
+	return SetGlobalOption(option, value, writeToFile)
 }
 
 // ResetCmd resets a setting to its default value
