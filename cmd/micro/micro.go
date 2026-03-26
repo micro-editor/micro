@@ -441,6 +441,51 @@ func main() {
 		screen.TermMessage(err)
 	}
 
+	config.StartConfigWatcher([]config.WatchedFile{
+		// Reload the colorscheme when the active .micro file changes on disk.
+		{
+			Path: func() string {
+				name := "default"
+				if cs, ok := config.GlobalSettings["colorscheme"].(string); ok {
+					name = cs
+				}
+				return filepath.Join(config.ConfigDir, "colorschemes", name+".micro")
+			},
+			OnChange: func() {
+				timerChan <- func() {
+					if err := config.InitColorscheme(); err == nil {
+						screen.Redraw()
+					}
+				}
+			},
+		},
+		// Reload settings.json when it changes on disk.
+		{
+			Path: func() string {
+				return filepath.Join(config.ConfigDir, "settings.json")
+			},
+			OnChange: func() {
+				timerChan <- func() {
+					if err := config.ReadSettings(); err == nil {
+						config.InitGlobalSettings()
+						screen.Redraw()
+					}
+				}
+			},
+		},
+		// Reload bindings.json when it changes on disk.
+		{
+			Path: func() string {
+				return filepath.Join(config.ConfigDir, "bindings.json")
+			},
+			OnChange: func() {
+				timerChan <- func() {
+					action.InitBindings()
+				}
+			},
+		},
+	})
+
 	if clipErr != nil {
 		log.Println(clipErr, " or change 'clipboard' option")
 	}
