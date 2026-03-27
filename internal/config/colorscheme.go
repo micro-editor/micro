@@ -145,6 +145,11 @@ lineLoop:
 			colors := string(matches[2])
 
 			style := StringToStyle(colors)
+
+			if !GlobalSettings["background"].(bool) && link != "statusline" {
+				style = style.Background(tcell.ColorDefault)
+			}
+
 			c[link] = style
 
 			if link == "default" {
