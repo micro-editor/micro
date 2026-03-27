@@ -251,6 +251,15 @@ func (eh *EventHandler) Execute(t *TextEvent) {
 	}
 
 	ExecuteTextEvent(t, eh.buf)
+
+	b, err := config.RunPluginFnBool("onExecuteTextEvent", luar.New(ulua.L, eh.buf), luar.New(ulua.L, t))
+	if err != nil {
+		screen.TermMessage(err)
+	}
+
+	if !b {
+		return
+	}
 }
 
 // Undo the first event in the undo stack. Returns false if the stack is empty.
