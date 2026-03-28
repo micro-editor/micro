@@ -63,7 +63,8 @@ rules:
             - constant.specialChar: "\\\\."
 
     - comment:
-        start: "//"
-        end: "$"
-        rules:
-            - todo: "(TODO|FIXME|XXX):?"
+      start: "//"
+      end: "$"
+      rules:
+        - todo: "(TODO|FIXME|XXX):?"
+        
