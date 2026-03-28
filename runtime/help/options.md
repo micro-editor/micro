@@ -631,6 +631,7 @@ so that you can see what the formatting should look like.
     "tabhighlight": true,
     "tabmovement": false,
     "tabreverse": false,
+    "tabalwaysshow": false,
     "tabsize": 4,
     "tabstospaces": false,
     "useprimary": true,
