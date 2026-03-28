@@ -9,7 +9,7 @@ type Loc struct {
 	X, Y int
 }
 
-// LessThan returns true if b is smaller
+// LessThan returns true if l is smaller than b
 func (l Loc) LessThan(b Loc) bool {
 	if l.Y < b.Y {
 		return true
@@ -17,7 +17,7 @@ func (l Loc) LessThan(b Loc) bool {
 	return l.Y == b.Y && l.X < b.X
 }
 
-// GreaterThan returns true if b is bigger
+// GreaterThan returns true if l is bigger than b
 func (l Loc) GreaterThan(b Loc) bool {
 	if l.Y > b.Y {
 		return true
@@ -25,7 +25,7 @@ func (l Loc) GreaterThan(b Loc) bool {
 	return l.Y == b.Y && l.X > b.X
 }
 
-// GreaterEqual returns true if b is greater than or equal to b
+// GreaterEqual returns true if l is greater than or equal to b
 func (l Loc) GreaterEqual(b Loc) bool {
 	if l.Y > b.Y {
 		return true
@@ -36,7 +36,7 @@ func (l Loc) GreaterEqual(b Loc) bool {
 	return l == b
 }
 
-// LessEqual returns true if b is less than or equal to b
+// LessEqual returns true if l is less than or equal to b
 func (l Loc) LessEqual(b Loc) bool {
 	if l.Y < b.Y {
 		return true
@@ -113,14 +113,13 @@ func (l Loc) left(buf *LineArray) Loc {
 // MoveLA moves the cursor n characters to the left or right
 // It moves the cursor left if n is negative
 func (l Loc) MoveLA(n int, buf *LineArray) Loc {
-	if n > 0 {
-		for i := 0; i < n; i++ {
-			l = l.right(buf)
-		}
-		return l
+	for n > 0 {
+		l = l.right(buf)
+		n--
 	}
-	for i := 0; i < util.Abs(n); i++ {
+	for n < 0 {
 		l = l.left(buf)
+		n++
 	}
 	return l
 }
