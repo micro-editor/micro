@@ -1,0 +1,47 @@
+# Author: https://github.com/RohanVashisht1234
+filetype: bend
+
+detect:
+    filename: "\\.bend$"
+
+rules:
+      # keywords
+    - statement: "\\b(def|switch|case|return|if|else|when|match|λ|Some|data|let|use|object|fold|open|do|bind|Name|identity|Bool|ask|with)\\b"
+      # special method names
+    - symbol.operator: "\\b(bend|None|Nil|Result|type|lambda)\\b"
+      # definitions
+    - identifier: "def [a-zA-Z_0-9]+"
+      # keywords (declaration)
+    - statement: "\\b(Node|Leaf|Tree)\\b"
+      # constants (true, false)
+    - constant: "\\b(true|false|True|False)\\b"
+      # parentheses
+    - symbol.brackets: "([(){}]|\\[|\\])"
+      # extra operators
+    - symbol.operator: "(\\+|\\-|\\/|%|\\*|>>|<<|\\\\|\\^|&|~|!>)"
+      # Comparision operators
+    - symbol.operator: "(==|!=|<=?|>=?|\\?\\?)"
+      # numbers
+    - constant.number: "\\b[0-9](_?[0-9])*(\\.([0-9](_?[0-9])*)?)?(e[0-9](_?[0-9])*)?\\b" # decimal
+    - constant.number: "\\b0b(_?[01])+\\b"     # bin
+    - constant.number: "\\b0x(_?[0-9a-fA-F])+\\b" # hex
+
+    - constant.string:
+        start: "\""
+        end: "(\"|$)"
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\."
+
+    - constant.string:
+        start: "'"
+        end: "('|$)"
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\."
+
+    - comment:
+        start: "\\#"
+        end: "$"
+        rules:
+            - todo: "(TODO|FIXME|HACK|BUG|NOTE|FAQ|MNEMONIC|REQ|RFE|IDEA|PORT|\\?\\?\\?|!!!|GLOSS|SEE|TODOC|STAT|RVD|CRED):?"
