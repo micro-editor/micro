@@ -12,14 +12,17 @@ rules:
     # Built-in node names
     - identifier: "\\b(AnimationPlayer|AnimationTreePlayer|Button|Control|Engine|HTTPClient|HTTPRequest|Input|InputEvent|MainLoop|Node|Node2D|OS|SceneTree|Spatial|StreamPeer|PacketPeer|PacketPeerUDP|Timer|Tween)\\b"
     # Types
-    - type: "\\b(AABB|Array|Basis|Color|Dictionary|NodePath|Object|Plane|PoolByteArray|PoolColorArray|PoolIntArray|PoolRealArray|PoolVector2Array|PoolVector3Array|Quat|Rect2|RID|String|Transform|Transform2D|Vector2|Vector3)\\b"
+    - type: "\\b(AABB|Array|Basis|Color|Dictionary|NodePath|Object|Plane|PoolByteArray|PoolColorArray|PoolIntArray|PoolRealArray|PoolVector2Array|PoolVector3Array|Quat|Rect2|RID|String|Transform|Transform2D|Vector2|Vector3|void)\\b"
     # Definitions
     - identifier: "func [a-zA-Z_0-9]+"
     # Keywords
-    - statement: "\\b(and|as|assert|break|breakpoint|class|const|continue|elif|else|enum|export|extends|for|func|if|in|is|map|master|mastersync|match|not|onready|or|pass|remote|remotesync|return|self|setget|slave|slavesync|signal|sync|tool|var|while|yield)\\b"
+    - statement: "\\b(and|as|assert|await|break|breakpoint|class|class_name|const|continue|elif|else|enum|export|extends|for|func|if|in|is|map|master|mastersync|match|not|onready|or|pass|remote|remotesync|return|self|setget|slave|slavesync|signal|static|sync|tool|var|while|yield)\\b"
 
     # Operators
     - statement: "[.:;,+*|=!\\%@]|<|>|/|-|&"
+
+    # Annotations
+    - special: "^@(export|export_category|export_color_no_alpha|export_dir|export_enum|export_exp_easing|export_file|export_flags|export_flags_2d_navigation|export_flags_2d_physics|export_flags_2d_render|export_flags_3d_navigation|export_flags_3d_physics|export_flags_3d_render|export_flags_avoidance|export_global_dir|export_global_file|export_group|export_multiline|export_node_path|export_placeholder|export_range|export_subgroup|icon|onready|rpc|static_unload|tool|warning_ignore)\\b"
 
     # Parentheses
     - statement: "[(){}]|\\[|\\]"
