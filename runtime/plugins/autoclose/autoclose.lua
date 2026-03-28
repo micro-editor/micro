@@ -28,7 +28,7 @@ function onRune(bp, r)
         if r == charAt(autoclosePairs[i], 1) then
             local curLine = bp.Buf:Line(bp.Cursor.Y)
 
-            if bp.Cursor.X == uutil.CharacterCountInString(curLine) or not uutil.IsWordChar(charAt(curLine, bp.Cursor.X+1)) then
+            if bp.Cursor.X == uutil.CharacterCountInString(curLine) or uutil.IsWhitespace(charAt(curLine, bp.Cursor.X+1)) then
                 -- the '-' here is to derefence the pointer to bp.Cursor.Loc which is automatically made
                 -- when converting go structs to lua
                 -- It needs to be dereferenced because the function expects a non pointer struct
