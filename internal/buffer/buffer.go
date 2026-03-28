@@ -123,13 +123,13 @@ type SharedBuffer struct {
 	origHash [md5.Size]byte
 }
 
-func (b *SharedBuffer) insert(pos Loc, value []byte) {
+func (b *SharedBuffer) insert(pos Loc, value []byte) Loc {
 	b.HasSuggestions = false
-	b.LineArray.insert(pos, value)
+	endPos := b.LineArray.insert(pos, value)
 	b.setModified()
 
-	inslines := bytes.Count(value, []byte{'\n'})
-	b.MarkModified(pos.Y, pos.Y+inslines)
+	b.MarkModified(pos.Y, endPos.Y)
+	return endPos
 }
 
 func (b *SharedBuffer) remove(start, end Loc) []byte {
@@ -570,6 +570,15 @@ func (b *Buffer) Remove(start, end Loc) {
 		b.EventHandler.cursors = b.cursors
 		b.EventHandler.active = b.curCursor
 		b.EventHandler.Remove(start, end)
+	}
+}
+
+// Replace replaces the characters between the start and end locations with the given text
+func (b *Buffer) Replace(start, end Loc, text string) {
+	if !b.Type.Readonly {
+		b.EventHandler.cursors = b.cursors
+		b.EventHandler.active = b.curCursor
+		b.EventHandler.Replace(start, end, text)
 	}
 }
 
