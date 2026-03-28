@@ -25,7 +25,6 @@ import (
 const LargeFileThreshold = 50000
 
 type wrappedFile struct {
-	name        string
 	writeCloser io.WriteCloser
 	withSudo    bool
 	screenb     bool
@@ -82,13 +81,13 @@ func openFile(name string, withSudo bool) (wrappedFile, error) {
 	var sigChan chan os.Signal
 
 	if withSudo {
-		conv := "notrunc"
+		args := []string{"dd", "bs=4k", "of=" + name}
 		// TODO: both platforms do not support dd with conv=fsync yet
 		if !(runtime.GOOS == "illumos" || runtime.GOOS == "netbsd") {
-			conv += ",fsync"
+			args = append(args, "conv=fsync")
 		}
 
-		cmd = exec.Command(config.GlobalSettings["sucmd"].(string), "dd", "bs=4k", "conv="+conv, "of="+name)
+		cmd = exec.Command(config.GlobalSettings["sucmd"].(string), args...)
 		writeCloser, err = cmd.StdinPipe()
 		if err != nil {
 			return wrappedFile{}, err
@@ -99,16 +98,16 @@ func openFile(name string, withSudo bool) (wrappedFile, error) {
 		signal.Notify(sigChan, os.Interrupt)
 
 		screenb = screen.TempFini()
+
 		// need to start the process now, otherwise when we flush the file
 		// contents to its stdin it might hang because the kernel's pipe size
 		// is too small to handle the full file contents all at once
 		err = cmd.Start()
 		if err != nil {
+			writeCloser.Close()
 			screen.TempStart(screenb)
-
 			signal.Notify(util.Sigterm, os.Interrupt)
 			signal.Stop(sigChan)
-
 			return wrappedFile{}, err
 		}
 	} else {
@@ -118,18 +117,7 @@ func openFile(name string, withSudo bool) (wrappedFile, error) {
 		}
 	}
 
-	return wrappedFile{name, writeCloser, withSudo, screenb, cmd, sigChan}, nil
-}
-
-func (wf wrappedFile) Truncate() error {
-	if wf.withSudo {
-		// we don't need to stop the screen here, since it is still stopped
-		// by openFile()
-		// truncate might not be available on every platfom, so use dd instead
-		cmd := exec.Command(config.GlobalSettings["sucmd"].(string), "dd", "count=0", "of="+wf.name)
-		return cmd.Run()
-	}
-	return wf.writeCloser.(*os.File).Truncate(0)
+	return wrappedFile{writeCloser, withSudo, screenb, cmd, sigChan}, nil
 }
 
 func (wf wrappedFile) Write(b *SharedBuffer) (int, error) {
@@ -150,9 +138,12 @@ func (wf wrappedFile) Write(b *SharedBuffer) (int, error) {
 		eol = []byte{'\n'}
 	}
 
-	err := wf.Truncate()
-	if err != nil {
-		return 0, err
+	if !wf.withSudo {
+		f := wf.writeCloser.(*os.File)
+		err := f.Truncate(0)
+		if err != nil {
+			return 0, err
+		}
 	}
 
 	// write lines
@@ -354,10 +345,7 @@ func (b *Buffer) saveToFile(filename string, withSudo bool, autoSave bool) error
 // This means that the file is not overwritten directly but by writing to the
 // backup file first.
 func (b *SharedBuffer) safeWrite(path string, withSudo bool, newFile bool) (int, error) {
-	file, err := openFile(path, withSudo)
-	if err != nil {
-		return 0, err
-	}
+	var err error
 
 	defer func() {
 		if newFile && err != nil {
@@ -365,15 +353,36 @@ func (b *SharedBuffer) safeWrite(path string, withSudo bool, newFile bool) (int,
 		}
 	}()
 
-	// Try to backup first before writing
-	backupName, resolveName, err := b.writeBackup(path)
+	// When using sudo, create the backup before opening the file because
+	// openFile() truncates the target immediately. For non-sudo saves,
+	// openFile() does not truncate on open, i.e. open is non-destructive,
+	// so only create the backup after open succeeds.
+	var backupName, resolveName string
+	if withSudo {
+		backupName, resolveName, err = b.writeBackup(path)
+		if err != nil {
+			return 0, err
+		}
+		delete(requestedBackups, b)
+	}
+
+	file, err := openFile(path, withSudo)
 	if err != nil {
-		file.Close()
+		if withSudo {
+			return 0, util.OverwriteError{err, backupName}
+		}
 		return 0, err
 	}
 
-	// Backup saved, so cancel pending periodic backup, if any
-	delete(requestedBackups, b)
+	if !withSudo {
+		backupName, resolveName, err = b.writeBackup(path)
+		if err != nil {
+			file.Close()
+			return 0, err
+		}
+		// Backup saved, so cancel pending periodic backup, if any
+		delete(requestedBackups, b)
+	}
 
 	b.forceKeepBackup = true
 	size := 0
