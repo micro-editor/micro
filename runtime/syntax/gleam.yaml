@@ -67,4 +67,3 @@ rules:
         end: "$"
         rules:
             - todo: "(TODO|FIXME|XXX):?"
-            
