@@ -1652,6 +1652,28 @@ func (h *BufPane) JumpToMatchingBrace() bool {
 	return false
 }
 
+// JumpToOpeningBrace moves the cursor to the opening brace in current brace scope
+func (h *BufPane) JumpToOpeningBrace() bool {
+	matchingBrace, found := h.Buf.FindOpeningBrace(h.Cursor.Loc)
+	if found {
+		h.Cursor.GotoLoc(matchingBrace)
+		h.Relocate()
+		return true
+	}
+	return false
+}
+
+// JumpToClosingBrace moves the cursor to the closing brace in current brace scope
+func (h *BufPane) JumpToClosingBrace() bool {
+	matchingBrace, found := h.Buf.FindClosingBrace(h.Cursor.Loc)
+	if found {
+		h.Cursor.GotoLoc(matchingBrace)
+		h.Relocate()
+		return true
+	}
+	return false
+}
+
 // SelectAll selects the entire buffer
 func (h *BufPane) SelectAll() bool {
 	h.Cursor.SetSelectionStart(h.Buf.Start())
