@@ -11,7 +11,7 @@ rules:
     - statement: "\\b(abstract|as|async|await|break|case|catch|class|const|constructor|continue)\\b"
     - statement: "\\b(debugger|declare|default|delete|do|else|enum|export|extends|finally|for|from)\\b"
     - statement: "\\b(function|get|if|implements|import|in|instanceof|interface|is|let|module|namespace)\\b"
-    - statement: "\\b(new|of|package|private|protected|public|require|return|set|static|super|switch)\\b"
+    - statement: "\\b(new|of|override|package|private|protected|public|require|return|set|static|super|switch)\\b"
     - statement: "\\b(this|throw|try|type|typeof|var|void|while|with|yield)\\b"
     - constant: "\\b(false|true|null|undefined|NaN)\\b"
     - type: "\\b(Array|Boolean|Date|Enumerator|Error|Function|Math)\\b"
