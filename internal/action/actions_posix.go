@@ -14,9 +14,8 @@ import (
 func (*BufPane) Suspend() bool {
 	screenb := screen.TempFini()
 
-	// suspend the process
-	pid := syscall.Getpid()
-	err := syscall.Kill(pid, syscall.SIGSTOP)
+	// suspend the process group
+	err := syscall.Kill(0, syscall.SIGSTOP)
 	if err != nil {
 		screen.TermMessage(err)
 	}
