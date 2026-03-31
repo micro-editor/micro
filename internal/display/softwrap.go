@@ -1,6 +1,8 @@
 package display
 
 import (
+	"bytes"
+
 	runewidth "github.com/mattn/go-runewidth"
 	"github.com/micro-editor/micro/v2/internal/buffer"
 	"github.com/micro-editor/micro/v2/internal/util"
@@ -80,6 +82,7 @@ func (w *BufWindow) getVLocFromLoc(loc buffer.Loc) VLoc {
 
 	wordwrap := w.Buf.Settings["wordwrap"].(bool)
 	tabsize := util.IntOpt(w.Buf.Settings["tabsize"])
+	leadingvisualspaces := w.getLeadingVisualSpaces(vloc)
 
 	line := w.Buf.LineBytes(loc.Y)
 	x := 0
@@ -121,6 +124,7 @@ func (w *BufWindow) getVLocFromLoc(loc buffer.Loc) VLoc {
 		if vloc.VisualX+wordwidth > w.bufWidth && vloc.VisualX > 0 {
 			vloc.Row++
 			vloc.VisualX = 0
+			vloc.VisualX += leadingvisualspaces
 		}
 
 		if x == loc.X {
@@ -137,6 +141,7 @@ func (w *BufWindow) getVLocFromLoc(loc buffer.Loc) VLoc {
 		if vloc.VisualX >= w.bufWidth {
 			vloc.Row++
 			vloc.VisualX = 0
+			vloc.VisualX += leadingvisualspaces
 		}
 	}
 	return vloc
@@ -151,6 +156,7 @@ func (w *BufWindow) getLocFromVLoc(svloc VLoc) buffer.Loc {
 
 	wordwrap := w.Buf.Settings["wordwrap"].(bool)
 	tabsize := util.IntOpt(w.Buf.Settings["tabsize"])
+	leadingvisualspaces := w.getLeadingVisualSpaces(svloc)
 
 	line := w.Buf.LineBytes(svloc.Line)
 	vloc := VLoc{SLoc: SLoc{svloc.Line, 0}, VisualX: 0}
@@ -202,6 +208,7 @@ func (w *BufWindow) getLocFromVLoc(svloc VLoc) buffer.Loc {
 			}
 			vloc.Row++
 			vloc.VisualX = 0
+			vloc.VisualX += leadingvisualspaces
 		}
 
 		for i := range widths {
@@ -218,9 +225,22 @@ func (w *BufWindow) getLocFromVLoc(svloc VLoc) buffer.Loc {
 		if vloc.VisualX >= w.bufWidth {
 			vloc.Row++
 			vloc.VisualX = 0
+			vloc.VisualX += leadingvisualspaces
 		}
 	}
 	return loc
+}
+
+// For wrapindent, count leading space to set correct VisualX on up, down action
+func (w *BufWindow) getLeadingVisualSpaces(vloc VLoc) int {
+	wrapindent := util.IntOpt(w.Buf.Settings["wrapindent"])
+	if wrapindent < 0 {
+		return 0
+	}
+	line := w.Buf.LineBytes(vloc.Line)
+	leadingwhitespace := util.GetLeadingWhitespace(line)
+	leadingtabscount := bytes.Count(leadingwhitespace, []byte{'\t'})
+	return wrapindent + leadingtabscount*int(w.Buf.Settings["tabsize"].(float64)) + (len(leadingwhitespace) - leadingtabscount)
 }
 
 func (w *BufWindow) getRowCount(line int) int {
