@@ -489,6 +489,67 @@ func DetermineEscapePath(dir string, path string) (string, string) {
 	return url, ""
 }
 
+// resolvePathElements will resolve each path element one after an other.
+// In case the current path element doesn't exist then path is extended with the
+// remaining elements of the path otherwise the path is returned unresolved.
+func resolvePathElements(path string) string {
+	splitPath := strings.Split(path, string(filepath.Separator))
+	tmpPath := ""
+	for idx, element := range splitPath {
+		if element == "" {
+			tmpPath += string(filepath.Separator)
+			continue
+		}
+		tmpPath = filepath.Join(tmpPath, element)
+		resolvedPath, err := filepath.EvalSymlinks(tmpPath)
+		if err == nil {
+			tmpPath = resolvedPath
+			continue
+		} else if errors.Is(err, fs.ErrNotExist) {
+			if idx+1 < len(splitPath) {
+				splitPath = append([]string{tmpPath}, splitPath[idx+1:]...)
+				tmpPath = filepath.Join(splitPath...)
+			}
+			return filepath.Clean(tmpPath)
+		}
+		return path
+	}
+	return filepath.Clean(tmpPath)
+}
+
+// ResolvePath provides the absolute file path for the given relative file path
+// as well as resolves symlinks in both. It returns the relative path with
+// symlinks resolved and the absolute path with symlinks resolved. If it fails
+// to get the absolute path or to resolve symlinks, it returns unresolved path
+// in place of resolved one. In case the file does not exist, ResolvePath still
+// resolves it, by resolving its directory path and keeping the file name.
+func ResolvePath(path string) (string, string) {
+	resolvedPath, err := filepath.EvalSymlinks(path)
+	if err == nil {
+		path = resolvedPath
+	} else if errors.Is(err, fs.ErrNotExist) {
+		// At least one path element doesn't exist so we try to resolve as much
+		// as we can.
+		path = resolvePathElements(path)
+	}
+
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		absPath = path
+	}
+
+	resolvedPath, err = filepath.EvalSymlinks(absPath)
+	if err == nil {
+		absPath = resolvedPath
+	} else if errors.Is(err, fs.ErrNotExist) {
+		// At least one path element doesn't exist so we try to resolve as much
+		// as we can.
+		absPath = resolvePathElements(absPath)
+	}
+
+	return path, absPath
+}
+
 // GetLeadingWhitespace returns the leading whitespace of the given byte array
 func GetLeadingWhitespace(b []byte) []byte {
 	ws := []byte{}
