@@ -1,6 +1,8 @@
 package display
 
 import (
+	"fmt"
+
 	runewidth "github.com/mattn/go-runewidth"
 	"github.com/micro-editor/micro/v2/internal/buffer"
 	"github.com/micro-editor/micro/v2/internal/config"
@@ -163,10 +165,30 @@ func (i *InfoWindow) displayBuffer() {
 	}
 }
 
-var keydisplay = []string{"^Q Quit, ^S Save, ^O Open, ^G Help, ^E Command Bar, ^K Cut Line", "^F Find, ^Z Undo, ^Y Redo, ^A Select All, ^D Duplicate Line, ^T New Tab"}
+func keydisplayGen() []string {
+	return []string{
+		fmt.Sprintf("%s %s, %s %s, %s %s, %s %s, %s %s, %s %s",
+			findBinding("Quit", true), "Quit",
+			findBinding("Save", true), "Save",
+			findBinding("OpenFile", true), "Open",
+			findBinding("ToggleHelp", true), "Help",
+			findBinding("CommandMode", true), "Command Bar",
+			findBinding("CutLine", true), "Cut Line",
+		),
+		fmt.Sprintf("%s %s, %s %s, %s %s, %s %s, %s %s, %s %s",
+			findBinding("Find", true), "Find",
+			findBinding("Undo", true), "Undo",
+			findBinding("Redo", true), "Redo",
+			findBinding("SelectAll", true), "Select All",
+			findBinding("DuplicateLine", true), "Duplicate Line",
+			findBinding("AddTab", true), "New Tab",
+		),
+	}
+}
 
 func (i *InfoWindow) displayKeyMenu() {
 	// TODO: maybe make this based on the actual keybindings
+	keydisplay := keydisplayGen()
 
 	for y := 0; y < len(keydisplay); y++ {
 		for x := 0; x < i.Width; x++ {
