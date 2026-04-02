@@ -283,6 +283,13 @@ Here are the available options:
 
     default value: `tab`
 
+* `padleft`: the number of columns of whitespace to add to the left of the
+    text buffer. Useful for centering text on wide screens.
+    default value: `0`
+* `padright`: the number of columns of whitespace to add to the right of the
+    text buffer. Useful for centering text on wide screens.
+    default value: `0`
+
 * `pageoverlap`: the number of lines from the current view to keep in view
    when paging up or down. If this is set to 2, for instance, and you page
    down, the last two lines of the previous page will be the first two lines

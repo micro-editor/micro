@@ -26,6 +26,7 @@ type BufWindow struct {
 	bufWidth         int
 	bufHeight        int
 	gutterOffset     int
+	padLeftOffset    int
 	hasMessage       bool
 	maxLineNumLength int
 	drawDivider      bool
@@ -64,7 +65,7 @@ func (w *BufWindow) SetBuffer(b *buffer.Buffer) {
 		}
 
 		if option == "diffgutter" || option == "ruler" || option == "scrollbar" ||
-			option == "statusline" {
+			option == "statusline" || option == "padleft" || option == "padright" {
 			w.updateDisplayInfo()
 			w.Relocate()
 		}
@@ -107,7 +108,7 @@ func (w *BufWindow) IsActive() bool {
 // ruler, scrollbar and statusline.
 func (w *BufWindow) BufView() View {
 	return View{
-		X:         w.X + w.gutterOffset,
+		X:         w.X + w.gutterOffset + w.padLeftOffset,
 		Y:         w.Y,
 		Width:     w.bufWidth,
 		Height:    w.bufHeight,
@@ -158,12 +159,22 @@ func (w *BufWindow) updateDisplayInfo() {
 		w.gutterOffset += w.maxLineNumLength + 1
 	}
 
-	if w.gutterOffset > w.Width-scrollbarWidth {
+	padLeft := util.IntOpt(b.Settings["padleft"])
+	padRight := util.IntOpt(b.Settings["padright"])
+	w.padLeftOffset = padLeft
+
+	if w.gutterOffset+padLeft > w.Width-scrollbarWidth {
+		w.gutterOffset = w.Width - scrollbarWidth
+		w.padLeftOffset = 0
+	} else if w.gutterOffset > w.Width-scrollbarWidth {
 		w.gutterOffset = w.Width - scrollbarWidth
 	}
 
 	prevBufWidth := w.bufWidth
-	w.bufWidth = w.Width - w.gutterOffset - scrollbarWidth
+	w.bufWidth = w.Width - w.gutterOffset - padLeft - scrollbarWidth - padRight
+	if w.bufWidth < 0 {
+		w.bufWidth = 0
+	}
 
 	if w.bufWidth != prevBufWidth && w.Buf.Settings["softwrap"].(bool) {
 		for _, c := range w.Buf.GetCursors() {
@@ -268,7 +279,7 @@ func (w *BufWindow) Relocate() bool {
 // If the requested position does not correspond to a buffer location it returns
 // the nearest position
 func (w *BufWindow) LocFromVisual(svloc buffer.Loc) buffer.Loc {
-	vx := svloc.X - w.X - w.gutterOffset
+	vx := svloc.X - w.X - w.gutterOffset - w.padLeftOffset
 	if vx < 0 {
 		vx = 0
 	}
@@ -387,7 +398,7 @@ func (w *BufWindow) displayBuffer() {
 		return
 	}
 
-	maxWidth := w.gutterOffset + w.bufWidth
+	maxWidth := w.gutterOffset + w.padLeftOffset + w.bufWidth
 
 	if b.ModifiedThisFrame {
 		if b.Settings["diffgutter"].(bool) {
@@ -503,8 +514,14 @@ func (w *BufWindow) displayBuffer() {
 			if b.Settings["ruler"].(bool) {
 				w.drawLineNum(s, false, &vloc, &bloc)
 			}
+
+			// draw left padding cells
+			for vloc.X < w.gutterOffset+w.padLeftOffset {
+				screen.SetContent(w.X+vloc.X, w.Y+vloc.Y, ' ', nil, config.DefStyle)
+				vloc.X++
+			}
 		} else {
-			vloc.X = w.gutterOffset
+			vloc.X = w.gutterOffset + w.padLeftOffset
 		}
 
 		bline := b.LineBytes(bloc.Y)
@@ -668,7 +685,7 @@ func (w *BufWindow) displayBuffer() {
 				}
 
 				if s, ok := config.Colorscheme["color-column"]; ok {
-					if colorcolumn != 0 && vloc.X-w.gutterOffset+w.StartCol == colorcolumn && !preservebg {
+					if colorcolumn != 0 && vloc.X-w.gutterOffset-w.padLeftOffset+w.StartCol == colorcolumn && !preservebg {
 						fg, _, _ := s.Decompose()
 						style = style.Background(fg)
 					}
@@ -701,8 +718,14 @@ func (w *BufWindow) displayBuffer() {
 				if b.Settings["ruler"].(bool) {
 					w.drawLineNum(lineNumStyle, true, &vloc, &bloc)
 				}
+
+				// draw left padding cells on wrapped lines
+				for vloc.X < w.gutterOffset+w.padLeftOffset {
+					screen.SetContent(w.X+vloc.X, w.Y+vloc.Y, ' ', nil, config.DefStyle)
+					vloc.X++
+				}
 			} else {
-				vloc.X = w.gutterOffset
+				vloc.X = w.gutterOffset + w.padLeftOffset
 			}
 		}
 
@@ -754,7 +777,7 @@ func (w *BufWindow) displayBuffer() {
 			}
 
 			// If a word (or just a wide rune) does not fit in the window
-			if vloc.X+wordwidth > maxWidth && vloc.X > w.gutterOffset {
+			if vloc.X+wordwidth > maxWidth && vloc.X > w.gutterOffset+w.padLeftOffset {
 				for vloc.X < maxWidth {
 					draw(' ', nil, config.DefStyle, false, false, true)
 				}
@@ -817,7 +840,7 @@ func (w *BufWindow) displayBuffer() {
 		for i := vloc.X; i < maxWidth; i++ {
 			curStyle := style
 			if s, ok := config.Colorscheme["color-column"]; ok {
-				if colorcolumn != 0 && i-w.gutterOffset+w.StartCol == colorcolumn {
+				if colorcolumn != 0 && i-w.gutterOffset-w.padLeftOffset+w.StartCol == colorcolumn {
 					fg, _, _ := s.Decompose()
 					curStyle = style.Background(fg)
 				}
