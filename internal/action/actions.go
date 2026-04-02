@@ -916,16 +916,6 @@ func (h *BufPane) Autocomplete() bool {
 		return true
 	}
 
-	if h.Cursor.X == 0 {
-		return false
-	}
-	r := h.Cursor.RuneUnder(h.Cursor.X)
-	prev := h.Cursor.RuneUnder(h.Cursor.X - 1)
-	if !util.IsAutocomplete(prev) || util.IsWordChar(r) {
-		// don't autocomplete if cursor is within a word
-		return false
-	}
-
 	return b.Autocomplete(buffer.BufferComplete)
 }
 
