@@ -31,6 +31,7 @@ following filetypes and linters:
 * **shell**: shellcheck
 * **swift**: swiftc (MacOS and Linux only)
 * **yaml**: yamllint
+* **dockerfile**: hadolint
 
 If the linter plugin is enabled and the file corresponds to one of
 these filetypes, each time the buffer is saved, or when the `> lint`
