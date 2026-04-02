@@ -24,13 +24,19 @@ Here are the available options:
 
     default value: `0`
 
-* `autosu`: When a file is saved that the user doesn't have permission to
+* `autosu`: when a file is saved that the user doesn't have permission to
    modify, micro will ask if the user would like to use super user
    privileges to save the file. If this option is enabled, micro will
    automatically attempt to use super user privileges to save without
    asking the user.
 
     default value: `false`
+
+* `background`: whether to display the current theme's background color.
+   If this option is disabled, the background color of the current theme
+   will not be used and instead the terminal's default color will be shown.
+
+    default value: `true`
 
 * `backup`: micro will automatically keep backups of all open buffers. Backups
    are stored in `~/.config/micro/backups` and are removed when the buffer is
@@ -558,6 +564,7 @@ so that you can see what the formatting should look like.
     "autoindent": true,
     "autosave": 0,
     "autosu": false,
+    "background": true,
     "backup": true,
     "backupdir": "",
     "basename": false,
