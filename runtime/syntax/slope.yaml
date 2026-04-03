@@ -1,0 +1,94 @@
+filetype: slope
+
+detect:
+  filename: "\\.(?i:(slo|slope))$\\b"
+ 
+rules:
+  - constant: "\\((PI|PHI|E|stdin|stdout|stderr|devnull|else)\\b"
+  - constant: "\\((sys)\\b-\\b(args)\\b"
+  - constant: "\\((args)\\b-\\b(list)\\b"
+  # XXX
+  - constant.number: "[\\-\\+]?[0-9]+\\.?[0-9]*"
+
+  - constant.boolean: "(?:#(t|f))"
+
+  - comment:
+      start: ";"
+      end: "$"
+
+  - constant.string: 
+      start: "\""
+      end: "\""
+
+  - constant.string:
+      start: "`"
+      end: "`"
+
+  - constant.string:
+      start: "'"
+      end: "(\\s|$)"
+
+  - special: "\\((quote|if|and|or|case|cond|ns\\-define|ns\\-create|define|lambda|usage|apply|coeval)"
+  - special: "\\((begin|begin0|load|macro|eval|for|usage)\\b"
+  - special: "\\((load)\\b-\\b(mod)\\b"
+  - special: "\\((load)\\b-\\b(mod)\\b-\\b(file)\\b"
+  - special: "\\([><]=?"
+  - special: "\\((\\+|\\-|\\/|\\*|\\!|\\%)"
+  - special: "\\.\\.\\."
+  - special: "\\bset\\!"
+
+
+# # slope commands
+  - statement: "\\((abs|floor|ceil|round|min|max|rand|reduce|filter|not)\\b"
+  - statement: "\\((sleep|%|exp|range|sin|cos|tan|atan2|sqrt)\\b"
+  - statement: "\\((exit|license|apply)\\b"
+  - statement: "\\((length|cons|car|cdr|append|list|map|ref|reverse|assoc)\\b"
+  - statement: "\\((mkdir|rm|mv|pwd|hostname|timestamp|date)\\b"
+  - statement: "\\((chmod|chdir|env|subprocess)\\b"
+  - statement: "\\((newline|display|write|close)\\b"
+  - statement: "\\((slice)\\b"
+
+
+  - statement: "\\((date)-(format|default-format)\\b"
+  - statement: "\\((assoc)-(has-key)\\b"
+  - statement: "\\((exception)-(mode-(pass|panic)\\b|mode-panic\\?)"
+  - statement: "\\((file)-(create|create-temp|open-read|open-write|append-to|stat|name)\\b"
+  - statement: "\\((for-each)\\b"
+  - statement: "\\((list)-(sort|seed|join)\\b"
+  - statement: "\\((mod-path)\\b"
+  - statement: "\\((net-conn)\\b"
+  - statement: "\\((path)-(abs|join|extension|base|dir|glob)\\b"
+  - statement: "\\((rand-seed)\\b"
+  - statement: "\\((read)-(line|char|all|all-lines)\\b"
+  - statement: "\\((regex)-(find|replace)\\b"
+  - statement: "\\((repl)-(flush)\\b"
+  - statement: "\\((signal-catch-sigint)\\b"
+  - statement: "\\((string)-(format|trim-space|index-of|ref|upper|lower|make|make-buf|buf-clear|fields)\\b"
+  - statement: "\\((term)-(size|(char|raw|cooked|sane)-mode)\\b"
+  - statement: "\\((write-raw)\\b"
+  - statenent: "\\((url)-(scheme|host|port|path|query)\\b"
+
+  - statement: "\\((date)->(timestamp)\\b"
+  - statement: "\\((display)-(lines)\\b"
+  - statement: "\\((list)->(string)\\b"
+  - statement: "\\((number)->(string)\\b"
+  - statement: "\\((rune)->(string|)\\b"
+  - statement: "\\((string)->(list)\\b"
+  - statement: "\\((string)->(md5)\\b"
+  - statement: "\\((string)->(number)\\b"
+  - statement: "\\((string)->(rune)\\b"
+  - statement: "\\((string)->(sha256)\\b"
+  - statement: "\\((timestamp)->(date)\\b"
+
+  - statement: "\\((macro\\?)"
+  - statement: "\\((equal\\?)"
+  - statement: "\\((exception\\?)"
+  - statement: "\\((exception-mode-panic\\?)\\b"
+  - statement: "\\((exception-mode-pass\\?)\\b"
+  - statement: "\\((member\\?)\\b"
+  - statement: "\\((mod-path|path-exists\\?|path-is-dir\\?)\\b"
+  - statement: "\\((positive|negative|zero|exists|zero|exists)\\b\\?"
+  - statement: "\\((qual|number|string|bool|symbol|pair|null|list|procedure|atom|bool|assoc|string-buf|io-handle|member)\\b\\?"
+  - statement: "\\((regex)\\b-\\b(match)\\b\\?"
+
+  - special: "(\\)|\\()"
