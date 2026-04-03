@@ -2,7 +2,6 @@ package buffer
 
 import (
 	"bufio"
-	"bytes"
 	"errors"
 	"io"
 	"io/fs"
@@ -11,6 +10,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 	"unicode"
 
@@ -156,7 +156,7 @@ func (wf wrappedFile) Write(b *SharedBuffer) (int, error) {
 	}
 
 	// write lines
-	size, err := file.Write(b.lines[0].data)
+	size, err := file.Write(b.lines[0].data())
 	if err != nil {
 		return 0, err
 	}
@@ -165,10 +165,10 @@ func (wf wrappedFile) Write(b *SharedBuffer) (int, error) {
 		if _, err = file.Write(eol); err != nil {
 			return 0, err
 		}
-		if _, err = file.Write(l.data); err != nil {
+		if _, err = file.Write(l.data()); err != nil {
 			return 0, err
 		}
-		size += len(eol) + len(l.data)
+		size += len(eol) + len(l.data())
 	}
 
 	err = file.Flush()
@@ -249,10 +249,9 @@ func (b *Buffer) saveToFile(filename string, withSudo bool, autoSave bool) error
 
 	if !autoSave && b.Settings["rmtrailingws"].(bool) {
 		for i, l := range b.lines {
-			leftover := util.CharacterCount(bytes.TrimRightFunc(l.data, unicode.IsSpace))
-
-			linelen := util.CharacterCount(l.data)
-			b.Remove(Loc{leftover, i}, Loc{linelen, i})
+			leftover := strings.TrimRightFunc(l.String(), unicode.IsSpace)
+			linelen := len(l.runes)
+			b.Remove(Loc{len(leftover), i}, Loc{linelen, i})
 		}
 
 		b.RelocateCursors()
