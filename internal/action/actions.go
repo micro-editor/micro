@@ -1110,8 +1110,10 @@ func (h *BufPane) Search(str string, useRegex bool, searchDown bool) error {
 		h.Buf.LastSearch = str
 		h.Buf.LastSearchRegex = useRegex
 		h.Buf.HighlightSearch = h.Buf.Settings["hlsearch"].(bool)
+		h.Buf.UpdateMatchCount(str, h.Buf.Start(), h.Buf.End(), match[0], useRegex)
 	} else {
 		h.Cursor.ResetSelection()
+		h.Buf.MatchCount = 0
 	}
 	return nil
 }
@@ -1132,9 +1134,11 @@ func (h *BufPane) find(useRegex bool) bool {
 				h.Cursor.OrigSelection[0] = h.Cursor.CurSelection[0]
 				h.Cursor.OrigSelection[1] = h.Cursor.CurSelection[1]
 				h.GotoLoc(match[1])
+				h.Buf.UpdateMatchCount(resp, h.Buf.Start(), h.Buf.End(), match[0], useRegex)
 			} else {
 				h.GotoLoc(h.searchOrig)
 				h.Cursor.ResetSelection()
+				h.Buf.MatchCount = 0
 			}
 		}
 	}
@@ -1153,9 +1157,11 @@ func (h *BufPane) find(useRegex bool) bool {
 				h.Buf.LastSearch = resp
 				h.Buf.LastSearchRegex = useRegex
 				h.Buf.HighlightSearch = h.Buf.Settings["hlsearch"].(bool)
+				h.Buf.UpdateMatchCount(h.Buf.LastSearch, h.Buf.Start(), h.Buf.End(), match[0], h.Buf.LastSearchRegex)
 			} else {
 				h.Cursor.ResetSelection()
 				InfoBar.Message("No matches found")
+				h.Buf.MatchCount = 0
 			}
 		} else {
 			h.Cursor.ResetSelection()
@@ -1187,6 +1193,7 @@ func (h *BufPane) UnhighlightSearch() bool {
 		return false
 	}
 	h.Buf.HighlightSearch = false
+	h.Buf.MatchCount = 0
 	return true
 }
 
@@ -1230,8 +1237,10 @@ func (h *BufPane) FindNext() bool {
 		h.Cursor.OrigSelection[0] = h.Cursor.CurSelection[0]
 		h.Cursor.OrigSelection[1] = h.Cursor.CurSelection[1]
 		h.GotoLoc(h.Cursor.CurSelection[1])
+		h.Buf.UpdateMatchCount(h.Buf.LastSearch, h.Buf.Start(), h.Buf.End(), match[0], h.Buf.LastSearchRegex)
 	} else {
 		h.Cursor.ResetSelection()
+		h.Buf.MatchCount = 0
 	}
 	return true
 }
@@ -1267,8 +1276,10 @@ func (h *BufPane) FindPrevious() bool {
 		h.Cursor.OrigSelection[0] = h.Cursor.CurSelection[0]
 		h.Cursor.OrigSelection[1] = h.Cursor.CurSelection[1]
 		h.GotoLoc(h.Cursor.CurSelection[1])
+		h.Buf.UpdateMatchCount(h.Buf.LastSearch, h.Buf.Start(), h.Buf.End(), match[0], h.Buf.LastSearchRegex)
 	} else {
 		h.Cursor.ResetSelection()
+		h.Buf.MatchCount = 0
 	}
 	return true
 }
