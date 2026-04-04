@@ -1,0 +1,18 @@
+filetype: typst
+
+detect:
+    filename: '\.typ$'
+
+rules:
+    - comment:
+        start: "//"
+        end: "$"
+    - constant.string:
+        start: '"'
+        end: '"'
+    - identifier.class: '#?[A-Za-z]*(\(|\[)'
+    - statement: '#?(let|set|show|import|context)'
+    - symbol.brackets: '\(|\)|\[|\]|\{|\}'
+    - special:
+        start: '\$'
+        end: '\$'
