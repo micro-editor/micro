@@ -1,37 +1,52 @@
 filetype: v
 
 detect:
+    filename: "\\.(vsh|vv)$"
+    header: "^#!\\S*\\benv(\\s.*)?\\sv(\\s|$)"
 
 rules:
       # Conditionals and control flow
     - preproc: "\\b(module|import)\\b"
-    - statement: "\\b(if|else|for|match|select|defer|or|unsafe)\\b"
+    - preproc: "#\\b(define|flag|(post|pre)?include|pkgconfig)\\b"
+    - statement: "\\b(if|else|for|match|select|defer|or)\\b"
     - statement: "\\b(break|continue|goto|return)\\b"
-    - type.keyword: "\\b(assert|const|enum|fn|struct|interface|type)\\b"
-    - type.keyword: "\\b(pub|mut|__global)\\b"
+    - statement: "\\b(go|spawn)\\b"
+    - type.keyword: "\\b(assert|const|enum|fn|implements|interface|struct|type|union)\\b"
+    - type.keyword: "\\b(pub|mut|__global|shared|static)\\b"
 
-    - preproc: "\\$\\b(if|else)\\b"
-    - identifier.os: "\\b(mac|macos|linux|windows|freebsd|openbsd|netbsd|dragonfly|android|solaris|haiku)\\b"
+    - type.keyword.other: "\\b(asm?|atomic|isreftype|r?lock|sql|unsafe|volatile)\\b"
+
+    - identifier.os: "\\b(android|darwin|dragonfly|freebsd|gnu|haiku|hpux|ios|linux|mach|macos|netbsd|openbsd|plan9|qnx|serenity|solaris|termux|vinix|windows)\\b"
     - identifier.compiler: "\\b(gcc|tinyc|clang|mingw|msvc|cplusplus)\\b"
-    - identifier.platform: "\\b(amd64|aarch64|x64|x32|little_endian|big_endian)\\b"
-    - identifier.other: "\\b(debug|test|js|glibc|prealloc|no_bounds_checking)\\b"
+    - identifier.platform: "\\b(aarch64|amd64|arm32|arm64|big_endian|i386|little_endian|ppc64le|rv32|rv64|s390x|x32|x64)\\b"
+    - identifier.other: "\\b(apk|autofree|backtrace|debug|es5|fast_math|freestanding|glibc|interpreter|js|js_browser|js_freestanding|js_node|native|no_backtrace|no_bounds_checking|no_main|no_segfault_handler|prealloc|prod|profile|threads|test|wasm32|wasm32_emscripten|wasm32_wasi)\\b"
 
     - identifier.class: "\\b([A-Z][A-Za-z0-9_]*)\\b"
-    - identifier.function: "\\b([a-z_]+\\()"
-    - symbol.operator: "\\b(i[ns])\\b|[-+/*<>!=~*%&:|,.?]"
-    - symbol.attribute:
-        start: "^\\["
-        end: "\\]$"
+    - identifier.function: "\\b([a-zA-Z0-9_]+(\\[ *([A-Z][a-zA-Z]*( *, *)? *)+\\])?\\()"
+    - symbol.operator: "\\b(i[ns])\\b|[-+/*<>!=~*%&:|^,.?]"
+
+    - default:
+        start: "@\\["
+        end: "\\]"
         rules:
-            - default: ".*"
-            - symbol: "\\b(deprecated|direct_array_access|if|inline|live|ref_only|typedef|windows_stdcall)\\b"
+            - symbol.attribute: "\\b[a-z_]+\\b"
+            - default: ":\\s*[a-z_]+\\b"
+            - constant.string: "'[^']*'"
+            - constant.string: "\"[^\"]*\""
+
+      # Compile time
+    - preproc.control_flow: "\\$\\b(if|else|for)\\b"
+    - preproc.pseudo_variable: "@\\b[A-Z_]+\\b"
+    - preproc.function: "\\$\\b([a-z_]+\\()"
+    - preproc.type: "\\$\\b([a-z_]+)\\b"
 
       # Types
-    - type: "\\b(byte|u(16|32|64|128)|i(nt|8|16|64|128)|f(32|64))\\b"
+    - type: "\\b(byte|u(8|16|32|64)|i(nt|8|16|32|64)|f(32|64))\\b"
     - type: "\\b(bool|cha[nr]|map|rune|string)\\b"
     - type: "\\b(any(_int|_float)?|size_t|(uint|byte|char|void)ptr)\\b"
     - constant.bool: "\\b(true|false)\\b"
     - constant.none: "\\b(none)\\b"
+    - constant.nil: "\\b(nil)\\b"
 
       # Brackets
     - symbol.brackets: "(\\{|\\})"
@@ -62,19 +77,25 @@ rules:
             - constant.specialChar: "\\\\[abefnrtv'\\\"\\\\]"
             - constant.specialChar: "\\\\([0-7]{3}|x[A-Fa-f0-9]{2}|u[A-Fa-f0-9]{4}|U[A-Fa-f0-9]{8})"
 
-    - constant.string:
+    - constant.string.char:
         start: "`"
         end: "`"
+        skip: "\\\\."
         rules: []
 
     - comment:
         start: "//"
         end: "$"
         rules:
-            - todo: "(TODO|XXX|FIXME):?"
+            - todo: "(FIXME|NOTE|TODO|XXX):?"
 
     - comment:
         start: "/\\*"
         end: "\\*/"
         rules:
-            - todo: "(TODO|XXX|FIXME):?"
+            - todo: "(FIXME|NOTE|TODO|XXX):?"
+
+    - comment.shebang:
+        start: "^#!"
+        end: "$"
+        rules: []
