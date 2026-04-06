@@ -1,7 +1,7 @@
 filetype: c++
 
 detect:
-    filename: "(\\.c(c|pp|xx)$|\\.h(h|pp|xx)?$|\\.ii?$|\\.(def)$)"
+    filename: "(\\.c(c(m)?|pp(m)?|xx(m)?|\\+\\+m?)$|\\.h(\\+\\+|h|pp|xx)?$|\\.i(i)?$|\\.(def|ino|inl|ipp|ixx|tpp|txx)$|\\.h(pp)?\\.in$)"
     signature: "\\b(namespace|class|public|protected|private|template|constexpr|noexcept|nullptr|throw)\\b"
 
 rules:
