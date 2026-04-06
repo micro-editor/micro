@@ -206,6 +206,14 @@ be used.
 
 ---
 
+### Subgroups and dynamic coloring
+
+Micro added recently the functionality to define the colors for the syntax highlighting in the colorscheme files.
+
+Please note, that not all highlighting files are using that right now, see a list of the supporting languages [here](https://github.com/zyedidia/micro/tree/master/runtime/syntax#using-with-colorschemes).
+
+You implement this functionality via subgroups. In the following, you can see how to implement these subgroups and the according files.
+
 In addition to the main colorscheme groups, there are subgroups that you can
 specify by adding `.subgroup` to the group. If you're creating your own custom
 syntax files, you can make use of your own subgroups.
