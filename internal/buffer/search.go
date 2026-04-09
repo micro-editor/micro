@@ -52,9 +52,13 @@ func regexPatternContainsEscapedNewline(s string) bool {
 
 func shouldUseMultilineSearch(s string, useRegex bool) bool {
 	if useRegex {
-		return regexPatternContainsEscapedNewline(s)
+		return regexPatternContainsEscapedNewline(s) || strings.Contains(s, "\n")
 	}
 	return strings.Contains(s, "\n")
+}
+
+func shouldUseMultilineRegexPattern(pattern string) bool {
+	return regexPatternContainsEscapedNewline(pattern) || strings.Contains(pattern, "\n")
 }
 
 // CompileSearchRegex compiles a search pattern according to regex mode and
@@ -82,14 +86,18 @@ func (b *Buffer) CompileSearchRegex(s string, useRegex bool, multiline bool) (st
 	return pattern, r, err
 }
 
-func (b *Buffer) findDownMultiline(r *regexp.Regexp, start, end Loc) ([2]Loc, bool) {
-	start, end = normalizeSearchBounds(b, start, end)
-
+func (b *Buffer) inclusiveSearchEnd(end Loc) Loc {
 	searchEnd := end
 	endLineCharCount := util.CharacterCount(b.LineBytes(end.Y))
 	if end.X < endLineCharCount {
 		searchEnd = end.Move(1, b)
 	}
+	return searchEnd
+}
+
+func (b *Buffer) findDownMultiline(r *regexp.Regexp, start, end Loc) ([2]Loc, bool) {
+	start, end = normalizeSearchBounds(b, start, end)
+	searchEnd := b.inclusiveSearchEnd(end)
 
 	joined := b.Substr(start, searchEnd)
 	match := r.FindIndex(joined)
@@ -104,12 +112,7 @@ func (b *Buffer) findDownMultiline(r *regexp.Regexp, start, end Loc) ([2]Loc, bo
 
 func (b *Buffer) findUpMultiline(r *regexp.Regexp, start, end Loc) ([2]Loc, bool) {
 	start, end = normalizeSearchBounds(b, start, end)
-
-	searchEnd := end
-	endLineCharCount := util.CharacterCount(b.LineBytes(end.Y))
-	if end.X < endLineCharCount {
-		searchEnd = end.Move(1, b)
-	}
+	searchEnd := b.inclusiveSearchEnd(end)
 
 	joined := b.Substr(start, searchEnd)
 	allMatches := r.FindAllIndex(joined, -1)
@@ -277,15 +280,27 @@ func (b *Buffer) FindNext(s string, start, end, from Loc, down bool, useRegex bo
 	return l, found, nil
 }
 
-// ReplaceRegex replaces all occurrences of 'search' with 'replace' in the given area
-// and returns the number of replacements made and the number of characters
-// added or removed on the last line of the range
-func (b *Buffer) ReplaceRegex(start, end Loc, search *regexp.Regexp, replace []byte, captureGroups bool) (int, int) {
-	if start.GreaterThan(end) {
-		start, end = end, start
+func (b *Buffer) replaceRegexMultiline(start, end Loc, charsEnd int, search *regexp.Regexp, replace []byte, captureGroups bool) (int, int) {
+	searchEnd := b.inclusiveSearchEnd(end)
+	joined := b.Substr(start, searchEnd)
+	matches := search.FindAllIndex(joined, -1)
+	found := len(matches)
+
+	if found > 0 {
+		var newText []byte
+		if captureGroups {
+			newText = search.ReplaceAll(joined, replace)
+		} else {
+			newText = search.ReplaceAllLiteral(joined, replace)
+		}
+
+		b.MultipleReplace([]Delta{{newText, start, searchEnd}})
 	}
 
-	charsEnd := util.CharacterCount(b.LineBytes(end.Y))
+	return found, util.CharacterCount(b.LineBytes(end.Y)) - charsEnd
+}
+
+func (b *Buffer) replaceRegexSingleLine(start, end Loc, charsEnd int, search *regexp.Regexp, replace []byte, captureGroups bool) (int, int) {
 	found := 0
 	var deltas []Delta
 
@@ -330,6 +345,21 @@ func (b *Buffer) ReplaceRegex(start, end Loc, search *regexp.Regexp, replace []b
 	}
 
 	b.MultipleReplace(deltas)
-
 	return found, util.CharacterCount(b.LineBytes(end.Y)) - charsEnd
+}
+
+// ReplaceRegex replaces all occurrences of 'search' with 'replace' in the given area
+// and returns the number of replacements made and the number of characters
+// added or removed on the last line of the range
+func (b *Buffer) ReplaceRegex(start, end Loc, search *regexp.Regexp, replace []byte, captureGroups bool) (int, int) {
+	if start.GreaterThan(end) {
+		start, end = end, start
+	}
+
+	charsEnd := util.CharacterCount(b.LineBytes(end.Y))
+
+	if shouldUseMultilineRegexPattern(search.String()) {
+		return b.replaceRegexMultiline(start, end, charsEnd, search, replace, captureGroups)
+	}
+	return b.replaceRegexSingleLine(start, end, charsEnd, search, replace, captureGroups)
 }

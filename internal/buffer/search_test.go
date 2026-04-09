@@ -49,3 +49,39 @@ func TestFindNextRegexEscapedBackslashNStaysSingleLine(t *testing.T) {
 		t.Fatalf("unexpected match locations: got %v", m)
 	}
 }
+
+func TestReplaceRegexAcrossLines(t *testing.T) {
+	b := NewBufferFromString("foo\nbar\nfoo\nbar", "", BTDefault)
+	defer b.Close()
+
+	_, regex, err := b.CompileSearchRegex(`foo\nbar`, true, true)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	n, _ := b.ReplaceRegex(b.Start(), b.End(), regex, []byte("X"), true)
+	if n != 2 {
+		t.Fatalf("unexpected replacement count: got %d", n)
+	}
+	if got := string(b.Bytes()); got != "X\nX" {
+		t.Fatalf("unexpected buffer text: got %q", got)
+	}
+}
+
+func TestReplaceRegexAcrossLinesLiteralReplace(t *testing.T) {
+	b := NewBufferFromString("a\nb", "", BTDefault)
+	defer b.Close()
+
+	_, regex, err := b.CompileSearchRegex(`a\nb`, true, true)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	n, _ := b.ReplaceRegex(b.Start(), b.End(), regex, []byte("$1"), false)
+	if n != 1 {
+		t.Fatalf("unexpected replacement count: got %d", n)
+	}
+	if got := string(b.Bytes()); got != "$1" {
+		t.Fatalf("unexpected buffer text: got %q", got)
+	}
+}
