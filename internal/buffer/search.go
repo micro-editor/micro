@@ -57,6 +57,31 @@ func shouldUseMultilineSearch(s string, useRegex bool) bool {
 	return strings.Contains(s, "\n")
 }
 
+// CompileSearchRegex compiles a search pattern according to regex mode and
+// buffer settings. It returns the normalized pattern and compiled regexp.
+func (b *Buffer) CompileSearchRegex(s string, useRegex bool, multiline bool) (string, *regexp.Regexp, error) {
+	pattern := s
+	if !useRegex {
+		pattern = regexp.QuoteMeta(pattern)
+	}
+
+	flags := ""
+	if b.Settings["ignorecase"].(bool) {
+		flags += "i"
+	}
+	if multiline {
+		flags += "m"
+	}
+
+	if flags != "" {
+		r, err := regexp.Compile("(?"+flags+")" + pattern)
+		return pattern, r, err
+	}
+
+	r, err := regexp.Compile(pattern)
+	return pattern, r, err
+}
+
 func (b *Buffer) findDownMultiline(r *regexp.Regexp, start, end Loc) ([2]Loc, bool) {
 	start, end = normalizeSearchBounds(b, start, end)
 
@@ -214,19 +239,7 @@ func (b *Buffer) FindNext(s string, start, end, from Loc, down bool, useRegex bo
 	}
 
 	multiline := shouldUseMultilineSearch(s, useRegex)
-
-	var r *regexp.Regexp
-	var err error
-
-	if !useRegex {
-		s = regexp.QuoteMeta(s)
-	}
-
-	if b.Settings["ignorecase"].(bool) {
-		r, err = regexp.Compile("(?i)" + s)
-	} else {
-		r, err = regexp.Compile(s)
-	}
+	_, r, err := b.CompileSearchRegex(s, useRegex, false)
 
 	if err != nil {
 		return [2]Loc{}, false, err
