@@ -2,6 +2,7 @@ package buffer
 
 import (
 	"regexp"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/micro-editor/micro/v2/internal/util"
@@ -16,6 +17,86 @@ const (
 	padStart = 1 << iota
 	padEnd
 )
+
+func normalizeSearchBounds(b *Buffer, start, end Loc) (Loc, Loc) {
+	lastcn := util.CharacterCount(b.LineBytes(b.LinesNum() - 1))
+	if start.Y > b.LinesNum()-1 {
+		start.X = lastcn - 1
+	}
+	if end.Y > b.LinesNum()-1 {
+		end.X = lastcn
+	}
+	start.Y = util.Clamp(start.Y, 0, b.LinesNum()-1)
+	end.Y = util.Clamp(end.Y, 0, b.LinesNum()-1)
+
+	if start.GreaterThan(end) {
+		start, end = end, start
+	}
+	return start, end
+}
+
+func regexPatternContainsEscapedNewline(s string) bool {
+	slashes := 0
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\\' {
+			slashes++
+			continue
+		}
+		if s[i] == 'n' && slashes%2 == 1 {
+			return true
+		}
+		slashes = 0
+	}
+	return false
+}
+
+func shouldUseMultilineSearch(s string, useRegex bool) bool {
+	if useRegex {
+		return regexPatternContainsEscapedNewline(s)
+	}
+	return strings.Contains(s, "\n")
+}
+
+func (b *Buffer) findDownMultiline(r *regexp.Regexp, start, end Loc) ([2]Loc, bool) {
+	start, end = normalizeSearchBounds(b, start, end)
+
+	searchEnd := end
+	endLineCharCount := util.CharacterCount(b.LineBytes(end.Y))
+	if end.X < endLineCharCount {
+		searchEnd = end.Move(1, b)
+	}
+
+	joined := b.Substr(start, searchEnd)
+	match := r.FindIndex(joined)
+	if match == nil {
+		return [2]Loc{}, false
+	}
+
+	matchStart := start.Move(util.RunePos(joined, match[0]), b)
+	matchEnd := start.Move(util.RunePos(joined, match[1]), b)
+	return [2]Loc{matchStart, matchEnd}, true
+}
+
+func (b *Buffer) findUpMultiline(r *regexp.Regexp, start, end Loc) ([2]Loc, bool) {
+	start, end = normalizeSearchBounds(b, start, end)
+
+	searchEnd := end
+	endLineCharCount := util.CharacterCount(b.LineBytes(end.Y))
+	if end.X < endLineCharCount {
+		searchEnd = end.Move(1, b)
+	}
+
+	joined := b.Substr(start, searchEnd)
+	allMatches := r.FindAllIndex(joined, -1)
+	if len(allMatches) == 0 {
+		return [2]Loc{}, false
+	}
+	match := allMatches[len(allMatches)-1]
+
+	matchStart := start.Move(util.RunePos(joined, match[0]), b)
+	matchEnd := start.Move(util.RunePos(joined, match[1]), b)
+	return [2]Loc{matchStart, matchEnd}, true
+}
 
 func findLineParams(b *Buffer, start, end Loc, i int, r *regexp.Regexp) ([]byte, int, int, *regexp.Regexp) {
 	l := b.LineBytes(i)
@@ -62,19 +143,7 @@ func findLineParams(b *Buffer, start, end Loc, i int, r *regexp.Regexp) ([]byte,
 }
 
 func (b *Buffer) findDown(r *regexp.Regexp, start, end Loc) ([2]Loc, bool) {
-	lastcn := util.CharacterCount(b.LineBytes(b.LinesNum() - 1))
-	if start.Y > b.LinesNum()-1 {
-		start.X = lastcn - 1
-	}
-	if end.Y > b.LinesNum()-1 {
-		end.X = lastcn
-	}
-	start.Y = util.Clamp(start.Y, 0, b.LinesNum()-1)
-	end.Y = util.Clamp(end.Y, 0, b.LinesNum()-1)
-
-	if start.GreaterThan(end) {
-		start, end = end, start
-	}
+	start, end = normalizeSearchBounds(b, start, end)
 
 	for i := start.Y; i <= end.Y; i++ {
 		l, charpos, padMode, rPadded := findLineParams(b, start, end, i, r)
@@ -99,19 +168,7 @@ func (b *Buffer) findDown(r *regexp.Regexp, start, end Loc) ([2]Loc, bool) {
 }
 
 func (b *Buffer) findUp(r *regexp.Regexp, start, end Loc) ([2]Loc, bool) {
-	lastcn := util.CharacterCount(b.LineBytes(b.LinesNum() - 1))
-	if start.Y > b.LinesNum()-1 {
-		start.X = lastcn - 1
-	}
-	if end.Y > b.LinesNum()-1 {
-		end.X = lastcn
-	}
-	start.Y = util.Clamp(start.Y, 0, b.LinesNum()-1)
-	end.Y = util.Clamp(end.Y, 0, b.LinesNum()-1)
-
-	if start.GreaterThan(end) {
-		start, end = end, start
-	}
+	start, end = normalizeSearchBounds(b, start, end)
 
 	for i := end.Y; i >= start.Y; i-- {
 		charCount := util.CharacterCount(b.LineBytes(i))
@@ -156,6 +213,8 @@ func (b *Buffer) FindNext(s string, start, end, from Loc, down bool, useRegex bo
 		return [2]Loc{}, false, nil
 	}
 
+	multiline := shouldUseMultilineSearch(s, useRegex)
+
 	var r *regexp.Regexp
 	var err error
 
@@ -176,14 +235,30 @@ func (b *Buffer) FindNext(s string, start, end, from Loc, down bool, useRegex bo
 	var found bool
 	var l [2]Loc
 	if down {
-		l, found = b.findDown(r, from, end)
+		if multiline {
+			l, found = b.findDownMultiline(r, from, end)
+		} else {
+			l, found = b.findDown(r, from, end)
+		}
 		if !found {
-			l, found = b.findDown(r, start, end)
+			if multiline {
+				l, found = b.findDownMultiline(r, start, end)
+			} else {
+				l, found = b.findDown(r, start, end)
+			}
 		}
 	} else {
-		l, found = b.findUp(r, from, start)
+		if multiline {
+			l, found = b.findUpMultiline(r, from, start)
+		} else {
+			l, found = b.findUp(r, from, start)
+		}
 		if !found {
-			l, found = b.findUp(r, end, start)
+			if multiline {
+				l, found = b.findUpMultiline(r, end, start)
+			} else {
+				l, found = b.findUp(r, end, start)
+			}
 		}
 	}
 	return l, found, nil
