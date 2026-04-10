@@ -1,0 +1,182 @@
+filetype: hy
+
+detect:
+    filename: "\\.hy$"
+
+rules:
+
+    # Slice operator
+    - symbol.operator: "\\:"
+
+    # Numbers
+    - constant.number: "\\b[0-9](_?[0-9])*(\\.([0-9](_?[0-9])*)?)?(e[0-9](_?[0-9])*)?\\b" # decimal
+    - constant.number: "\\b0b(_?[01])+\\b"        # binary
+    - constant.number: "\\b0o(_?[0-7])+\\b"       # octal
+    - constant.number: "\\b0x(_?[0-9a-fA-F])+\\b" # hexadecimal
+
+    # Strings
+    - constant.string:
+        start: "\""
+        end: "\""
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "(\\\\u[0-9A-fa-f]{4,4}|\\\\newline|\\\\space|\\\\tab|\\\\formfeed|\\\\backspace|\\\\return|\\\\.)"
+
+    # Constants
+    - constant: "\\b(Ellipsis|None|True|False)\\b"
+    # Attributes
+    - constant: "\\b(__bases__|__builtin__|__class__|__debug__|__dict__|__doc__|__file__|__members__|__methods__|__name__|__self__)\\b"
+    # Functions
+    - identifier: ".?\\b(abs|accumulate|all|and|any|ascii|assoc|append|bin|bool|breakpoint|butlast|bytearray|bytes|callable|chain|chr|classmethod|combinations|comp|compile|complement|complex|compress|constantly|count|cut|cycle|dec|delattr|dir|disassemble|distinct|divmod|drop|eval|exec|filter|first|flatten|format|fraction|get|getattr|globals|hasattr|hash|hex|hy.eval|id|identity|in|inc|input|interleave|interpose|is|isinstance|islice|issubclass|iter|iterate|juxt|keyword|last|len|locals|mangle|map|max|min|multicombinations|next|nonlocal|not|nth|ncut|oct|of|open|or|ord|partition|permutations|pow|print|product|py|pys|range|read|reduce|remove|repeat|repeatedly|repr|rest|round|second|setattr|some|sorted|tee|sum|take|type|unmangle|vars|xor|zip)\\b"
+    # Special methods
+    - identifier: "\\b__(abs|add|and|call|cmp|coerce|complex|concat|contains|delattr|delitem|delslice|del|dict|divmod|div|first|float|getattr|getitem|getslice|hash|hex|iadd|iand|iconcat|ifloordiv|ilshift|imatmul|imod|import|imul|init|int|invert|inv|ior|ipow|irshift|isub|iter|itruediv|ixor|len|long|lshift|mod|mul|neg|next|nonzero|oct|or|pos|pow|radd|rand|rcmp|rdivmod|rdiv|repeat|repr|rlshift|rmod|rmul|ror|rpow|rrshift|rshift|rsub|rxor|setattr|setitem|setslice|str|sub|xor)__\\b"
+    # Types
+    - type: "\\b(bool|bytearray|bytes|classmethod|complex|dict|enumerate|float|frozenset|int|list|memoryview|object|property|reversed|set|slice|staticmethod|str|super|tuple)\\b"
+    # Special forms
+    - statement: "\\b(as|assert|async|await|break|case|class|cmp|continue|cond|defmain|defseq|deftag|del|do|doc|doto|else|except|finally|fn|gensym|help|if|import|lif|loop|macroexpand|pass|pformat|postwalk|pp|pprint|prewalk|quasiquote|quote|raise|recur|require|return|rit|saferepr|seq|smacrolet|try|unless|unquote|walk|when|while|with|yield)\\b"
+
+    - default: "\\w*-\\w*"
+    - default: "\\w*\\.\\w*"
+
+    # Operators
+    - symbol.operator: "([#^,|!]|&)"
+
+    # Comparison, logical, arithmetic operators
+    - identifier: "\\= |!\\= |\\+ |- |\\* |\\*\\* |/ |// |% |@ |< |> |<\\= |\\=> |<< |>> |\\| |\\~ |\\+= |-= |\\*= |/= "
+
+    # Symbol definitions
+    - identifier.var: "cfor [a-zA-Z\\-_0-9~\\.!]*"
+    - identifier.var: "def [a-zA-Z\\-_0-9~]*"
+    - identifier.var: "defclass [a-zA-Z\\-_0-9~\\.!]*"
+    - identifier.var: "defmacro [a-zA-Z\\-_0-9~\\.!]*"
+    - identifier.var: "defn [a-zA-Z\\-_0-9~\\.!]*"
+    - identifier.var: "dfor [a-zA-Z\\-_0-9~\\.!]*"
+    - identifier.var: "for \\[[a-zA-Z\\-_0-9~\\.!]*"
+    - identifier.var: "gfor [a-zA-Z\\-_0-9~\\.!]*"
+    - identifier.var: "global [a-zA-Z\\-_0-9~\\.!]*"
+    - identifier.var: "let \\[[a-zA-Z\\-_0-9~\\.!]*"
+    - identifier.var: "lfor [a-zA-Z\\-_0-9~\\.!]*"
+    - identifier.var: "nonlocal [a-zA-Z\\-_0-9~\\.!]*"
+    - identifier.var: "setv [a-zA-Z\\-_0-9~\\.!]*"
+    - identifier.var: "setx [a-zA-Z\\-_0-9~\\.!]*"
+    - identifier.var: "sfor [a-zA-Z\\-_0-9~\\.!]*"
+    - identifier.var: "with-decorator [a-zA-Z\\-_0-9~\\.!]*"
+    - identifier.var: ":[a-zA-Z\\-_]*"
+
+    - statement: "\\b(cfor|def|defclass|defmacro|defn|dfor|for|gfor|global|let|lfor|nonlocal|setv|setx|sfor)\\b"
+
+    # Decorators
+    - brightgreen: "\\bwith-decorator\\b"
+
+    # - identifier: "-cfor|-def|-defclass|-defmacro|-defn|-dfor|-for|-gfor|-global|-let|-lfor|-nonlocal|-setv|-setx|-sfor|-with-decorator"
+    # - identifier: "cfor-|def-|defclass-|defmacro-|defn-|dfor-|for-|gfor-|global-|let-|lfor-|nonlocal-|setv-|setx-|sfor-|with-decorator-"
+
+    # Functions with special characters
+    - identifier: "\\^ "
+    - identifier: "\\bcall\\?"
+    - identifier: "\\bcoll\\?"
+    - identifier: "\\bdrop-last\\b"
+    - identifier: "\\bdrop-while\\b"
+    - identifier: "\\bempty\\?"
+    - identifier: "\\beven\\?"
+    - identifier: "\\bevery\\?"
+    - identifier: "\\bfloat\\?"
+    - identifier: "\\bgroup-by\\b"
+    - identifier: "\\binstance\\?"
+    - identifier: "\\binteger-char\\?"
+    - identifier: "\\binteger\\?"
+    - identifier: "\\biterable\\?"
+    - identifier: "\\biterator\\?"
+    - identifier: "\\bkeyword\\?"
+    - identifier: "\\blist\\?"
+    - identifier: "\\b\\*map"
+    - identifier: "\\bmerge-with\\b"
+    - identifier: "\\bneg\\?"
+    - identifier: "\\bnone\\?"
+    - identifier: "\\bnot\\?"
+    - identifier: "\\bnot-in\\b"
+    - identifier: "\\bnumeric\\?"
+    - identifier: "\\bodd\\?"
+    - identifier: "\\bparse-args\\b"
+    - identifier: "\\bpos\\?"
+    - identifier: "\\bprofile/calls\\b"
+    - identifier: "\\bprofile/cpu\\b"
+    - identifier: "\\bread-str\\b"
+    - identifier: "\\breadable\\?"
+    - identifier: "\\brecursive\\?"
+    - identifier: "\\bstring\\?"
+    - identifier: "\\bsymbol\\?"
+    - identifier: "\\btake-nth\\b"
+    - identifier: "\\btake-while\\b"
+    - identifier: "\\btuple\\?"
+    - identifier: "\\bzero\\?"
+    - identifier: "\\bzip-longest\\b"
+
+    # Brackets
+    - symbol.brackets: "([(){}]|\\[|\\])"
+
+    # Reader macros
+    - symbol.operator: "\\~"
+    - symbol.operator: "\\@"
+    - symbol.operator: "'"
+    - symbol.operator: "`"
+
+    # Special forms with special characters
+    - statement: "\\b(ap-dotimes|ap-each|ap-each-while|ap-filter|ap-first|ap-if|ap-last|ap-map|ap-map-when|ap-reduce|ap-reject|recur-sym-replace|calling-module-name|calling-module|defn\\/a|do-n|end-sequence|eval-and-compile|eval-when-compile|fn\\/a|hy-repr|hy-repr-register|if-not|it|lambda-list|lif-not|list-n|macroexpand-all|macroexpand-1|unpack-iterable|unpack-mapping|unquote-splice|with\\/a|with-gensyms|yield-from)\\b"
+    
+    - statement: ":&"
+    - statement: ":as"
+    - statement: ":async"
+    - statement: ":do"
+    - statement: ":else"
+    - statement: ":if"
+    - statement: ":keys"
+    - statement: ":or"
+    - statement: ":setv"
+    - statement: ":strs"
+
+    - statement: ":action"
+    - statement: ":description"
+    - statement: ":help"
+    - statement: ":nargs"
+    - statement: ":type"
+
+    - statement: "defmacro!"
+    - statement: "defmacro/g!"
+    - statement: "if\\*"
+
+    - statement: "\\bdefn\\+"
+    - statement: "\\bdefn/a\\+"
+    - statement: "\\bdest-dict\\b"
+    - statement: "\\bdest-iter\\b"
+    - statement: "\\bdest-list\\b"
+    - statement: "\\bdestructure\\b"
+    - statement: "\\bdict=:"
+    - statement: "\\bfn\\+"
+    - statement: "\\bfn/a\\+"
+    - statement: "\\bifp\\b"
+    - statement: "\\blet\\+"
+    - statement: "\\bsetv\\+"
+
+    # Reader macros
+    - symbol.operator: "#\\*+"
+    - symbol.operator: "->"
+    - symbol.operator: "->>"
+    - symbol.operator: "as->"
+    - symbol.operator: "#%"
+    - symbol.operator: "%\\*+"
+    - symbol.operator: "%[1-9]"
+    - symbol.operator: "#\\:"
+    - symbol.operator: "\\:\\:"
+
+    # Decorators
+    - brightgreen: "##\\@"
+
+    # Comments
+    - comment:
+        start: ";"
+        end: "$"
+        rules:
+            - todo: "(TODO|XXX|FIXME):?"
+    - comment: "\\bcomment"
+    - comment: "#_"
