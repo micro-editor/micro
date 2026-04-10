@@ -1173,46 +1173,162 @@ var BracePairs = [][2]rune{
 	{'[', ']'},
 }
 
+func (b *Buffer) resolveBraceStartLoc(start Loc) Loc {
+	var onbrace bool = false
+	// TODO: maybe can be more efficient with utf8 package
+	curLine := []rune(string(b.LineBytes(start.Y)))
+	// See if we are on any brace
+	if start.X >= 0 && start.X < len(curLine) {
+		startChar := curLine[start.X]
+		for _, bp := range BracePairs {
+			if startChar == bp[0] || startChar == bp[1] {
+				return start
+			}
+		}
+	}
+
+	if !onbrace && b.Settings["matchbraceleft"].(bool) {
+		if start.X-1 >= 0 && start.X-1 < len(curLine) {
+			startChar := curLine[start.X-1]
+			for _, bp := range BracePairs {
+				if startChar == bp[0] || startChar == bp[1] {
+					return Loc{start.X - 1, start.Y}
+				}
+			}
+		}
+	}
+	return start
+}
+
+func (b *Buffer) findOpeningBrace(braceType [2]rune, start Loc) (Loc, bool) {
+	// Bound guard
+	start = clamp(start, b.LineArray)
+	if len(b.lines) == 0 {
+		return start, false
+	}
+
+	i := 1
+	// If we are on a closing brace, let the counter be incremented below when we traverse
+	curLine := []rune(string(b.LineBytes(start.Y)))
+	if start.X >= 0 && start.X < len(curLine) {
+		startChar := curLine[start.X]
+		if startChar == braceType[1] {
+			i = 0
+		}
+	}
+
+	for y := start.Y; y >= 0; y-- {
+		l := []rune(string(b.lines[y].data))
+		xInit := len(l) - 1
+		if y == start.Y && start.X < len(curLine) {
+			xInit = start.X
+		}
+		for x := xInit; x >= 0; x-- {
+			r := l[x]
+			if r == braceType[1] {
+				i++
+			} else if r == braceType[0] {
+				i--
+				if i == 0 {
+					return Loc{x, y}, true
+				}
+			}
+		}
+	}
+	return start, false
+}
+
+// Returns the opening brace in current brace scope starting at the start location and a boolean
+// indicating if an opening brace is found
+func (b *Buffer) FindOpeningBrace(start Loc) (Loc, bool) {
+	currentDist := -1
+	currentMb := Loc{-1, -1}
+	start = b.resolveBraceStartLoc(start)
+	for _, bp := range BracePairs {
+		mb, found := b.findOpeningBrace(bp, start)
+		if found {
+			dist := DiffLA(start, mb, b.LineArray)
+			if currentDist < 0 || dist < currentDist {
+				currentMb = mb
+				currentDist = dist
+			}
+		}
+	}
+
+	if currentDist == -1 {
+		return start, false
+	} else {
+		return currentMb, true
+	}
+}
+
+func (b *Buffer) findClosingBrace(braceType [2]rune, start Loc) (Loc, bool) {
+	// Bound guard
+	start = clamp(start, b.LineArray)
+	if len(b.lines) == 0 {
+		return start, false
+	}
+
+	i := 1
+	// If we are on an opening brace, let the counter be incremented below when we traverse
+	curLine := []rune(string(b.LineBytes(start.Y)))
+	if start.X >= 0 && start.X < len(curLine) {
+		startChar := curLine[start.X]
+		if startChar == braceType[0] {
+			i = 0
+		}
+	}
+
+	for y := start.Y; y < b.LinesNum(); y++ {
+		l := []rune(string(b.LineBytes(y)))
+		xInit := 0
+		if y == start.Y && start.X >= 0 {
+			xInit = start.X
+		}
+		for x := xInit; x < len(l); x++ {
+			r := l[x]
+			if r == braceType[0] {
+				i++
+			} else if r == braceType[1] {
+				i--
+				if i == 0 {
+					return Loc{x, y}, true
+				}
+			}
+		}
+	}
+	return start, false
+}
+
+// Returns the closing brace in current brace scope starting at the start location and a boolean
+// indicating if an closing brace is found
+func (b *Buffer) FindClosingBrace(start Loc) (Loc, bool) {
+	currentDist := -1
+	currentMb := Loc{-1, -1}
+	start = b.resolveBraceStartLoc(start)
+	for _, bp := range BracePairs {
+		mb, found := b.findClosingBrace(bp, start)
+		if found {
+			dist := DiffLA(start, mb, b.LineArray)
+			if currentDist < 0 || dist < currentDist {
+				currentMb = mb
+				currentDist = dist
+			}
+		}
+	}
+
+	if currentDist == -1 {
+		return start, false
+	} else {
+		return currentMb, true
+	}
+}
+
 func (b *Buffer) findMatchingBrace(braceType [2]rune, start Loc, char rune) (Loc, bool) {
-	var i int
 	if char == braceType[0] {
-		for y := start.Y; y < b.LinesNum(); y++ {
-			l := []rune(string(b.LineBytes(y)))
-			xInit := 0
-			if y == start.Y {
-				xInit = start.X
-			}
-			for x := xInit; x < len(l); x++ {
-				r := l[x]
-				if r == braceType[0] {
-					i++
-				} else if r == braceType[1] {
-					i--
-					if i == 0 {
-						return Loc{x, y}, true
-					}
-				}
-			}
-		}
+		return b.findClosingBrace(braceType, start)
 	} else if char == braceType[1] {
-		for y := start.Y; y >= 0; y-- {
-			l := []rune(string(b.lines[y].data))
-			xInit := len(l) - 1
-			if y == start.Y {
-				xInit = start.X
-			}
-			for x := xInit; x >= 0; x-- {
-				r := l[x]
-				if r == braceType[1] {
-					i++
-				} else if r == braceType[0] {
-					i--
-					if i == 0 {
-						return Loc{x, y}, true
-					}
-				}
-			}
-		}
+		return b.findOpeningBrace(braceType, start)
 	}
 	return start, false
 }
@@ -1223,36 +1339,21 @@ func (b *Buffer) findMatchingBrace(braceType [2]rune, start Loc, char rune) (Loc
 // for given starting location but it was found for the location one character left
 // of it. The third returned value is true if the matching brace was found at all.
 func (b *Buffer) FindMatchingBrace(start Loc) (Loc, bool, bool) {
-	// TODO: maybe can be more efficient with utf8 package
+	newstart := b.resolveBraceStartLoc(start)
+	var left bool = false
+	if start != newstart {
+		left = true
+		start = newstart
+	}
 	curLine := []rune(string(b.LineBytes(start.Y)))
 
-	// first try to find matching brace for the given location (it has higher priority)
 	if start.X >= 0 && start.X < len(curLine) {
 		startChar := curLine[start.X]
-
 		for _, bp := range BracePairs {
 			if startChar == bp[0] || startChar == bp[1] {
 				mb, found := b.findMatchingBrace(bp, start, startChar)
 				if found {
-					return mb, false, true
-				}
-			}
-		}
-	}
-
-	if b.Settings["matchbraceleft"].(bool) {
-		// failed to find matching brace for the given location, so try to find matching
-		// brace for the location one character left of it
-		if start.X-1 >= 0 && start.X-1 < len(curLine) {
-			leftChar := curLine[start.X-1]
-			left := Loc{start.X - 1, start.Y}
-
-			for _, bp := range BracePairs {
-				if leftChar == bp[0] || leftChar == bp[1] {
-					mb, found := b.findMatchingBrace(bp, left, leftChar)
-					if found {
-						return mb, true, true
-					}
+					return mb, left, true
 				}
 			}
 		}
