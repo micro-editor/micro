@@ -1043,7 +1043,17 @@ func (h *BufPane) ReplaceCmd(args []string) {
 		searchLoc = start // otherwise me might start at the end
 	}
 	if all {
-		nreplaced, _ = h.Buf.ReplaceRegex(start, end, regex, replace, !noRegex)
+		var deltaX int
+		nreplaced, deltaX = h.Buf.ReplaceRegex(start, end, regex, replace, !noRegex)
+		if selection {
+			if start.LessEqual(end) {
+				newEnd := end.Move(deltaX, h.Buf)
+				h.Cursor.SetSelectionEnd(newEnd)
+				h.Cursor.GotoLoc(newEnd)
+			} else {
+				h.Cursor.SetSelectionStart(start.Move(deltaX, h.Buf))
+			}
+		}
 	} else {
 		inRange := func(l buffer.Loc) bool {
 			return l.GreaterEqual(start) && l.LessEqual(end)
