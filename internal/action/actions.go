@@ -2114,7 +2114,7 @@ func (h *BufPane) PlayMacro() bool {
 	}
 	for _, action := range curmacro {
 		switch t := action.(type) {
-		case rune:
+		case string:
 			h.DoRuneInsert(t)
 		case BufKeyAction:
 			t(h)

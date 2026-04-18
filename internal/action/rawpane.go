@@ -44,7 +44,7 @@ func (h *RawPane) HandleEvent(event tcell.Event) {
 		h.Buf.Insert(h.Cursor.Loc, fmt.Sprintf(": %s", e.Name()))
 	}
 
-	h.Buf.Insert(h.Cursor.Loc, fmt.Sprintf(": %q\n", event.EscSeq()))
+	h.Buf.Insert(h.Cursor.Loc, fmt.Sprintf(": %q\n", eventEscSeq(event)))
 
 	h.Relocate()
 }

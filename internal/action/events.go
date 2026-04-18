@@ -26,13 +26,13 @@ func (r RawEvent) Name() string {
 
 // KeyEvent is a key event containing a key code,
 // some possible modifiers (alt, ctrl, etc...) and
-// a rune if it was simply a character press
-// Note: to be compatible with tcell events,
-// for ctrl keys r=code
+// a grapheme-cluster string if it was simply a character press
+// Note: to be compatible with tcell events, for ctrl keys str
+// holds the rune-derived string.
 type KeyEvent struct {
 	code tcell.Key
 	mod  tcell.ModMask
-	r    rune
+	str  string
 	any  bool
 }
 
@@ -50,7 +50,7 @@ func keyEvent(e *tcell.EventKey) KeyEvent {
 		mod:  metaToAlt(e.Modifiers()),
 	}
 	if e.Key() == tcell.KeyRune {
-		ke.r = e.Rune()
+		ke.str = e.Str()
 	}
 	return ke
 }
@@ -77,7 +77,7 @@ func (k KeyEvent) Name() string {
 	ok := false
 	if s, ok = tcell.KeyNames[k.code]; !ok {
 		if k.code == tcell.KeyRune {
-			s = string(k.r)
+			s = k.str
 		} else {
 			s = fmt.Sprintf("Key[%d]", k.code)
 		}
@@ -158,6 +158,16 @@ func (m MouseEvent) Name() string {
 	return ""
 }
 
+// eventEscSeq returns the raw escape sequence associated with a tcell
+// event, if any. Only EventKey carries source bytes through the
+// tcell v3 EscSeq overlay.
+func eventEscSeq(event tcell.Event) string {
+	if e, ok := event.(*tcell.EventKey); ok {
+		return e.EscSeq()
+	}
+	return ""
+}
+
 // ConstructEvent takes a tcell event and returns a micro
 // event. Note that tcell events can't express certain
 // micro events such as key sequences. This function is
@@ -167,10 +177,6 @@ func ConstructEvent(event tcell.Event) (Event, error) {
 	switch e := event.(type) {
 	case *tcell.EventKey:
 		return keyEvent(e), nil
-	case *tcell.EventRaw:
-		return RawEvent{
-			esc: e.EscSeq(),
-		}, nil
 	case *tcell.EventMouse:
 		return MouseEvent{
 			btn: e.Buttons(),
