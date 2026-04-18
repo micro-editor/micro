@@ -5,8 +5,10 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/gdamore/tcell/v3"
+	"github.com/gdamore/tcell/v3/vt"
 	"github.com/go-errors/errors"
 	"github.com/micro-editor/micro/v2/internal/action"
 	"github.com/micro-editor/micro/v2/internal/buffer"
@@ -17,13 +19,40 @@ import (
 )
 
 var tempDir string
-var sim tcell.SimulationScreen
+var mt vt.MockTerm
 
-func init() {
-	screen.Events = make(chan tcell.Event, 8)
+// settleEvents waits briefly for the tcell reader goroutine to parse
+// whatever bytes MockTerm just delivered into EventKey/EventMouse
+// events on screen.Events, then returns. Unlike v2's SimulationScreen
+// (which exposed a synchronous PollEvent), v3 parses asynchronously,
+// so we have to give the reader a window to catch up before draining.
+func settleEvents() {
+	deadline := time.Now().Add(200 * time.Millisecond)
+	for time.Now().Before(deadline) {
+		if len(screen.Events) > 0 || len(screen.DrawChan()) > 0 {
+			return
+		}
+		time.Sleep(2 * time.Millisecond)
+	}
 }
 
-func startup(args []string) (tcell.SimulationScreen, error) {
+// drainEvents runs DoEvent once per pending queue entry. Each DoEvent
+// call consumes one event from screen.Events (or one Redraw token).
+// After draining, a final short settle pass catches any tail events
+// the processed action may have posted (e.g. a command prompt).
+func drainEvents() {
+	for {
+		settleEvents()
+		if len(screen.Events) == 0 && len(screen.DrawChan()) == 0 {
+			return
+		}
+		for len(screen.Events) > 0 || len(screen.DrawChan()) > 0 {
+			DoEvent()
+		}
+	}
+}
+
+func startup(args []string) (vt.MockTerm, error) {
 	var err error
 
 	tempDir, err = os.MkdirTemp("", "micro_test")
@@ -47,7 +76,7 @@ func startup(args []string) (tcell.SimulationScreen, error) {
 		return nil, err
 	}
 
-	s, err := screen.InitSimScreen()
+	mtLocal, err := screen.InitMockScreen()
 	if err != nil {
 		return nil, err
 	}
@@ -62,8 +91,7 @@ func startup(args []string) (tcell.SimulationScreen, error) {
 					b.Backup()
 				}
 			}
-			// Print the stack trace too
-			log.Fatalf(errors.Wrap(err, 2).ErrorStack())
+			log.Fatalf("%s", errors.Wrap(err, 2).ErrorStack())
 		}
 	}()
 
@@ -94,60 +122,94 @@ func startup(args []string) (tcell.SimulationScreen, error) {
 		return nil, err
 	}
 
-	s.InjectResize()
-	handleEvent()
+	w, h := screen.Screen.Size()
+	mtLocal.SetSize(vt.Coord{X: vt.Col(w), Y: vt.Row(h)})
+	drainEvents()
 
-	return s, nil
+	return mtLocal, nil
 }
 
 func cleanup() {
 	os.RemoveAll(tempDir)
 }
 
-func handleEvent() {
-	screen.Lock()
-	e := screen.Screen.PollEvent()
-	screen.Unlock()
-	if e != nil {
-		screen.Events <- e
+// keyBytes translates a (tcell.Key, rune, mod) injection into the raw
+// byte sequence tcell's input parser expects. For plain runes the
+// payload is the UTF-8 encoding; for control bytes (Ctrl-A .. Ctrl-Z,
+// Enter, Tab, Backspace, Esc) it's the single-byte code; for the
+// arrow keys it's the legacy CSI escape. This covers every key
+// currently exercised by the test suite. Unknown combinations panic
+// so a missing mapping fails loudly rather than silently no-opping.
+func keyBytes(key tcell.Key, r rune, _ tcell.ModMask) []byte {
+	switch key {
+	case tcell.KeyRune:
+		return []byte(string(r))
+	case tcell.KeyEnter:
+		return []byte{'\r'}
+	case tcell.KeyEscape:
+		return []byte{0x1b}
+	case tcell.KeyTab:
+		return []byte{'\t'}
+	case tcell.KeyBackspace:
+		return []byte{0x08}
+	case tcell.KeyBackspace2:
+		return []byte{0x7f}
+	case tcell.KeyUp:
+		return []byte{0x1b, '[', 'A'}
+	case tcell.KeyDown:
+		return []byte{0x1b, '[', 'B'}
+	case tcell.KeyRight:
+		return []byte{0x1b, '[', 'C'}
+	case tcell.KeyLeft:
+		return []byte{0x1b, '[', 'D'}
 	}
-
-	for len(screen.DrawChan()) > 0 || len(screen.Events) > 0 {
-		DoEvent()
+	if key >= tcell.KeyCtrlA && key <= tcell.KeyCtrlZ {
+		// tcell v3 reshuffled the Key constants: KeyCtrlA is 65, not 1.
+		// Convert back to the ASCII control byte (0x01..0x1A).
+		return []byte{byte(key-tcell.KeyCtrlA) + 1}
 	}
+	if r != 0 {
+		return []byte(string(r))
+	}
+	panic(fmt.Sprintf("keyBytes: unsupported key 0x%x", key))
 }
 
 func injectKey(key tcell.Key, r rune, mod tcell.ModMask) {
-	sim.InjectKey(key, r, mod)
-	handleEvent()
-}
-
-func injectMouse(x, y int, buttons tcell.ButtonMask, mod tcell.ModMask) {
-	sim.InjectMouse(x, y, buttons, mod)
-	handleEvent()
+	mt.SendRaw(keyBytes(key, r, mod))
+	drainEvents()
 }
 
 func injectString(str string) {
-	// the tcell simulation screen event channel can only handle
-	// 10 events at once, so we need to divide up the key events
-	// into chunks of 10 and handle the 10 events before sending
-	// another chunk of events
-	iters := len(str) / 10
-	extra := len(str) % 10
+	mt.SendRaw([]byte(str))
+	drainEvents()
+}
 
-	for i := 0; i < iters; i++ {
-		s := i * 10
-		e := i*10 + 10
-		sim.InjectKeyBytes([]byte(str[s:e]))
-		for i := 0; i < 10; i++ {
-			handleEvent()
-		}
+// tcellButtonToVt maps a tcell ButtonMask to the single vt.Button it
+// corresponds to. micro_test only ever passes Button1 or ButtonNone;
+// for ButtonNone (release) the caller must remember the button that
+// was last pressed — vt.MouseEvent requires a non-nil Button even
+// for release events. We assume Button1 for all releases, which is
+// correct for every call site below.
+func tcellButtonToVt(b tcell.ButtonMask) vt.Button {
+	switch {
+	case b&tcell.Button1 != 0:
+		return vt.Button1
+	case b&tcell.Button2 != 0:
+		return vt.Button2
+	case b&tcell.Button3 != 0:
+		return vt.Button3
 	}
+	return vt.Button1
+}
 
-	sim.InjectKeyBytes([]byte(str[len(str)-extra:]))
-	for i := 0; i < extra; i++ {
-		handleEvent()
-	}
+func injectMouse(x, y int, buttons tcell.ButtonMask, _ tcell.ModMask) {
+	down := buttons != tcell.ButtonNone
+	mt.MouseEvent(vt.MouseEvent{
+		Position: vt.Coord{X: vt.Col(x), Y: vt.Row(y)},
+		Button:   tcellButtonToVt(buttons),
+		Down:     down,
+	})
+	drainEvents()
 }
 
 func openFile(file string) {
@@ -187,7 +249,7 @@ func createTestFile(t *testing.T, content string) string {
 
 func TestMain(m *testing.M) {
 	var err error
-	sim, err = startup([]string{})
+	mt, err = startup([]string{})
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -211,7 +273,6 @@ func TestSimpleEdit(t *testing.T) {
 	injectKey(tcell.KeyUp, 0, tcell.ModNone)
 	injectString("first line")
 
-	// test both kinds of backspace
 	for i := 0; i < len("ne"); i++ {
 		injectKey(tcell.KeyBackspace, rune(tcell.KeyBackspace), tcell.ModNone)
 	}
@@ -336,5 +397,3 @@ func TestMultiCursor(t *testing.T) {
 func TestSettingsPersistence(t *testing.T) {
 	// TODO
 }
-
-// more tests (rendering, tabs, plugins)?
