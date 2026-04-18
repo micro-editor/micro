@@ -1,12 +1,12 @@
 package screen
 
 import (
-	"errors"
 	"log"
 	"os"
 	"sync"
 
 	"github.com/gdamore/tcell/v3"
+	"github.com/gdamore/tcell/v3/vt"
 	"github.com/micro-editor/micro/v2/internal/config"
 )
 
@@ -18,8 +18,9 @@ import (
 // same time too.
 var Screen tcell.Screen
 
-// Events is the channel of tcell events
-var Events chan (tcell.Event)
+// Events is the channel of tcell events. It is an alias for the tcell
+// Screen.EventQ() channel, populated during Init().
+var Events chan tcell.Event
 
 // RestartCallback is called when the screen is restarted after it was
 // temporarily shut down
@@ -31,12 +32,6 @@ var lock sync.Mutex
 // drawChan is a channel that will cause the screen to redraw when
 // written to even if no event user event has occurred
 var drawChan chan bool
-
-// rawSeq is the list of raw escape sequences that are bound to some actions
-// via keybindings and thus should be parsed by tcell. We need to register
-// them in tcell every time we reinitialize the screen, so we need to remember
-// them in a list
-var rawSeq = make([]string, 0)
 
 // Lock locks the screen lock
 func Lock() {
@@ -71,6 +66,21 @@ type screenCell struct {
 
 var lastCursor screenCell
 
+// splitGrapheme splits a tcell v3 grapheme-cluster string into a
+// (primary rune, combining runes) pair for the Screen.SetContent API,
+// which still takes a rune + []rune.
+func splitGrapheme(s string) (rune, []rune) {
+	rs := []rune(s)
+	switch len(rs) {
+	case 0:
+		return ' ', nil
+	case 1:
+		return rs[0], nil
+	default:
+		return rs[0], rs[1:]
+	}
+}
+
 // ShowFakeCursor displays a cursor at the given position by modifying the
 // style of the given column instead of actually using the terminal cursor
 // This can be useful in certain terminals such as the windows console where
@@ -78,7 +88,8 @@ var lastCursor screenCell
 // This keeps track of the most recent fake cursor location and resets it when
 // a new fake cursor location is specified
 func ShowFakeCursor(x, y int) {
-	r, combc, style, _ := Screen.GetContent(x, y)
+	s, style, _ := Screen.Get(x, y)
+	r, combc := splitGrapheme(s)
 	Screen.SetContent(lastCursor.x, lastCursor.y, lastCursor.r, lastCursor.combc, lastCursor.style)
 	Screen.SetContent(x, y, r, combc, config.DefStyle.Reverse(true))
 
@@ -96,7 +107,8 @@ func UseFake() bool {
 // reset previous locations of the cursor
 // Fake cursors are also necessary to display multiple cursors
 func ShowFakeCursorMulti(x, y int) {
-	r, _, _, _ := Screen.GetContent(x, y)
+	s, _, _ := Screen.Get(x, y)
+	r, _ := splitGrapheme(s)
 	Screen.SetContent(x, y, r, nil, config.DefStyle.Reverse(true))
 }
 
@@ -114,43 +126,11 @@ func ShowCursor(x, y int) {
 // SetContent sets a cell at a point on the screen and makes sure that it is
 // synced with the last cursor location
 func SetContent(x, y int, mainc rune, combc []rune, style tcell.Style) {
-	if !Screen.CanDisplay(mainc, true) {
-		mainc = '�'
-	}
-
 	Screen.SetContent(x, y, mainc, combc, style)
 	if UseFake() && lastCursor.x == x && lastCursor.y == y {
 		lastCursor.r = mainc
 		lastCursor.style = style
 		lastCursor.combc = combc
-	}
-}
-
-// RegisterRawSeq registers a raw escape sequence that should be parsed by tcell
-func RegisterRawSeq(r string) {
-	for _, seq := range rawSeq {
-		if seq == r {
-			return
-		}
-	}
-	rawSeq = append(rawSeq, r)
-
-	if Screen != nil {
-		Screen.RegisterRawSeq(r)
-	}
-}
-
-// UnregisterRawSeq unregisters a raw escape sequence that should be parsed by tcell
-func UnregisterRawSeq(r string) {
-	for i, seq := range rawSeq {
-		if seq == r {
-			rawSeq[i] = rawSeq[len(rawSeq)-1]
-			rawSeq = rawSeq[:len(rawSeq)-1]
-		}
-	}
-
-	if Screen != nil {
-		Screen.UnregisterRawSeq(r)
 	}
 }
 
@@ -220,7 +200,11 @@ func Init() error {
 		return err
 	}
 
-	Screen.SetPaste(config.GetGlobalOption("paste").(bool))
+	if config.GetGlobalOption("paste").(bool) {
+		Screen.EnablePaste()
+	} else {
+		Screen.DisablePaste()
+	}
 
 	// restore TERM
 	if modifiedTerm {
@@ -231,33 +215,41 @@ func Init() error {
 		Screen.EnableMouse()
 	}
 
-	for _, r := range rawSeq {
-		Screen.RegisterRawSeq(r)
-	}
+	Events = Screen.EventQ()
 
 	return nil
 }
 
-// InitSimScreen initializes a simulation screen for testing purposes
-func InitSimScreen() (tcell.SimulationScreen, error) {
+// InitMockScreen initializes a terminfo-backed tcell.Screen wired to a
+// vt.MockTerm for use in tests. The returned MockTerm is the test-side
+// handle for injecting keys/mouse/raw-bytes; the tcell.Screen is
+// installed as screen.Screen and its EventQ() is aliased to
+// screen.Events, so the rest of micro drives it unchanged.
+//
+// Uses OptTerm("xterm-256color") to pin terminfo lookup rather than
+// relying on $TERM, which may be unset or "dumb" in CI.
+//
+// This replaces the v2-era InitSimScreen helper: tcell v3 removed
+// SimulationScreen, and vt.MockTerm is the blessed upstream mock.
+// Note that the vt package docstring flags its API as still under
+// development, so test-only use is deliberate.
+func InitMockScreen() (vt.MockTerm, error) {
 	drawChan = make(chan bool, 8)
 
-	// Initilize tcell
-	var err error
-	s := tcell.NewSimulationScreen("")
-	if s == nil {
-		return nil, errors.New("Failed to get a simulation screen")
-	}
-	if err = s.Init(); err != nil {
+	mt := vt.NewMockTerm()
+	s, err := tcell.NewTerminfoScreenFromTty(mt, tcell.OptTerm("xterm-256color"))
+	if err != nil {
 		return nil, err
 	}
-
-	s.SetSize(80, 24)
+	if err := s.Init(); err != nil {
+		return nil, err
+	}
 	Screen = s
+	Events = Screen.EventQ()
 
 	if config.GetGlobalOption("mouse").(bool) {
 		Screen.EnableMouse()
 	}
 
-	return s, nil
+	return mt, nil
 }
