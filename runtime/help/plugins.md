@@ -494,8 +494,8 @@ The following plugins come pre-installed with micro:
    directory, the diff gutter will show changes with respect to the most
    recent Git commit rather than the diff since opening the file.
 
-See `> help linter`, `> help comment`, and `> help status` for additional
-documentation specific to those plugins.
+See `> help autoclose`, `> help linter`, `> help comment`, and `> help status`
+for additional documentation specific to those plugins.
 
 These are good examples for many use-cases if you are looking to write
 your own plugins.
