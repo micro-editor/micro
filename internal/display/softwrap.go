@@ -60,6 +60,7 @@ type VLoc struct {
 }
 
 type SoftWrap interface {
+	HScroll(sc, n int) int
 	Scroll(s SLoc, n int) SLoc
 	Diff(s1, s2 SLoc) int
 	SLocFromLoc(loc buffer.Loc) SLoc
@@ -295,6 +296,30 @@ func (w *BufWindow) Scroll(s SLoc, n int) SLoc {
 		return s
 	}
 	return w.scroll(s, n)
+}
+
+// HScroll returns the column after moving n columns relative to sc
+// i.e. the result of scrolling n columns left/right. n can be negative,
+// which means scrolling left. The returned column is guaranteed to be
+// within the buffer boundaries.
+func (w *BufWindow) HScroll(sc, n int) int {
+	if w.Buf.Settings["softwrap"].(bool) {
+		return sc
+	}
+	if n <= 0 {
+		return util.Max(0, sc+n)
+	}
+
+	lw := 0 // longest line width
+	for i := 0; i < w.Buf.LinesNum(); i++ {
+		cc := util.CharacterCount(w.Buf.LineBytes(i))
+		lw = util.Max(lw, cc)
+	}
+
+	OFFSET := 3
+	maxSc := lw - w.BufView().Width + OFFSET
+
+	return util.Min(sc+n, maxSc)
 }
 
 // Diff returns the difference (the vertical distance) between two SLocs.
