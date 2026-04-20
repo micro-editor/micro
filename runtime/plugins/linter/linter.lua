@@ -92,6 +92,7 @@ function preinit()
     makeLinter("swiftc-linux", "swift", "swiftc", {"%f"}, "%f:%l:%c:.+: %m", {"linux"}, true)
     makeLinter("yaml", "yaml", "yamllint", {"--format", "parsable", "%f"}, "%f:%l:%c:.+ %m")
     makeLinter("nix-linter", "nix", "nix-linter", {"%f"}, "%m at %f:%l:%c", {"linux"}, true)
+    makeLinter("php", "php", "php", {"-l", "%f"}, "%m in %f on line %l")
 
     config.MakeCommand("lint", function(bp, args)
         bp:Save()
@@ -175,28 +176,31 @@ end
 function onExit(output, args)
     local buf, linter, errorformat, loff, coff = args[1], args[2], args[3], args[4], args[5]
     local lines = split(output, "\n")
-
+    local hascol = errorformat:find("%%c") ~= nil
     local regex = errorformat:gsub("%%f", "(..-)"):gsub("%%l", "(%d+)"):gsub("%%c", "(%d+)"):gsub("%%m", "(.+)")
-    for _,line in ipairs(lines) do
+    local errPlaceholders = {["%f"] = "filePath", ["%l"] = "lineNum", ["%c"] = "col", ["%m"] = "msg"}
+
+    for _, line in ipairs(lines) do
         -- Trim whitespace
         line = line:match("^%s*(.+)%s*$")
-        if string.find(line, regex) then
-            local file, line, col, msg = string.match(line, regex)
-            local hascol = true
-            if not string.find(errorformat, "%%c") then
-                hascol = false
-                msg = col
-            elseif col == nil then
-                hascol = false
+        if line:find(regex) then
+            local matchedParts = {line:match(regex)}
+            local err = {}
+            local i = 1
+            for placeholder in errorformat:gmatch("%%[flcm]") do
+                key = errPlaceholders[placeholder]
+                err[key] = matchedParts[i]
+                i = i + 1
             end
-            if basename(buf.Path) == basename(file) then
+
+            if basename(buf.Path) == basename(err.filePath) then
                 local bmsg = nil
                 if hascol then
-                    local mstart = buffer.Loc(tonumber(col-1+coff), tonumber(line-1+loff))
-                    local mend = buffer.Loc(tonumber(col+coff), tonumber(line-1+loff))
-                    bmsg = buffer.NewMessage(linter, msg, mstart, mend, buffer.MTError)
+                    local mstart = buffer.Loc(tonumber(err.col - 1 + coff), tonumber(err.lineNum - 1 + loff))
+                    local mend = buffer.Loc(tonumber(err.col + coff), tonumber(err.lineNum - 1 + loff))
+                    bmsg = buffer.NewMessage(linter, err.msg, mstart, mend, buffer.MTError)
                 else
-                    bmsg = buffer.NewMessageAtLine(linter, msg, tonumber(line+loff), buffer.MTError)
+                    bmsg = buffer.NewMessageAtLine(linter, err.msg, tonumber(err.lineNum + loff), buffer.MTError)
                 end
                 buf:AddMessage(bmsg)
             end
