@@ -280,6 +280,6 @@ If you find any bugs, please report them! I am also happy to accept pull request
 You can use the [GitHub issue tracker](https://github.com/micro-editor/micro/issues)
 to report bugs, ask questions, or suggest new features.
 
-For a more informal setting to discuss the editor, you can join the [Gitter chat](https://gitter.im/zyedidia/micro) or the [Discord](https://discord.gg/nhWR6armnR). You can also use the [Discussions](https://github.com/micro-editor/micro/discussions) section on Github for a forum-like setting or for Q&A.
+For a more informal setting to discuss the editor, you can join the [Gitter chat](https://gitter.im/zyedidia/micro) or the [Discord](https://discord.gg/nhWR6armnR). You can also use the [Discussions](https://github.com/micro-editor/micro/discussions) section on GitHub for a forum-like setting or for Q&A.
 
 Sometimes I am unresponsive, and I apologize! If that happens, please ping me.
