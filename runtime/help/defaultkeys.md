@@ -68,14 +68,14 @@ you can use `Ctrl-n` and `Ctrl-p` to cycle through matches.
 
 | Key                                     | Description of function                   |
 |---------------------------------------- |------------------------------------------ |
-| Ctrl(Alt on Mac)-Shift-RightArrow       | Select word right                         |
-| Ctrl(Alt on Mac)-Shift-LeftArrow        | Select word left                          |
-| Alt(Ctrl on Mac)-Shift-LeftArrow        | Select to start of current line           |
-| Alt(Ctrl on Mac)-Shift-RightArrow       | Select to end of current line             |
+| Shift-Ctrl(Alt on Mac)-LeftArrow        | Select word left                          |
+| Shift-Ctrl(Alt on Mac)-RightArrow       | Select word right                         |
+| Shift-Alt(Ctrl on Mac)-LeftArrow        | Select to start of current line           |
+| Shift-Alt(Ctrl on Mac)-RightArrow       | Select to end of current line             |
 | Shift-Home                              | Select to start of current line           |
 | Shift-End                               | Select to end of current line             |
-| Ctrl-Shift-UpArrow or Ctrl-Shift-Home   | Select to start of file                   |
-| Ctrl-Shift-DownArrow or Ctrl-Shift-End  | Select to end of file                     |
+| Shift-Ctrl-UpArrow or Shift-Ctrl-Home   | Select to start of file                   |
+| Shift-Ctrl-DownArrow or Shift-Ctrl-End  | Select to end of file                     |
 | Ctrl-x                                  | Cut selected text                         |
 | Ctrl-c                                  | Copy selected text                        |
 | Ctrl-v                                  | Paste                                     |
@@ -102,8 +102,8 @@ you can use `Ctrl-n` and `Ctrl-p` to cycle through matches.
 | Key               | Description of function                                                                       |
 |------------------ |---------------------------------------------------------------------------------------------- |
 | Alt-n             | Create new multiple cursor from selection (will select current word if no current selection)  |
-| Alt-Shift-Up      | Spawn a new cursor on the line above the current one                                          |
-| Alt-Shift-Down    | Spawn a new cursor on the line below the current one                                          |
+| Shift-Alt-Up      | Spawn a new cursor on the line above the current one                                          |
+| Shift-Alt-Down    | Spawn a new cursor on the line below the current one                                          |
 | Alt-p             | Remove latest multiple cursor                                                                 |
 | Alt-c             | Remove all multiple cursors (cancel)                                                          |
 | Alt-x             | Skip multiple cursor selection                                                                |
