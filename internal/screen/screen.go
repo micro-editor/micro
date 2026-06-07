@@ -6,8 +6,8 @@ import (
 	"os"
 	"sync"
 
+	"github.com/gdamore/tcell/v3"
 	"github.com/micro-editor/micro/v2/internal/config"
-	"github.com/micro-editor/tcell/v2"
 )
 
 // Screen is the tcell screen we use to draw to the terminal
