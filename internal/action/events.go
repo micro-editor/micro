@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/micro-editor/tcell/v2"
+	"github.com/gdamore/tcell/v3"
 )
 
 type Event interface {

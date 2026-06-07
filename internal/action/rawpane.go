@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/gdamore/tcell/v3"
 	"github.com/micro-editor/micro/v2/internal/buffer"
 	"github.com/micro-editor/micro/v2/internal/display"
-	"github.com/micro-editor/tcell/v2"
 )
 
 type RawPane struct {
