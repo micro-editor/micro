@@ -303,11 +303,11 @@ Here are the available options:
 * `paste`: treat characters sent from the terminal in a single chunk as a paste
    event rather than a series of manual key presses. If you are pasting using
    the terminal keybinding (not `Ctrl-v`, which is micro's default paste
-   keybinding) then it is a good idea to enable this option during the paste
-   and disable once the paste is over. See `> help copypaste` for details about
-   copying and pasting in a terminal environment.
+   keybinding) then it is a good idea to enable this option.
+   See `> help copypaste` for details about copying and pasting in a terminal
+   environment.
 
-    default value: `false`
+    default value: `true`
 
 * `permbackup`: this option causes backups (see `backup` option) to be
    permanently saved. With permanent backups, micro will not remove backups when
