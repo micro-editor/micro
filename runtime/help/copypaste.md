@@ -55,8 +55,7 @@ The recommended method of pasting is the following:
 
 * If you are working over SSH, use the terminal keybinding
   (`Ctrl-Shift-v` or `Command-v`) to perform pastes. If your terminal
-  does not support bracketed paste, when performing a paste first
-  enable the `paste` option, and when finished disable the option.
+  does not support bracketed paste, please see if `paste` is enabled first.
 
 ## Micro paste events
 
@@ -89,13 +88,13 @@ event and everything will work well. However, if your terminal
 sends a list of key events, this can cause issues because micro
 will think you manually entered each character and may add closing
 brackets or automatic indentation, which will mess up the pasted
-text. To avoid this, you can temporarily enable the `paste` option
-while you perform the paste. When paste option is on, micro will
+text. To avoid this, you can enable the `paste` option while you
+perform the paste. When the `paste` option is on, micro will
 aggregate lists of multiple key events into larger paste events.
-It is a good idea to disable the `paste` option during normal use
-as occasionally if you are typing quickly, the terminal will send
-the key events as lists of characters that were in fact manually
-entered.
+If you are typing quickly, the terminal might send the key events as
+lists of characters that were in fact manually entered.
+It is then a good idea to disable the `paste` option to not interfer
+quick typing.
 
 ## Pasting over SSH
 
