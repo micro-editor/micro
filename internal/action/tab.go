@@ -239,6 +239,11 @@ type Tab struct {
 	*views.Node
 	*display.UIWindow
 
+	// id is this tab's unique id. It is taken from the root node when the
+	// tab is created and does not change afterwards, unlike the id of the
+	// embedded root node, which becomes 0 once the node has children.
+	id uint64
+
 	isActive bool
 
 	Panes  []Pane
@@ -253,6 +258,7 @@ type Tab struct {
 func NewTabFromBuffer(x, y, width, height int, b *buffer.Buffer) *Tab {
 	t := new(Tab)
 	t.Node = views.NewRoot(x, y, width, height)
+	t.id = t.Node.ID()
 	t.UIWindow = display.NewUIWindow(t.Node)
 	t.release = true
 
@@ -266,6 +272,7 @@ func NewTabFromBuffer(x, y, width, height int, b *buffer.Buffer) *Tab {
 func NewTabFromPane(x, y, width, height int, pane Pane) *Tab {
 	t := new(Tab)
 	t.Node = views.NewRoot(x, y, width, height)
+	t.id = t.Node.ID()
 	t.UIWindow = display.NewUIWindow(t.Node)
 	t.release = true
 	pane.SetTab(t)
@@ -273,6 +280,12 @@ func NewTabFromPane(x, y, width, height int, pane Pane) *Tab {
 
 	t.Panes = append(t.Panes, pane)
 	return t
+}
+
+// ID returns this tab's unique id. Unlike the id of the tab's root node, it
+// stays the same after the tab has been split.
+func (t *Tab) ID() uint64 {
+	return t.id
 }
 
 // HandleEvent takes a tcell event and usually dispatches it to the current
