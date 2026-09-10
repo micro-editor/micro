@@ -1,0 +1,41 @@
+#The Icon Programming Language https://www2.cs.arizona.edu/icon
+filetype: Icon
+
+detect:
+    filename: "\\.icn$"
+
+rules:
+    - identifier: "\\b[A-Za-z_][0-9A-Za-z_]*\\b"
+    - preproc: "^[[:space:]]*\\$(include|define|undef|line|ifdef|ifndef|else|endif)"
+    - statement: "\\b(break|by|case|create|default|do|else|end|every|fail|global|if|initial|invocable|link|local|next|not|of|procedure|record|repeat|return|static|suspend|then|to|until|while)\\b"
+    - symbol.operator: "[.:;,+*|=!\\%@\\^\\?]|<|>|/|-|&"
+    - symbol.brackets: "[(){}\\[\\]]"
+    - constant.number: "\\b[1-9][0-9]*\\b"
+    - constant.number: "\\b[1-9][0-9]?(r|R)[0-9a-zA-Z]+\\b"
+    - constant.number: "\\b(([0-9]*[.][0-9]+|[0-9]+[.][0-9]*)([Ee][+-]?[0-9]+)?|[0-9]+[Ee][+-]?[0-9]+)\\b"
+    - special: "\\B\\&(allocated|ascii|clock|collections|cset|current|date|dateline|digits|dump|e|error|errornumber|errortext|errorvalue|errout|fail|features|file|host|input|lcase|letters|level|line|main|null|output|phi|pi|pos|progname|random|regions|source|storage|subject|time|trace|ucase|version)\\b"
+    
+    - constant.string:
+        start: "\""
+        end: "\""
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\[bdeflnrtv'\\\"\\\\]"
+            - constant.specialChar: "\\\\[0-7]{3}"
+            - constant.specialChar: "\\\\x[0-9a-fA_F]{2}"
+            - constant.specialChar: "\\\\\\^."
+
+    - constant.string:
+        start: "'"
+        end: "'"
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\[bdeflnrtv'\\\"\\\\]"
+            - constant.specialChar: "\\\\[0-7]{3}"
+            - constant.specialChar: "\\\\x[0-9a-fA-F]{2}"
+            - constant.specialChar: "\\\\\\^."
+   
+    - comment:
+        start: "#"
+        end: "$"
+        rules: []
