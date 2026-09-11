@@ -93,6 +93,10 @@ quotes here but these are not necessary when entering the command in micro.
    is provided, a vertical split is opened with an empty buffer. If multiple
    files are provided (separated via ` `) they are opened all as splits.
 
+   Drag a divider to resize splits. Resizing keeps room for nested dividers,
+   even when the pane content no longer fits. Enlarging the split restores
+   its nested panes' proportions.
+
 * `hsplit ['filename']`: same as `vsplit` but opens a horizontal split instead
    of a vertical split.
 

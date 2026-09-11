@@ -140,6 +140,29 @@ func (n *Node) GetNode(id uint64) *Node {
 	return nil
 }
 
+// minimumSize reserves a cell for each leaf, including its divider or status
+// line. Siblings share the cross axis and add up along the split axis.
+func (n *Node) minimumSize() (w, h int) {
+	if n.IsLeaf() {
+		return 1, 1
+	}
+	for _, c := range n.children {
+		cw, ch := c.minimumSize()
+		if n.Kind == STHoriz {
+			w += cw
+			if ch > h {
+				h = ch
+			}
+		} else {
+			h += ch
+			if cw > w {
+				w = cw
+			}
+		}
+	}
+	return
+}
+
 func (n *Node) vResizeSplit(i int, size int) bool {
 	if i < 0 || i >= len(n.children) {
 		return false
@@ -151,14 +174,15 @@ func (n *Node) vResizeSplit(i int, size int) bool {
 		c1, c2 = n.children[i], n.children[i+1]
 	}
 	toth := c1.H + c2.H
-	if size >= toth {
+	_, min1 := c1.minimumSize()
+	_, min2 := c2.minimumSize()
+	if size < min1 || toth-size < min2 {
 		return false
 	}
 	c2.Y = c1.Y + size
 	c1.Resize(c1.W, size)
 	c2.Resize(c2.W, toth-size)
 	n.markSizes()
-	n.alignSizes(n.W, n.H)
 	return true
 }
 func (n *Node) hResizeSplit(i int, size int) bool {
@@ -172,14 +196,15 @@ func (n *Node) hResizeSplit(i int, size int) bool {
 		c1, c2 = n.children[i], n.children[i+1]
 	}
 	totw := c1.W + c2.W
-	if size >= totw {
+	min1, _ := c1.minimumSize()
+	min2, _ := c2.minimumSize()
+	if size < min1 || totw-size < min2 {
 		return false
 	}
 	c2.X = c1.X + size
 	c1.Resize(size, c1.H)
 	c2.Resize(totw-size, c2.H)
 	n.markSizes()
-	n.alignSizes(n.W, n.H)
 	return true
 }
 
@@ -205,58 +230,105 @@ func (n *Node) ResizeSplit(size int) bool {
 	return n.parent.hResizeSplit(ind, size)
 }
 
-// Resize sets this node's size and resizes all children accordingly
+// Resize sets this node's size and resizes all children accordingly.
+// If the terminal is too small to fit the tree, retain the minimum layout
+// without losing the proportions needed when the terminal grows again.
 func (n *Node) Resize(w, h int) {
+	minw, minh := n.minimumSize()
+	if w < minw {
+		w = minw
+	}
+	if h < minh {
+		h = minh
+	}
 	n.W, n.H = w, h
 
 	if n.IsLeaf() {
 		return
 	}
 
-	x, y := n.X, n.Y
-	totw, toth := 0, 0
-	for _, c := range n.children {
-		cW := int(float64(w) * c.propW)
-		cH := int(float64(h) * c.propH)
-
-		c.X, c.Y = x, y
-		c.Resize(cW, cH)
+	minimums := make([]int, len(n.children))
+	remainingMin := 0
+	for i, c := range n.children {
+		cw, ch := c.minimumSize()
+		minimums[i] = ch
 		if n.Kind == STHoriz {
-			x += cW
-			totw += cW
+			minimums[i] = cw
+		}
+		remainingMin += minimums[i]
+	}
+
+	size := h
+	if n.Kind == STHoriz {
+		size = w
+	}
+	remaining := size
+	x, y := n.X, n.Y
+	for i, c := range n.children {
+		proportion := c.propH
+		if n.Kind == STHoriz {
+			proportion = c.propW
+		}
+		childSize := int(float64(size) * proportion)
+		remainingMin -= minimums[i]
+		if childSize < minimums[i] {
+			childSize = minimums[i]
+		}
+		// Reserve enough room for every following subtree. The last child
+		// receives the rounding remainder, which can never erase a sibling.
+		if childSize > remaining-remainingMin || i == len(n.children)-1 {
+			childSize = remaining - remainingMin
+		}
+		c.X, c.Y = x, y
+		if n.Kind == STHoriz {
+			c.Resize(childSize, h)
+			x += childSize
 		} else {
-			y += cH
-			toth += cH
+			c.Resize(w, childSize)
+			y += childSize
+		}
+		remaining -= childSize
+	}
+}
+
+// Record the proportions of direct children after a local layout change.
+// Descendant proportions must survive rounding during ancestor resizes.
+func (n *Node) markSizes() {
+	total := 0
+	for _, c := range n.children {
+		if n.Kind == STHoriz {
+			total += c.W
+		} else {
+			total += c.H
 		}
 	}
-
-	n.alignSizes(totw, toth)
-}
-
-func (n *Node) alignSizes(totw, toth int) {
-	// Make sure that there are no off-by-one problems with the rounding
-	// of the sizes by making the final split fill the screen
-	if n.Kind == STVert && toth != n.H {
-		last := n.children[len(n.children)-1]
-		last.Resize(last.W, last.H+n.H-toth)
-	} else if n.Kind == STHoriz && totw != n.W {
-		last := n.children[len(n.children)-1]
-		last.Resize(last.W+n.W-totw, last.H)
-	}
-}
-
-// Resets all proportions for children
-func (n *Node) markSizes() {
 	for _, c := range n.children {
-		c.propW = float64(c.W) / float64(n.W)
-		c.propH = float64(c.H) / float64(n.H)
-		c.markSizes()
+		// New siblings may not yet fit their parent. Normalize their intended
+		// sizes, including equal shares when splitting a one-cell pane.
+		proportion := 1 / float64(len(n.children))
+		if total > 0 {
+			size := c.H
+			if n.Kind == STHoriz {
+				size = c.W
+			}
+			proportion = float64(size) / float64(total)
+		}
+		c.propW, c.propH = 1, proportion
+		if n.Kind == STHoriz {
+			c.propW, c.propH = proportion, 1
+		}
 	}
 }
 
 func (n *Node) markResize() {
 	n.markSizes()
-	n.Resize(n.W, n.H)
+	// A new split can increase this subtree's minimum size. Relayout from
+	// the root so its ancestors can take the needed space from siblings.
+	root := n
+	for root.parent != nil {
+		root = root.parent
+	}
+	root.Resize(root.W, root.H)
 }
 
 // vsplits a vertical split and returns the id of the new split
