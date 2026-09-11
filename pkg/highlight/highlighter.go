@@ -101,6 +101,40 @@ func findIndex(regex *regexp.Regexp, skip *regexp.Regexp, str []byte) []int {
 	return []int{runePos(match[0], str), runePos(match[1], str)}
 }
 
+// regionWithDelimiter returns a copy of the region with the delimiter set from
+// the start match on the line. If the region's start regex has no capture groups,
+// it returns the original region unchanged.
+func regionWithDelimiter(r *region, line []byte) *region {
+	if r.start.NumSubexp() == 0 {
+		return r
+	}
+	sub := r.start.FindSubmatch(line)
+	if len(sub) <= 1 {
+		return r
+	}
+	rc := *r
+	rc.delimiter = string(sub[1])
+	return &rc
+}
+
+// bytePos converts a rune position to a byte position in the given slice.
+func bytePos(runeIdx int, str []byte) int {
+	if runeIdx <= 0 {
+		return 0
+	}
+	count := 0
+	totalSize := 0
+	for totalSize < len(str) {
+		if count >= runeIdx {
+			return totalSize
+		}
+		_, _, size := DecodeCharacter(str[totalSize:])
+		totalSize += size
+		count++
+	}
+	return len(str)
+}
+
 func findAllIndex(regex *regexp.Regexp, str []byte) [][]int {
 	matches := regex.FindAllIndex(str, -1)
 	for i, m := range matches {
@@ -124,6 +158,17 @@ func (h *Highlighter) highlightRegion(highlights LineMatch, start int, canMatchE
 	firstLoc := []int{lineLen, 0}
 	searchNesting := true
 	endLoc := findIndex(curRegion.end, curRegion.skip, line)
+	if endLoc != nil && curRegion.delimiter != "" {
+		// When the region has a captured delimiter (e.g. heredoc),
+		// verify the matched text on the original line equals the delimiter.
+		// endLoc contains rune positions; convert to byte positions.
+		bStart := bytePos(endLoc[0], line)
+		bEnd := bytePos(endLoc[1], line)
+		matched := string(line[bStart:bEnd])
+		if matched != curRegion.delimiter {
+			endLoc = nil
+		}
+	}
 	if endLoc != nil {
 		if start == endLoc[0] {
 			searchNesting = false
@@ -146,6 +191,7 @@ func (h *Highlighter) highlightRegion(highlights LineMatch, start int, canMatchE
 		if !statesOnly {
 			highlights[start+firstLoc[0]] = firstRegion.limitGroup
 		}
+		firstRegion = regionWithDelimiter(firstRegion, line)
 		h.highlightEmptyRegion(highlights, start+firstLoc[1], canMatchEnd, lineNum, sliceStart(line, firstLoc[1]), statesOnly)
 		h.highlightRegion(highlights, start+firstLoc[1], canMatchEnd, lineNum, sliceStart(line, firstLoc[1]), firstRegion, statesOnly)
 		return highlights
@@ -228,6 +274,7 @@ func (h *Highlighter) highlightEmptyRegion(highlights LineMatch, start int, canM
 		if !statesOnly {
 			highlights[start+firstLoc[0]] = firstRegion.limitGroup
 		}
+		firstRegion = regionWithDelimiter(firstRegion, line)
 		h.highlightEmptyRegion(highlights, start, false, lineNum, sliceEnd(line, firstLoc[0]), statesOnly)
 		h.highlightRegion(highlights, start+firstLoc[1], canMatchEnd, lineNum, sliceStart(line, firstLoc[1]), firstRegion, statesOnly)
 		return highlights

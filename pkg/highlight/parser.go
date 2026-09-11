@@ -86,6 +86,7 @@ type region struct {
 	end        *regexp.Regexp
 	skip       *regexp.Regexp
 	rules      *rules
+	delimiter  string // for heredoc-like regions: the captured delimiter from the start match
 }
 
 func init() {
