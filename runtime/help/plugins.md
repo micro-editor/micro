@@ -539,6 +539,8 @@ This file will contain the metadata for your plugin. Here is an example:
 Then open a pull request at the [official plugin channel](https://github.com/micro-editor/plugin-channel),
 adding a link to the raw `repo.json` that is in your plugin repository.
 
-To make updating the plugin work, the first line of your plugin's lua code
-should contain the version of the plugin. (Like this: `VERSION = "1.0.0"`)
-Please make sure to use [semver](https://semver.org/) for versioning.
+For plugin updates to work, your plugin's Lua code should include its version;
+for example: `VERSION = "1.0.0"`. Note that `VERSION` is **not** declared as
+`local`. By convention, this code is placed on the first line of your plugin's
+main Lua file. Please make sure to use [semver](https://semver.org/) for
+versioning.
