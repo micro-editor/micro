@@ -423,6 +423,13 @@ Here are the available options:
 
     default value: `false`
 
+* `softwrapcolumn`: if this is not set to 0, lines will soft-wrap at the
+   specified column instead of at the edge of the screen, once softwrap is
+   enabled. If the specified column is wider than the screen, it wraps at
+   the screen edge instead.
+
+    default value: `0`
+
 * `splitbottom`: when a horizontal split is created, create it below the
    current split.
 

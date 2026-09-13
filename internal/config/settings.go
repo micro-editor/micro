@@ -35,6 +35,7 @@ var optionValidators = map[string]optionValidator{
 	"reload":          validateChoice,
 	"scrollmargin":    validateNonNegativeValue,
 	"scrollspeed":     validateNonNegativeValue,
+	"softwrapcolumn":  validateNonNegativeValue,
 	"tabsize":         validatePositiveValue,
 	"truecolor":       validateChoice,
 }
@@ -93,6 +94,7 @@ var defaultCommonSettings = map[string]any{
 	"showchars":       "",
 	"smartpaste":      true,
 	"softwrap":        false,
+	"softwrapcolumn":  float64(0),
 	"splitbottom":     true,
 	"splitright":      true,
 	"statusformatl":   "$(filename) $(modified)$(overwrite)($(line),$(col)) $(status.paste)| ft:$(opt:filetype) | $(opt:fileformat) | $(opt:encoding)",

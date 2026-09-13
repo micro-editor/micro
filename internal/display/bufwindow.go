@@ -24,6 +24,7 @@ type BufWindow struct {
 	sline *StatusLine
 
 	bufWidth         int
+	wrapWidth        int
 	bufHeight        int
 	gutterOffset     int
 	hasMessage       bool
@@ -64,7 +65,7 @@ func (w *BufWindow) SetBuffer(b *buffer.Buffer) {
 		}
 
 		if option == "diffgutter" || option == "ruler" || option == "scrollbar" ||
-			option == "statusline" {
+			option == "statusline" || option == "softwrapcolumn" {
 			w.updateDisplayInfo()
 			w.Relocate()
 		}
@@ -162,10 +163,18 @@ func (w *BufWindow) updateDisplayInfo() {
 		w.gutterOffset = w.Width - scrollbarWidth
 	}
 
-	prevBufWidth := w.bufWidth
+	prevWrapWidth := w.wrapWidth
 	w.bufWidth = w.Width - w.gutterOffset - scrollbarWidth
 
-	if w.bufWidth != prevBufWidth && w.Buf.Settings["softwrap"].(bool) {
+	// softwrapcolumn narrows the wrap width below the pane width.
+	w.wrapWidth = w.bufWidth
+	if b.Settings["softwrap"].(bool) {
+		if softwrapcolumn := util.IntOpt(b.Settings["softwrapcolumn"]); softwrapcolumn > 0 {
+			w.wrapWidth = util.Min(w.bufWidth, softwrapcolumn)
+		}
+	}
+
+	if w.wrapWidth != prevWrapWidth && w.Buf.Settings["softwrap"].(bool) {
 		for _, c := range w.Buf.GetCursors() {
 			c.LastWrappedVisualX = c.GetVisualX(true)
 		}
@@ -388,6 +397,8 @@ func (w *BufWindow) displayBuffer() {
 	}
 
 	maxWidth := w.gutterOffset + w.bufWidth
+	// wrapMaxWidth is where lines wrap; softwrapcolumn may narrow it below maxWidth.
+	wrapMaxWidth := w.gutterOffset + w.wrapWidth
 
 	if b.ModifiedThisFrame {
 		if b.Settings["diffgutter"].(bool) {
@@ -449,6 +460,27 @@ func (w *BufWindow) displayBuffer() {
 	bloc := buffer.Loc{X: -1, Y: w.StartLine.Line}
 
 	cursors := b.GetCursors()
+
+	// fillStyle returns the background for a blank cell at visual column x, so
+	// cursor-line and color-column highlighting span the full pane width.
+	fillStyle := func(x int) tcell.Style {
+		style := config.DefStyle
+		for _, c := range cursors {
+			if b.Settings["cursorline"].(bool) && w.active && !c.HasSelection() && c.Y == bloc.Y {
+				if s, ok := config.Colorscheme["cursor-line"]; ok {
+					fg, _, _ := s.Decompose()
+					style = style.Background(fg)
+				}
+			}
+		}
+		if colorcolumn != 0 && x-w.gutterOffset+w.StartCol == colorcolumn {
+			if s, ok := config.Colorscheme["color-column"]; ok {
+				fg, _, _ := s.Decompose()
+				style = style.Background(fg)
+			}
+		}
+		return style
+	}
 
 	curStyle := config.DefStyle
 
@@ -722,7 +754,7 @@ func (w *BufWindow) displayBuffer() {
 		wordwidth := 0
 
 		totalwidth := w.StartCol - nColsBeforeStart
-		for len(line) > 0 && vloc.X < maxWidth {
+		for len(line) > 0 && vloc.X < wrapMaxWidth {
 			r, combc, size := util.DecodeCharacter(line)
 			line = line[size:]
 
@@ -735,7 +767,7 @@ func (w *BufWindow) displayBuffer() {
 			switch r {
 			case '\t':
 				ts := tabsize - (totalwidth % tabsize)
-				width = util.Min(ts, maxWidth-vloc.X)
+				width = util.Min(ts, wrapMaxWidth-vloc.X)
 				totalwidth += ts
 			default:
 				width = runewidth.RuneWidth(r)
@@ -748,15 +780,15 @@ func (w *BufWindow) displayBuffer() {
 			// Collect a complete word to know its width.
 			// If wordwrap is off, every single character is a complete "word".
 			if wordwrap {
-				if !util.IsWhitespace(r) && len(line) > 0 && wordwidth < w.bufWidth {
+				if !util.IsWhitespace(r) && len(line) > 0 && wordwidth < w.wrapWidth {
 					continue
 				}
 			}
 
 			// If a word (or just a wide rune) does not fit in the window
-			if vloc.X+wordwidth > maxWidth && vloc.X > w.gutterOffset {
+			if vloc.X+wordwidth > wrapMaxWidth && vloc.X > w.gutterOffset {
 				for vloc.X < maxWidth {
-					draw(' ', nil, config.DefStyle, false, false, true)
+					draw(' ', nil, fillStyle(vloc.X), false, false, true)
 				}
 
 				// We either stop or we wrap to draw the word in the next line
@@ -791,10 +823,15 @@ func (w *BufWindow) displayBuffer() {
 			wordwidth = 0
 
 			// If we reach the end of the window then we either stop or we wrap for softwrap
-			if vloc.X >= maxWidth {
+			if vloc.X >= wrapMaxWidth {
 				if !softwrap {
 					break
 				} else {
+					// Fill the dead zone right of the wrap column so colorcolumn
+					// and cursor-line span the full pane on wrapped rows.
+					for vloc.X < maxWidth {
+						draw(' ', nil, fillStyle(vloc.X), false, false, true)
+					}
 					vloc.Y++
 					if vloc.Y >= w.bufHeight {
 						break
@@ -804,25 +841,8 @@ func (w *BufWindow) displayBuffer() {
 			}
 		}
 
-		style := config.DefStyle
-		for _, c := range cursors {
-			if b.Settings["cursorline"].(bool) && w.active &&
-				!c.HasSelection() && c.Y == bloc.Y {
-				if s, ok := config.Colorscheme["cursor-line"]; ok {
-					fg, _, _ := s.Decompose()
-					style = style.Background(fg)
-				}
-			}
-		}
 		for i := vloc.X; i < maxWidth; i++ {
-			curStyle := style
-			if s, ok := config.Colorscheme["color-column"]; ok {
-				if colorcolumn != 0 && i-w.gutterOffset+w.StartCol == colorcolumn {
-					fg, _, _ := s.Decompose()
-					curStyle = style.Background(fg)
-				}
-			}
-			screen.SetContent(i+w.X, vloc.Y+w.Y, ' ', nil, curStyle)
+			screen.SetContent(i+w.X, vloc.Y+w.Y, ' ', nil, fillStyle(i))
 		}
 
 		if vloc.X != maxWidth {

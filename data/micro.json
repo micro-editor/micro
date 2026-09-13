@@ -283,6 +283,12 @@
             "type": "boolean",
             "default": false
         },
+        "softwrapcolumn": {
+            "description": "The column at which to soft-wrap long lines, instead of at the screen edge\nhttps://github.com/micro-editor/micro/blob/master/runtime/help/options.md#options",
+            "type": "integer",
+            "minimum": 0,
+            "default": 0
+        },
         "splitbottom": {
             "description": "Whether to create a new horizontal split below the current one\nhttps://github.com/micro-editor/micro/blob/master/runtime/help/options.md#options",
             "type": "boolean",
