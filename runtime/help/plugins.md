@@ -50,7 +50,9 @@ that micro defines:
    This function is called after buffers have been initialized.
 
 * `preinit()`: initialization function called before buffers have been
-   initialized.
+   initialized. No buffers, panes, tabs, or infobar exist yet, so the
+   functions that return them return `nil`; use `init()` for anything that
+   touches the editor itself.
 
 * `postinit()`: initialization function called after the `init()` function of
    all plugins has been called.
@@ -64,8 +66,12 @@ that micro defines:
    buffer has changed. The input contains the buffer object, the option name,
    the old and the new value.
 
-* `onBufPaneOpen(bufpane)`: runs when a bufpane is opened. The input
-   contains the bufpane object.
+* `onBufPaneOpen(bufpane)`: runs when a bufpane is opened. The input contains
+   the bufpane object. Act on the supplied bufpane rather than
+   `micro.CurPane()`: a pane opened in a split is not yet the active one when
+   this runs. This also fires once at startup for the infobar's own pane
+   (`BTInfo`), before the editor is initialized; check `bufpane.Buf.Type.Kind`
+   if your handler should only act on files.
 
 * `onSetActive(bufpane)`: runs when changing the currently active bufpane.
 
@@ -141,9 +147,11 @@ The packages and their contents are listed below (in Go type signatures):
        accessible from the statusline formatting options.
 
     - `CurPane() *BufPane`: returns the current BufPane, or nil if the
-       current pane is not a BufPane.
+       current pane is not a BufPane or no tab exists yet. Tabs are created
+       during startup, so this is nil in `preinit()` and in hooks that fire
+       for the files micro opens at startup.
 
-    - `CurTab() *Tab`: returns the current tab.
+    - `CurTab() *Tab`: returns the current tab, or nil before tabs exist.
 
     - `Tabs() *TabList`: returns the global tab list.
 
@@ -341,8 +349,10 @@ The packages and their contents are listed below (in Go type signatures):
     - `ByteOffset(pos Loc, buf *Buffer) int`: returns the byte index of the
        given position in a buffer.
 
-    - `Log(s string)`: writes a string to the log buffer.
-    - `LogBuf() *Buffer`: returns the log buffer.
+    - `Log(s string)`: writes a string to the log buffer. The log buffer is
+       created during startup; before then (in `preinit()`, or in
+       `onBufPaneOpen` for the infobar's pane) the message is dropped.
+    - `LogBuf() *Buffer`: returns the log buffer, or nil before it exists.
 
     Relevant links:
     [Message](https://pkg.go.dev/github.com/micro-editor/micro/v2/internal/buffer#Message)
