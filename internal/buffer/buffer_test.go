@@ -202,6 +202,22 @@ func benchEdit(testingB *testing.B, nLines, nCursors int) {
 	b.Close()
 }
 
+// Plugins can log from preinit and from the log buffer's own onBufferOpen,
+// both of which run before LogBuf is assigned.
+func TestWriteLogBeforeLogBufExists(t *testing.T) {
+	saved := LogBuf
+	t.Cleanup(func() { LogBuf = saved })
+
+	LogBuf = nil
+	WriteLog("dropped")
+
+	LogBuf = NewBufferFromString("", "", BTLog)
+	t.Cleanup(LogBuf.Close)
+	WriteLog("kept")
+
+	assert.Equal(t, []byte("kept"), LogBuf.Bytes())
+}
+
 func BenchmarkCreateAndClose10Lines(b *testing.B) {
 	benchCreateAndClose(b, 10)
 }

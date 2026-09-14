@@ -49,7 +49,11 @@ func luaImportMicro() *lua.LTable {
 	ulua.L.SetField(pkg, "Log", luar.New(ulua.L, log.Println))
 	ulua.L.SetField(pkg, "SetStatusInfoFn", luar.New(ulua.L, display.SetStatusInfoFnLua))
 	ulua.L.SetField(pkg, "CurPane", luar.New(ulua.L, func() *action.BufPane {
-		return action.MainTab().CurPane()
+		t := action.MainTab()
+		if t == nil {
+			return nil
+		}
+		return t.CurPane()
 	}))
 	ulua.L.SetField(pkg, "CurTab", luar.New(ulua.L, action.MainTab))
 	ulua.L.SetField(pkg, "Tabs", luar.New(ulua.L, func() *action.TabList {

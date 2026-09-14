@@ -228,6 +228,10 @@ func InitTabs(bufs []*buffer.Buffer) {
 }
 
 func MainTab() *Tab {
+	// Tabs is nil until InitTabs finishes; plugin hooks can fire before then.
+	if Tabs == nil || len(Tabs.List) == 0 {
+		return nil
+	}
 	return Tabs.List[Tabs.Active()]
 }
 
