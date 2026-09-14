@@ -137,10 +137,56 @@ func (b *Buffer) GetArg() (string, int) {
 	return input, argstart
 }
 
+// fileArgEscapeChars are the characters that are escaped with a backslash in
+// filename completions, so that commands receive the name as a single argument
+const fileArgEscapeChars = " \t\"'"
+
+// getFileArg is the same as GetArg, but a backslash-escaped space or quote
+// does not end the argument. The escapes are removed from the returned string.
+func (b *Buffer) getFileArg() (string, int) {
+	c := b.GetActiveCursor()
+	l := util.SliceStart(b.LineBytes(c.Y), c.X)
+
+	var input []byte
+	argstart := 0
+	escaped := false
+	for i := 0; len(l) > 0; i++ {
+		r, _, size := util.DecodeCharacter(l)
+		char := l[:size]
+		l = l[size:]
+
+		if escaped {
+			escaped = false
+			input = append(input, char...)
+		} else if r == ' ' {
+			input = input[:0]
+			argstart = i + 1
+		} else if r == '\\' && len(l) > 0 && strings.IndexByte(fileArgEscapeChars, l[0]) >= 0 {
+			escaped = true
+		} else {
+			input = append(input, char...)
+		}
+	}
+
+	return string(input), argstart
+}
+
+// escapeFileArg escapes the characters in fileArgEscapeChars with a backslash
+func escapeFileArg(s string) string {
+	var buf strings.Builder
+	for _, r := range s {
+		if strings.ContainsRune(fileArgEscapeChars, r) {
+			buf.WriteByte('\\')
+		}
+		buf.WriteRune(r)
+	}
+	return buf.String()
+}
+
 // FileComplete autocompletes filenames
 func FileComplete(b *Buffer) ([]string, []string) {
 	c := b.GetActiveCursor()
-	input, argstart := b.GetArg()
+	input, argstart := b.getFileArg()
 
 	sep := string(os.PathSeparator)
 	dirs := strings.Split(input, sep)
@@ -180,7 +226,7 @@ func FileComplete(b *Buffer) ([]string, []string) {
 		} else {
 			complete = suggestions[i]
 		}
-		completions[i] = util.SliceEndStr(complete, c.X-argstart)
+		completions[i] = util.SliceEndStr(escapeFileArg(complete), c.X-argstart)
 	}
 
 	return completions, suggestions
