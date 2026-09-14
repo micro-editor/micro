@@ -303,6 +303,56 @@ func exit(rc int) {
 	os.Exit(rc)
 }
 
+// initEditor runs the startup sequence shared by main and the tests, in the
+// order the editor depends on: globals exist before any buffer is loaded, and
+// tabs exist before plugins run init.
+//
+//   - onErr reports a failure the editor survives; startup continues past it.
+//   - A returned error means startup cannot continue.
+//   - The returned buffers are empty when there is nothing to open.
+func initEditor(args []string, onErr func(error)) ([]*buffer.Buffer, error) {
+	if err := config.LoadAllPlugins(); err != nil {
+		onErr(err)
+	}
+
+	if err := checkBackup("bindings.json"); err != nil {
+		return nil, err
+	}
+
+	action.InitBindings()
+	action.InitCommands()
+
+	timerChan = make(chan func())
+
+	if err := config.RunPluginFn("preinit"); err != nil {
+		onErr(err)
+	}
+
+	action.InitGlobals()
+	buffer.SetMessager(action.InfoBar)
+
+	b := LoadInput(args)
+	if len(b) == 0 {
+		return b, nil
+	}
+
+	action.InitTabs(b)
+
+	if err := config.RunPluginFn("init"); err != nil {
+		onErr(err)
+	}
+
+	if err := config.RunPluginFn("postinit"); err != nil {
+		onErr(err)
+	}
+
+	if err := config.InitColorscheme(); err != nil {
+		onErr(err)
+	}
+
+	return b, nil
+}
+
 func main() {
 	defer func() {
 		if util.Stdout.Len() > 0 {
@@ -405,53 +455,16 @@ func main() {
 		}
 	}()
 
-	err = config.LoadAllPlugins()
-	if err != nil {
-		screen.TermMessage(err)
-	}
-
-	err = checkBackup("bindings.json")
+	b, err := initEditor(flag.Args(), func(err error) { screen.TermMessage(err) })
 	if err != nil {
 		screen.TermMessage(err)
 		exit(1)
 	}
 
-	action.InitBindings()
-	action.InitCommands()
-
-	timerChan = make(chan func())
-
-	err = config.RunPluginFn("preinit")
-	if err != nil {
-		screen.TermMessage(err)
-	}
-
-	action.InitGlobals()
-	buffer.SetMessager(action.InfoBar)
-	args := flag.Args()
-	b := LoadInput(args)
-
 	if len(b) == 0 {
 		// No buffers to open
 		screen.Screen.Fini()
 		runtime.Goexit()
-	}
-
-	action.InitTabs(b)
-
-	err = config.RunPluginFn("init")
-	if err != nil {
-		screen.TermMessage(err)
-	}
-
-	err = config.RunPluginFn("postinit")
-	if err != nil {
-		screen.TermMessage(err)
-	}
-
-	err = config.InitColorscheme()
-	if err != nil {
-		screen.TermMessage(err)
 	}
 
 	if clipErr != nil {

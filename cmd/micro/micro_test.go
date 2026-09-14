@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/go-errors/errors"
-	"github.com/micro-editor/micro/v2/internal/action"
 	"github.com/micro-editor/micro/v2/internal/buffer"
 	"github.com/micro-editor/micro/v2/internal/config"
 	"github.com/micro-editor/micro/v2/internal/screen"
@@ -67,31 +67,22 @@ func startup(args []string) (tcell.SimulationScreen, error) {
 		}
 	}()
 
-	err = config.LoadAllPlugins()
-	if err != nil {
-		screen.TermMessage(err)
-	}
-
-	action.InitBindings()
-	action.InitCommands()
-
-	err = config.InitColorscheme()
+	// The editor warns and carries on when plugins or the colorscheme fail to
+	// load; a test should report every one of them and stop.
+	var startupErrs []string
+	b, err := initEditor(args, func(reported error) {
+		// Strings, not errors.Join: go.mod and CI still support Go 1.19.
+		startupErrs = append(startupErrs, reported.Error())
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	b := LoadInput(args)
+	if len(startupErrs) > 0 {
+		return nil, errors.New(strings.Join(startupErrs, "\n"))
+	}
 
 	if len(b) == 0 {
 		return nil, errors.New("No buffers opened")
-	}
-
-	action.InitTabs(b)
-	action.InitGlobals()
-
-	err = config.RunPluginFn("init")
-	if err != nil {
-		return nil, err
 	}
 
 	s.InjectResize()
