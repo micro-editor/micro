@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/micro-editor/micro/v2/internal/config"
+	"github.com/micro-editor/micro/v2/internal/util"
 	"github.com/micro-editor/tcell/v2"
 )
 
@@ -181,6 +182,8 @@ func TempStart(screenWasNil bool) {
 // Init creates and initializes the tcell screen
 func Init() error {
 	drawChan = make(chan bool, 8)
+
+	util.SetAmbiguousWidth(config.GetGlobalOption("ambiguouswidth").(string))
 
 	// Should we enable true color?
 	truecolor := config.GetGlobalOption("truecolor").(string)
