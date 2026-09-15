@@ -207,6 +207,7 @@ Here is a list of the colorscheme groups that you can use:
 * hlsearch (Color of highlighted search results when `hlsearch` is enabled)
 * tab-error (Color of tab vs space errors when `hltaberrors` is enabled)
 * trailingws (Color of trailing whitespaces when `hltrailingws` is enabled)
+* hlchunk (Color of the indent chunk guide when `hlchunk` is enabled)
 
 Colorschemes must be placed in the `~/.config/micro/colorschemes` directory to
 be used.
