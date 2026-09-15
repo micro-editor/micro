@@ -39,6 +39,7 @@ type PluginRepository string
 type PluginPackage struct {
 	Name        string
 	Description string
+	Website     string
 	Author      string
 	Tags        []string
 	Versions    PluginVersions
@@ -213,6 +214,7 @@ func (pp *PluginPackage) UnmarshalJSON(data []byte) error {
 		Name        string
 		Description string
 		Author      string
+		Website     string
 		Tags        []string
 		Versions    PluginVersions
 	}
@@ -222,6 +224,7 @@ func (pp *PluginPackage) UnmarshalJSON(data []byte) error {
 	pp.Name = values.Name
 	pp.Description = values.Description
 	pp.Author = values.Author
+	pp.Website = values.Website
 	pp.Tags = values.Tags
 	pp.Versions = values.Versions
 	for _, v := range pp.Versions {
@@ -725,9 +728,16 @@ func PluginCommand(out io.Writer, cmd string, args []string) {
 		fmt.Fprintln(out, "----------------")
 	case "available":
 		packages := GetAllPluginPackages(out)
+		separator := ""
 		fmt.Fprintln(out, "Available Plugins:")
 		for _, pkg := range packages {
-			fmt.Fprintln(out, pkg.Name)
+			fmt.Fprintf(out, separator)
+			separator = "\n\n"
+			if pkg.Website == "" {
+				fmt.Fprintf(out, "%s\n\t%s", pkg.Name, pkg.Description)
+			} else {
+				fmt.Fprintf(out, "%s\n\t%s\n\t%s", pkg.Name, pkg.Description, pkg.Website)
+			}
 		}
 	default:
 		fmt.Fprintln(out, "Invalid plugin command")
