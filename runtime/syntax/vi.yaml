@@ -7,25 +7,21 @@ rules:
     - identifier: "[A-Za-z_][A-Za-z0-9_]*[(]+[A-Za-z0-9_:.,\\s]*[)]+"
     - special: "[()]+"
     - statement: "\\b([nvxsoilc]?(nore|un)?map|[nvlx]n|[ico]?no|[cilovx][um]|s?unm)\\b"
-    - statement: "\\b(snor|nun|nm|set|if|endif|let|unlet|source)\\b"
-    - statement: "[!&=?]"
+    - statement: "\\b(is|isnot|fu(nc?|nction)?|if|while|for|try|return|throw|end(if|for|while|try|fu(nc?|nction)?|f)?|au(g|group)|else(if)?|do|in|catch|finally)\\b"
+    - statement: "\\b(snor|nun|nm|set(l|local|global)?|let|command|filetype|colorscheme|syn(tax)?|exe(c|cute)?|ec(ho)?|au(tocmd)?|source|call)\\b"
+    - statement: "[!&=?]|[+<>]="
     - constant.number: "\\b[0-9]+\\b"
 
+    - identifier:
+        start: "@"
+        end: ".|$"
+        rules: []
+
     - comment:
-        start: "(^\"|[ \t]+\" |[ \t]+\"$)"
+        start: "^[ \t]*\""
         end: "$"
         rules: []
 
-    - constant.string:
-        start: "\""
-        end: "\""
-        skip: "\\\\."
-        rules:
-            - constant.specialChar: "\\\\."
-
-    - constant.string:
-        start: "'"
-        end: "'"
-        skip: "\\\\."
-        rules:
-            - constant.specialChar: "\\\\."
+    - constant.string: '"[^"]*"'
+    - constant.string: "'[^']*'"
+    - constant.specialChar: "\\\\."

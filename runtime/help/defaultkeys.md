@@ -66,29 +66,29 @@ you can use `Ctrl-n` and `Ctrl-p` to cycle through matches.
 
 ### Text operations
 
-| Key                                 | Description of function                   |
-|------------------------------------ |------------------------------------------ |
-| Ctrl(Alt on Mac)-Shift-RightArrow   | Select word right                         |
-| Ctrl(Alt on Mac)-Shift-LeftArrow    | Select word left                          |
-| Alt(Ctrl on Mac)-Shift-LeftArrow    | Select to start of current line           |
-| Alt(Ctrl on Mac)-Shift-RightArrow   | Select to end of current line             |
-| Shift-Home                          | Select to start of current line           |
-| Shift-End                           | Select to end of current line             |
-| Ctrl-Shift-UpArrow                  | Select to start of file                   |
-| Ctrl-Shift-DownArrow                | Select to end of file                     |
-| Ctrl-x                              | Cut selected text                         |
-| Ctrl-c                              | Copy selected text                        |
-| Ctrl-v                              | Paste                                     |
-| Ctrl-k                              | Cut current line                          |
-| Ctrl-d                              | Duplicate current line                    |
-| Ctrl-z                              | Undo                                      |
-| Ctrl-y                              | Redo                                      |
-| Alt-UpArrow                         | Move current line or selected lines up    |
-| Alt-DownArrow                       | Move current line or selected lines down  |
-| Alt-Backspace or Alt-Ctrl-h         | Delete word left                          |
-| Ctrl-a                              | Select all                                |
-| Tab                                 | Indent selected text                      |
-| Shift-Tab                           | Unindent selected text                    |
+| Key                                     | Description of function                   |
+|---------------------------------------- |------------------------------------------ |
+| Ctrl(Alt on Mac)-Shift-RightArrow       | Select word right                         |
+| Ctrl(Alt on Mac)-Shift-LeftArrow        | Select word left                          |
+| Alt(Ctrl on Mac)-Shift-LeftArrow        | Select to start of current line           |
+| Alt(Ctrl on Mac)-Shift-RightArrow       | Select to end of current line             |
+| Shift-Home                              | Select to start of current line           |
+| Shift-End                               | Select to end of current line             |
+| Ctrl-Shift-UpArrow or Ctrl-Shift-Home   | Select to start of file                   |
+| Ctrl-Shift-DownArrow or Ctrl-Shift-End  | Select to end of file                     |
+| Ctrl-x                                  | Cut selected text                         |
+| Ctrl-c                                  | Copy selected text                        |
+| Ctrl-v                                  | Paste                                     |
+| Ctrl-k                                  | Cut current line                          |
+| Ctrl-d                                  | Duplicate current line                    |
+| Ctrl-z                                  | Undo                                      |
+| Ctrl-y                                  | Redo                                      |
+| Alt-UpArrow                             | Move current line or selected lines up    |
+| Alt-DownArrow                           | Move current line or selected lines down  |
+| Alt-Backspace or Alt-Ctrl-h             | Delete word left                          |
+| Ctrl-a                                  | Select all                                |
+| Tab                                     | Indent selected text                      |
+| Shift-Tab                               | Unindent selected text                    |
 
 ### Macros
 
