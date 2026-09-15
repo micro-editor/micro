@@ -123,7 +123,7 @@ var DefaultGlobalOnlySettings = map[string]any{
 	"mouse":          true,
 	"multiopen":      "tab",
 	"parsecursor":    false,
-	"paste":          false,
+	"paste":          defaultPaste(),
 	"pluginchannels": []string{"https://raw.githubusercontent.com/micro-editor/plugin-channel/master/channel.json"},
 	"pluginrepos":    []string{},
 	"savehistory":    true,
@@ -458,6 +458,16 @@ func defaultFakeCursor() bool {
 	_, wt := os.LookupEnv("WT_SESSION")
 	if runtime.GOOS == "windows" && !wt {
 		// enabled for windows consoles where the cursor is slow
+		return true
+	}
+	return false
+}
+
+func defaultPaste() bool {
+	_, wt := os.LookupEnv("WT_SESSION")
+	if runtime.GOOS == "windows" && wt {
+		// enabled for windows terminal app where the default paste bindings
+		// like Ctrl-v and Ctrl-Shift-v produce bracketed paste
 		return true
 	}
 	return false

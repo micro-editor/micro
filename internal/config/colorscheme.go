@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/micro-editor/tcell/v2"
+	"github.com/gdamore/tcell/v3"
 )
 
 // DefStyle is Micro's default style
@@ -176,19 +176,19 @@ func StringToStyle(str string) tcell.Style {
 	var fgColor, bgColor tcell.Color
 	var ok bool
 	if fg == "" || fg == "default" {
-		fgColor, _, _ = DefStyle.Decompose()
+		fgColor = DefStyle.GetForeground()
 	} else {
 		fgColor, ok = StringToColor(fg)
 		if !ok {
-			fgColor, _, _ = DefStyle.Decompose()
+			fgColor = DefStyle.GetForeground()
 		}
 	}
 	if bg == "" || bg == "default" {
-		_, bgColor, _ = DefStyle.Decompose()
+		bgColor = DefStyle.GetBackground()
 	} else {
 		bgColor, ok = StringToColor(bg)
 		if !ok {
-			_, bgColor, _ = DefStyle.Decompose()
+			bgColor = DefStyle.GetBackground()
 		}
 	}
 

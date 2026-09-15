@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -16,7 +17,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-errors/errors"
+	"github.com/gdamore/tcell/v3"
+	goerrors "github.com/go-errors/errors"
 	isatty "github.com/mattn/go-isatty"
 	"github.com/micro-editor/micro/v2/internal/action"
 	"github.com/micro-editor/micro/v2/internal/buffer"
@@ -25,7 +27,6 @@ import (
 	"github.com/micro-editor/micro/v2/internal/screen"
 	"github.com/micro-editor/micro/v2/internal/shell"
 	"github.com/micro-editor/micro/v2/internal/util"
-	"github.com/micro-editor/tcell/v2"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -393,7 +394,7 @@ func main() {
 			if e, ok := err.(*lua.ApiError); ok {
 				fmt.Println("Lua API error:", e)
 			} else {
-				fmt.Println("Micro encountered an error:", errors.Wrap(err, 2).ErrorStack(), "\nIf you can reproduce this error, please report it at https://github.com/micro-editor/micro/issues")
+				fmt.Println("Micro encountered an error:", goerrors.Wrap(err, 2).ErrorStack(), "\nIf you can reproduce this error, please report it at https://github.com/micro-editor/micro/issues")
 			}
 			// immediately backup all buffers with unsaved changes
 			for _, b := range buffer.OpenBuffers {
@@ -463,19 +464,9 @@ func main() {
 		config.SetAutoTime(a)
 	}
 
-	screen.Events = make(chan tcell.Event)
-
-	// Here is the event loop which runs in a separate thread
-	go func() {
-		for {
-			screen.Lock()
-			e := screen.Screen.PollEvent()
-			screen.Unlock()
-			if e != nil {
-				screen.Events <- e
-			}
-		}
-	}()
+	// screen.Events is populated by screen.Init() with the tcell v3
+	// EventQ() channel; the former manual PollEvent goroutine is
+	// no longer needed (tcell v3 drives its own reader loop).
 
 	// clear the drawchan so we don't redraw excessively
 	// if someone requested a redraw before we started displaying
@@ -542,7 +533,7 @@ func DoEvent() {
 	if e, ok := event.(*tcell.EventError); ok {
 		log.Println("tcell event error: ", e.Error())
 
-		if e.Err() == io.EOF {
+		if errors.Is(e, io.EOF) {
 			// shutdown due to terminal closing/becoming inaccessible
 			exit(0)
 		}

@@ -217,6 +217,6 @@ end
 function init()
     config.MakeCommand("comment", comment, config.NoComplete)
     config.TryBindKey("Alt-/", "lua:comment.comment", false)
-    config.TryBindKey("CtrlUnderscore", "lua:comment.comment", false)
+    config.TryBindKey("Ctrl-_", "lua:comment.comment", false)
     config.AddRuntimeFile("comment", config.RTHelp, "help/comment.md")
 end

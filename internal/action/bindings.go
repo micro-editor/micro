@@ -11,11 +11,11 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/gdamore/tcell/v3"
 	"github.com/micro-editor/json5"
 	"github.com/micro-editor/micro/v2/internal/config"
 	"github.com/micro-editor/micro/v2/internal/screen"
 	"github.com/micro-editor/micro/v2/internal/util"
-	"github.com/micro-editor/tcell/v2"
 )
 
 var Binder = map[string]func(e Event, action string){
@@ -91,10 +91,6 @@ func BindKey(k, v string, bind func(e Event, a string)) {
 	if err != nil {
 		screen.TermMessage(err)
 		return
-	}
-
-	if strings.HasPrefix(k, "\x1b") {
-		screen.RegisterRawSeq(k)
 	}
 
 	bind(event, v)
@@ -174,17 +170,32 @@ modSearch:
 		return KeyEvent{}, false
 	}
 
-	// Control is handled in a special way, since the terminal sends explicitly
-	// marked escape sequences for control keys
-	// We should check for Control keys first
+	// When Ctrl is one of the modifiers, two things to handle:
+	//   1. The historical CtrlSpace / CtrlLeftSq / CtrlBackslash /
+	//      CtrlRightSq / CtrlCarat / CtrlUnderscore aliases. tcell v3
+	//      dropped the matching Key constants, so route them through
+	//      ctrlNameAliases to the rune+mod path below.
+	//   2. tcell's NewEventKey only folds {KeyRune, letter, ModCtrl}
+	//      back to a KeyCtrlX constant when mod == ModCtrl exactly
+	//      (key.go:282-291). So return the KeyCtrlX form only in that
+	//      case; for Ctrl+Shift+letter / Ctrl+Alt+letter / Ctrl+rune,
+	//      kitty CSI-u and the legacy paths both deliver the event as
+	//      {KeyRune, str, mod} and we fall through to the rune branch.
 	if modifiers&tcell.ModCtrl != 0 {
-		// see if the key is in bindingKeys with the Ctrl prefix.
-		k = string(unicode.ToUpper(rune(k[0]))) + k[1:]
-		if code, ok := keyEvents["Ctrl"+k]; ok {
-			return KeyEvent{
-				code: code,
-				mod:  modifiers,
-			}, true
+		if r, ok := ctrlNameAliases[k]; ok {
+			k = string(r)
+		} else {
+			// Allow Ctrl-q / Ctrl-Q / Ctrl-up / Ctrl-Up to be written
+			// either way.
+			k = string(unicode.ToUpper(rune(k[0]))) + k[1:]
+		}
+		if modifiers == tcell.ModCtrl {
+			if code, ok := keyEvents["Ctrl"+k]; ok {
+				return KeyEvent{
+					code: code,
+					mod:  modifiers,
+				}, true
+			}
 		}
 	}
 
@@ -215,10 +226,19 @@ modSearch:
 
 	// If we were given one character, then we've got a rune.
 	if len(k) == 1 {
+		str := k
+		// Both kitty's CSI-u disambiguate path (which encodes the
+		// unshifted base keycode + modifier mask) and tcell's legacy
+		// byte-path normalisation in NewEventKey deliver lowercase
+		// letters when Ctrl is held. Lowercase the bound rune so
+		// CtrlShiftP matches the "p" that kitty actually sends.
+		if modifiers&tcell.ModCtrl != 0 {
+			str = strings.ToLower(str)
+		}
 		return KeyEvent{
 			code: tcell.KeyRune,
 			mod:  modifiers,
-			r:    rune(k[0]),
+			str:  str,
 		}, true
 	}
 
@@ -361,10 +381,6 @@ func UnbindKey(k string) error {
 			}
 		}
 
-		if strings.HasPrefix(k, "\x1b") {
-			screen.UnregisterRawSeq(k)
-		}
-
 		defaults := DefaultBindings("buffer")
 		if a, ok := defaults[k]; ok {
 			BindKey(k, a, Binder["buffer"])
@@ -380,6 +396,23 @@ func UnbindKey(k string) error {
 	return e
 }
 
+// ctrlNameAliases lets bindings.json keep using the historical long
+// names (CtrlSpace, CtrlUnderscore, ...) that tcell v3 dropped as
+// dedicated Key constants. Inside the Ctrl branch of findSingleEvent
+// these are rewritten to the corresponding rune so they fall through
+// to the rune+mod emission path.
+//
+// Note: CtrlLeftSq parses but never fires, because tcell consumes
+// 0x1B as the start of an escape sequence. That matches v2 behaviour.
+var ctrlNameAliases = map[string]rune{
+	"Space":      ' ',
+	"LeftSq":     '[',
+	"Backslash":  '\\',
+	"RightSq":    ']',
+	"Carat":      '^',
+	"Underscore": '_',
+}
+
 var mouseEvents = map[string]tcell.ButtonMask{
 	"MouseLeft":       tcell.ButtonPrimary,
 	"MouseMiddle":     tcell.ButtonMiddle,
@@ -391,132 +424,133 @@ var mouseEvents = map[string]tcell.ButtonMask{
 }
 
 var keyEvents = map[string]tcell.Key{
-	"Up":             tcell.KeyUp,
-	"Down":           tcell.KeyDown,
-	"Right":          tcell.KeyRight,
-	"Left":           tcell.KeyLeft,
-	"UpLeft":         tcell.KeyUpLeft,
-	"UpRight":        tcell.KeyUpRight,
-	"DownLeft":       tcell.KeyDownLeft,
-	"DownRight":      tcell.KeyDownRight,
-	"Center":         tcell.KeyCenter,
-	"PageUp":         tcell.KeyPgUp,
-	"PageDown":       tcell.KeyPgDn,
-	"Home":           tcell.KeyHome,
-	"End":            tcell.KeyEnd,
-	"Insert":         tcell.KeyInsert,
-	"Delete":         tcell.KeyDelete,
-	"Help":           tcell.KeyHelp,
-	"Exit":           tcell.KeyExit,
-	"Clear":          tcell.KeyClear,
-	"Cancel":         tcell.KeyCancel,
-	"Print":          tcell.KeyPrint,
-	"Pause":          tcell.KeyPause,
-	"Backtab":        tcell.KeyBacktab,
-	"F1":             tcell.KeyF1,
-	"F2":             tcell.KeyF2,
-	"F3":             tcell.KeyF3,
-	"F4":             tcell.KeyF4,
-	"F5":             tcell.KeyF5,
-	"F6":             tcell.KeyF6,
-	"F7":             tcell.KeyF7,
-	"F8":             tcell.KeyF8,
-	"F9":             tcell.KeyF9,
-	"F10":            tcell.KeyF10,
-	"F11":            tcell.KeyF11,
-	"F12":            tcell.KeyF12,
-	"F13":            tcell.KeyF13,
-	"F14":            tcell.KeyF14,
-	"F15":            tcell.KeyF15,
-	"F16":            tcell.KeyF16,
-	"F17":            tcell.KeyF17,
-	"F18":            tcell.KeyF18,
-	"F19":            tcell.KeyF19,
-	"F20":            tcell.KeyF20,
-	"F21":            tcell.KeyF21,
-	"F22":            tcell.KeyF22,
-	"F23":            tcell.KeyF23,
-	"F24":            tcell.KeyF24,
-	"F25":            tcell.KeyF25,
-	"F26":            tcell.KeyF26,
-	"F27":            tcell.KeyF27,
-	"F28":            tcell.KeyF28,
-	"F29":            tcell.KeyF29,
-	"F30":            tcell.KeyF30,
-	"F31":            tcell.KeyF31,
-	"F32":            tcell.KeyF32,
-	"F33":            tcell.KeyF33,
-	"F34":            tcell.KeyF34,
-	"F35":            tcell.KeyF35,
-	"F36":            tcell.KeyF36,
-	"F37":            tcell.KeyF37,
-	"F38":            tcell.KeyF38,
-	"F39":            tcell.KeyF39,
-	"F40":            tcell.KeyF40,
-	"F41":            tcell.KeyF41,
-	"F42":            tcell.KeyF42,
-	"F43":            tcell.KeyF43,
-	"F44":            tcell.KeyF44,
-	"F45":            tcell.KeyF45,
-	"F46":            tcell.KeyF46,
-	"F47":            tcell.KeyF47,
-	"F48":            tcell.KeyF48,
-	"F49":            tcell.KeyF49,
-	"F50":            tcell.KeyF50,
-	"F51":            tcell.KeyF51,
-	"F52":            tcell.KeyF52,
-	"F53":            tcell.KeyF53,
-	"F54":            tcell.KeyF54,
-	"F55":            tcell.KeyF55,
-	"F56":            tcell.KeyF56,
-	"F57":            tcell.KeyF57,
-	"F58":            tcell.KeyF58,
-	"F59":            tcell.KeyF59,
-	"F60":            tcell.KeyF60,
-	"F61":            tcell.KeyF61,
-	"F62":            tcell.KeyF62,
-	"F63":            tcell.KeyF63,
-	"F64":            tcell.KeyF64,
-	"CtrlSpace":      tcell.KeyCtrlSpace,
-	"CtrlA":          tcell.KeyCtrlA,
-	"CtrlB":          tcell.KeyCtrlB,
-	"CtrlC":          tcell.KeyCtrlC,
-	"CtrlD":          tcell.KeyCtrlD,
-	"CtrlE":          tcell.KeyCtrlE,
-	"CtrlF":          tcell.KeyCtrlF,
-	"CtrlG":          tcell.KeyCtrlG,
-	"CtrlH":          tcell.KeyCtrlH,
-	"CtrlI":          tcell.KeyCtrlI,
-	"CtrlJ":          tcell.KeyCtrlJ,
-	"CtrlK":          tcell.KeyCtrlK,
-	"CtrlL":          tcell.KeyCtrlL,
-	"CtrlM":          tcell.KeyCtrlM,
-	"CtrlN":          tcell.KeyCtrlN,
-	"CtrlO":          tcell.KeyCtrlO,
-	"CtrlP":          tcell.KeyCtrlP,
-	"CtrlQ":          tcell.KeyCtrlQ,
-	"CtrlR":          tcell.KeyCtrlR,
-	"CtrlS":          tcell.KeyCtrlS,
-	"CtrlT":          tcell.KeyCtrlT,
-	"CtrlU":          tcell.KeyCtrlU,
-	"CtrlV":          tcell.KeyCtrlV,
-	"CtrlW":          tcell.KeyCtrlW,
-	"CtrlX":          tcell.KeyCtrlX,
-	"CtrlY":          tcell.KeyCtrlY,
-	"CtrlZ":          tcell.KeyCtrlZ,
-	"CtrlLeftSq":     tcell.KeyCtrlLeftSq,
-	"CtrlBackslash":  tcell.KeyCtrlBackslash,
-	"CtrlRightSq":    tcell.KeyCtrlRightSq,
-	"CtrlCarat":      tcell.KeyCtrlCarat,
-	"CtrlUnderscore": tcell.KeyCtrlUnderscore,
-	"Tab":            tcell.KeyTab,
-	"Esc":            tcell.KeyEsc,
-	"Escape":         tcell.KeyEscape,
-	"Enter":          tcell.KeyEnter,
-	"Backspace":      tcell.KeyBackspace2,
-	"OldBackspace":   tcell.KeyBackspace,
+	"Up":        tcell.KeyUp,
+	"Down":      tcell.KeyDown,
+	"Right":     tcell.KeyRight,
+	"Left":      tcell.KeyLeft,
+	"UpLeft":    tcell.KeyUpLeft,
+	"UpRight":   tcell.KeyUpRight,
+	"DownLeft":  tcell.KeyDownLeft,
+	"DownRight": tcell.KeyDownRight,
+	"Center":    tcell.KeyCenter,
+	"PageUp":    tcell.KeyPgUp,
+	"PageDown":  tcell.KeyPgDn,
+	"Home":      tcell.KeyHome,
+	"End":       tcell.KeyEnd,
+	"Insert":    tcell.KeyInsert,
+	"Delete":    tcell.KeyDelete,
+	"Help":      tcell.KeyHelp,
+	"Exit":      tcell.KeyExit,
+	"Clear":     tcell.KeyClear,
+	"Cancel":    tcell.KeyCancel,
+	"Print":     tcell.KeyPrint,
+	"Pause":     tcell.KeyPause,
+	"Backtab":   tcell.KeyBacktab,
+	"F1":        tcell.KeyF1,
+	"F2":        tcell.KeyF2,
+	"F3":        tcell.KeyF3,
+	"F4":        tcell.KeyF4,
+	"F5":        tcell.KeyF5,
+	"F6":        tcell.KeyF6,
+	"F7":        tcell.KeyF7,
+	"F8":        tcell.KeyF8,
+	"F9":        tcell.KeyF9,
+	"F10":       tcell.KeyF10,
+	"F11":       tcell.KeyF11,
+	"F12":       tcell.KeyF12,
+	"F13":       tcell.KeyF13,
+	"F14":       tcell.KeyF14,
+	"F15":       tcell.KeyF15,
+	"F16":       tcell.KeyF16,
+	"F17":       tcell.KeyF17,
+	"F18":       tcell.KeyF18,
+	"F19":       tcell.KeyF19,
+	"F20":       tcell.KeyF20,
+	"F21":       tcell.KeyF21,
+	"F22":       tcell.KeyF22,
+	"F23":       tcell.KeyF23,
+	"F24":       tcell.KeyF24,
+	"F25":       tcell.KeyF25,
+	"F26":       tcell.KeyF26,
+	"F27":       tcell.KeyF27,
+	"F28":       tcell.KeyF28,
+	"F29":       tcell.KeyF29,
+	"F30":       tcell.KeyF30,
+	"F31":       tcell.KeyF31,
+	"F32":       tcell.KeyF32,
+	"F33":       tcell.KeyF33,
+	"F34":       tcell.KeyF34,
+	"F35":       tcell.KeyF35,
+	"F36":       tcell.KeyF36,
+	"F37":       tcell.KeyF37,
+	"F38":       tcell.KeyF38,
+	"F39":       tcell.KeyF39,
+	"F40":       tcell.KeyF40,
+	"F41":       tcell.KeyF41,
+	"F42":       tcell.KeyF42,
+	"F43":       tcell.KeyF43,
+	"F44":       tcell.KeyF44,
+	"F45":       tcell.KeyF45,
+	"F46":       tcell.KeyF46,
+	"F47":       tcell.KeyF47,
+	"F48":       tcell.KeyF48,
+	"F49":       tcell.KeyF49,
+	"F50":       tcell.KeyF50,
+	"F51":       tcell.KeyF51,
+	"F52":       tcell.KeyF52,
+	"F53":       tcell.KeyF53,
+	"F54":       tcell.KeyF54,
+	"F55":       tcell.KeyF55,
+	"F56":       tcell.KeyF56,
+	"F57":       tcell.KeyF57,
+	"F58":       tcell.KeyF58,
+	"F59":       tcell.KeyF59,
+	"F60":       tcell.KeyF60,
+	"F61":       tcell.KeyF61,
+	"F62":       tcell.KeyF62,
+	"F63":       tcell.KeyF63,
+	"F64":       tcell.KeyF64,
+	// CtrlSpace / CtrlLeftSq / CtrlBackslash / CtrlRightSq / CtrlCarat /
+	// CtrlUnderscore are intentionally absent: tcell v3 dropped the
+	// matching Key constants. findSingleEvent translates those names
+	// via ctrlNameAliases (above) and emits {KeyRune, char, ModCtrl}
+	// instead, which is the form tcell actually delivers under v3.
+	"CtrlA":  tcell.KeyCtrlA,
+	"CtrlB":  tcell.KeyCtrlB,
+	"CtrlC":  tcell.KeyCtrlC,
+	"CtrlD":  tcell.KeyCtrlD,
+	"CtrlE":  tcell.KeyCtrlE,
+	"CtrlF":  tcell.KeyCtrlF,
+	"CtrlG":  tcell.KeyCtrlG,
+	"CtrlH":  tcell.KeyCtrlH,
+	"CtrlI":  tcell.KeyCtrlI,
+	"CtrlJ":  tcell.KeyCtrlJ,
+	"CtrlK":  tcell.KeyCtrlK,
+	"CtrlL":  tcell.KeyCtrlL,
+	"CtrlM":  tcell.KeyCtrlM,
+	"CtrlN":  tcell.KeyCtrlN,
+	"CtrlO":  tcell.KeyCtrlO,
+	"CtrlP":  tcell.KeyCtrlP,
+	"CtrlQ":  tcell.KeyCtrlQ,
+	"CtrlR":  tcell.KeyCtrlR,
+	"CtrlS":  tcell.KeyCtrlS,
+	"CtrlT":  tcell.KeyCtrlT,
+	"CtrlU":  tcell.KeyCtrlU,
+	"CtrlV":  tcell.KeyCtrlV,
+	"CtrlW":  tcell.KeyCtrlW,
+	"CtrlX":  tcell.KeyCtrlX,
+	"CtrlY":  tcell.KeyCtrlY,
+	"CtrlZ":  tcell.KeyCtrlZ,
+	"Tab":    tcell.KeyTab,
+	"Esc":    tcell.KeyEsc,
+	"Escape": tcell.KeyEscape,
+	"Enter":  tcell.KeyEnter,
+	// tcell v3 treats KeyBackspace2 as KeyBackspace
+	"Backspace":    tcell.KeyBackspace,
+	"OldBackspace": tcell.KeyBackspace,
 
 	// I renamed these keys to PageUp and PageDown but I don't want to break someone's keybindings
 	"PgUp":   tcell.KeyPgUp,
 	"PgDown": tcell.KeyPgDn,
+	"PgDn":   tcell.KeyPgDn,
 }

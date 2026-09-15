@@ -2,8 +2,8 @@
 
 The comment plugin provides auto commenting/uncommenting.
 The default binding to comment/uncomment a line is `Alt-/`
-and `CtrlUnderscore`, which is equivalent in most terminals
-to `Ctrl-/`. You can easily modify that in your `bindings.json`
+and `Ctrl-_`, which is equivalent in most terminals to
+`Ctrl-/`. You can easily modify that in your `bindings.json`
 file:
 
 ```json
