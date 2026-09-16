@@ -57,6 +57,32 @@ func (h *BufPane) ScrollReachedEnd() bool {
 // MousePress is the event that should happen when a normal click happens
 // This is almost always bound to left click
 func (h *BufPane) MousePress(e *tcell.EventMouse) bool {
+	// Scrollbar hit-test
+	// Intercept clicks on the scrollbar before any buffer/cursor handling.
+	if bw, ok := h.BWindow.(*display.BufWindow); ok {
+		mx, my := e.Position()
+		sbX := bw.ScrollBarX()
+		if sbX >= 0 && mx == sbX {
+			trackStart, trackEnd := bw.ScrollBarTrackBounds()
+			if my >= trackStart && my <= trackEnd {
+				thumbStart, thumbEnd := bw.ScrollBarBounds()
+				if my >= thumbStart && my <= thumbEnd {
+					// Click lands on the thumb: start a drag.
+					bw.BeginScrollDrag(my, thumbStart)
+				} else {
+					// Click on the track outside the thumb: page scroll.
+					if my < thumbStart {
+						h.ScrollUp(h.BufView().Height)
+					} else {
+						h.ScrollDown(h.BufView().Height)
+						h.ScrollAdjust()
+					}
+				}
+				return true
+			}
+		}
+	}
+
 	b := h.Buf
 	mx, my := e.Position()
 	// ignore click on the status line
@@ -109,6 +135,18 @@ func (h *BufPane) MousePress(e *tcell.EventMouse) bool {
 }
 
 func (h *BufPane) MouseDrag(e *tcell.EventMouse) bool {
+	if bw, ok := h.BWindow.(*display.BufWindow); ok && bw.IsScrollDragging() {
+		_, my := e.Position()
+		// Subtract the intra-thumb offset
+		effectiveY := my - bw.ScrollDragOffset()
+		targetLine := bw.ScrollPosFromMouse(effectiveY)
+		v := h.GetView()
+		v.StartLine = display.SLoc{targetLine, 0}
+		h.SetView(v)
+		h.ScrollAdjust()
+		return true
+	}
+
 	mx, my := e.Position()
 	// ignore drag on the status line
 	if my >= h.BufView().Y+h.BufView().Height {
@@ -130,6 +168,11 @@ func (h *BufPane) MouseDrag(e *tcell.EventMouse) bool {
 }
 
 func (h *BufPane) MouseRelease(e *tcell.EventMouse) bool {
+	if bw, ok := h.BWindow.(*display.BufWindow); ok && bw.IsScrollDragging() {
+		bw.EndScrollDrag()
+		return true
+	}
+
 	// We could finish the selection based on the release location as in the
 	// commented out code below, to allow text selections even in a terminal
 	// that doesn't support mouse motion events. But when the mouse click is
