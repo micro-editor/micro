@@ -290,6 +290,11 @@ func checkBackup(name string) error {
 }
 
 func exit(rc int) {
+	err := config.RunPluginFn("deinit")
+	if err != nil {
+		screen.TermMessage(err)
+	}
+
 	for _, b := range buffer.OpenBuffers {
 		if !b.Modified() {
 			b.Fini()
@@ -387,9 +392,6 @@ func main() {
 
 	defer func() {
 		if err := recover(); err != nil {
-			if screen.Screen != nil {
-				screen.Screen.Fini()
-			}
 			if e, ok := err.(*lua.ApiError); ok {
 				fmt.Println("Lua API error:", e)
 			} else {

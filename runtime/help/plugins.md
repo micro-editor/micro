@@ -55,7 +55,8 @@ that micro defines:
 * `postinit()`: initialization function called after the `init()` function of
    all plugins has been called.
 
-* `deinit()`: cleanup function called when your plugin is unloaded or reloaded.
+* `deinit()`: cleanup function called when your plugin is unloaded, reloaded or
+   micro exited.
 
 * `onBufferOpen(buf)`: runs when a buffer is opened. The input contains
    the buffer object.
