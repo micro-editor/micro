@@ -100,6 +100,9 @@ func (s *StatusLine) FindOpt(opt string) any {
 	if val, ok := s.win.Buf.Settings[opt]; ok {
 		return val
 	}
+	if _, ok := config.DefaultGlobalOnlySettings[opt]; ok {
+		return config.GlobalSettings[opt]
+	}
 	return "null"
 }
 
