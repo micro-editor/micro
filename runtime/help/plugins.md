@@ -518,7 +518,7 @@ If you'd like to publish a plugin you've made as an official plugin, you should
 upload your plugin online (preferably to Github) and add a `repo.json` file.
 This file will contain the metadata for your plugin. Here is an example:
 
-```json
+```jsonc
 [{
   "Name": "pluginname",
   "Description": "Here is a nice concise description of my plugin",

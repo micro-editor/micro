@@ -13,7 +13,7 @@ You can read more about how to write syntax files (and colorschemes) in the [col
 Micro used to use the `.micro` filetype for syntax files which is no longer supported. If you have `.micro`
 syntax files that you would like to convert to the new filetype, you can use the [`syntax_converter.go`](./syntax_converter.go) program (also located in this directory):
 
-```
+```sh
 $ go run syntax_converter.go c.micro > c.yaml
 ```
 

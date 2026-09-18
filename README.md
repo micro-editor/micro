@@ -73,7 +73,7 @@ To uninstall micro, simply remove the binary, and the configuration directory at
 
 #### Third-party quick-install script
 
-```bash
+```sh
 curl https://getmic.ro | bash
 ```
 
@@ -83,13 +83,13 @@ The script will place the micro binary in the current directory. From there, you
 
 With [Eget](https://github.com/zyedidia/eget) installed, you can easily get a pre-built binary:
 
-```
+```sh
 eget micro-editor/micro
 ```
 
 Use `--tag VERSION` to download a specific tagged version.
 
-```
+```sh
 eget --tag nightly micro-editor/micro # download the nightly version (compiled every day at midnight UTC)
 eget --tag v2.0.8 micro-editor/micro  # download version 2.0.8 rather than the latest release
 ```
@@ -102,7 +102,7 @@ See [Eget](https://github.com/zyedidia/eget) for more information.
 
 You can install micro using Homebrew on Mac:
 
-```
+```sh
 brew install micro
 ```
 
@@ -112,7 +112,7 @@ the section on [macOS terminals](https://github.com/micro-editor/micro#macos-ter
 
 On Linux, you can install micro through [snap](https://snapcraft.io/docs/core/install)
 
-```
+```sh
 snap install micro --classic
 ```
 
@@ -163,7 +163,7 @@ If your operating system does not have a binary release, but does run Go, you ca
 
 Make sure that you have Go version 1.19 or greater and Go modules are enabled.
 
-```
+```sh
 git clone https://github.com/micro-editor/micro
 cd micro
 make build
@@ -184,7 +184,7 @@ and doesn't disable debug mode.
 By default, the micro binary is linked statically to increase the portability of the prebuilt binaries.
 This behavior can simply be overriden by providing `CGO_ENABLED=1` to the build target.
 
-```
+```sh
 CGO_ENABLED=1 make build
 ```
 
@@ -231,7 +231,7 @@ than the Windows default.
 Cygwin, Mingw, and Plan9 are unfortunately not officially supported. In Cygwin and Mingw, micro will often work when run using
 the `winpty` utility:
 
-```
+```sh
 winpty micro.exe ...
 ```
 

@@ -28,7 +28,7 @@ Each key is bound to an action.
 For example, to bind `Ctrl-y` to undo and `Ctrl-z` to redo, you could put the
 following in the `bindings.json` file.
 
-```json
+```jsonc
 {
     "Ctrl-y": "Undo",
     "Ctrl-z": "Redo"
@@ -47,7 +47,7 @@ In addition to editing your `~/.config/micro/bindings.json`, you can run
 You can also chain commands when rebinding. For example, if you want `Alt-s` to
 save and quit you can bind it like so:
 
-```json
+```jsonc
 {
     "Alt-s": "Save,Quit"
 }
@@ -60,7 +60,7 @@ will abort the chain if the action preceding it succeeds, and the `&` will
 abort the chain if the action preceding it fails. For example, in the default
 bindings, tab is bound as
 
-```
+```jsonc
 "Tab": "Autocomplete|IndentSelection|InsertTab"
 ```
 
@@ -82,7 +82,7 @@ callbacks returned true.
 You can also bind a key to execute a command in command mode (see
 `help commands`). Simply prepend the binding with `command:`. For example:
 
-```json
+```jsonc
 {
     "Alt-p": "command:pwd"
 }
@@ -102,7 +102,7 @@ micro won't immediately execute the command when you press the binding, but
 instead just place the string in the infobar in command mode. For example,
 you could rebind `Ctrl-g` to `> help`:
 
-```json
+```jsonc
 {
     "Ctrl-g": "command-edit:help "
 }
@@ -117,7 +117,7 @@ cursor placement).
 You can also bind a key to a Lua function provided by a plugin, or by your own
 `~/.config/micro/init.lua`. For example:
 
-```json
+```jsonc
 {
     "Alt-q": "lua:foo.bar"
 }
@@ -150,7 +150,7 @@ The return value of the lua function defines whether the action has succeeded.
 This is used when chaining lua functions with other actions. They can be chained
 the same way as regular actions as described above, for example:
 
-```
+```jsonc
 "Alt-q": "lua:initlua.bar|Quit"
 ```
 
@@ -177,7 +177,7 @@ sequences you define. Then from micro you can directly bind those escape
 sequences to actions. For example, to bind `CtrlBackspace` you can instruct
 your terminal to send `\x1bctrlback` and then bind it in `bindings.json`:
 
-```json
+```jsonc
 {
     "\u001bctrlback": "DeleteWordLeft"
 }
@@ -522,7 +522,7 @@ A select few keybindings are different on MacOS compared to other
 operating systems. This is because different OSes have different
 conventions for text editing defaults.
 
-```json
+```jsonc
 {
     "Up":             "CursorUp",
     "Down":           "CursorDown",
@@ -646,7 +646,7 @@ conventions for text editing defaults.
 Keybindings can be specified for different pane types as well. For example, to
 make a binding that only affects the command bar, use the `command` subgroup:
 
-```
+```jsonc
 {
     "command": {
         "Ctrl-w": "WordLeft"
@@ -658,7 +658,7 @@ The possible pane types are `buffer` (normal buffer), `command` (command bar),
 and `terminal` (terminal pane). The defaults for the command and terminal panes
 are given below:
 
-```
+```jsonc
 {
     "terminal": {
         "<Ctrl-q><Ctrl-q>": "Exit",

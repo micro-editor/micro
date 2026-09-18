@@ -6,7 +6,7 @@ and `CtrlUnderscore`, which is equivalent in most terminals
 to `Ctrl-/`. You can easily modify that in your `bindings.json`
 file:
 
-```json
+```jsonc
 {
     "Alt-g": "lua:comment.comment"
 }
@@ -88,7 +88,7 @@ set comment.type "/* %s */"
 
 Or in your `settings.json`:
 
-```json
+```jsonc
 {
     "*.c": {
         "comment.type": "/* %s */"

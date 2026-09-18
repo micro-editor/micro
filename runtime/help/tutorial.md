@@ -29,7 +29,7 @@ the current buffer. Also micro will not save this local change to the
 `settings.json` file. For example, if you want the `tabsize` to be 2 only in
 Ruby files, and 4 otherwise, you could put the following in `settings.json`:
 
-```json
+```jsonc
 {
     "*.rb": {
         "tabsize": 2
@@ -51,7 +51,7 @@ Keybindings work in much the same way as options. You configure them using the
 For example if you would like to bind `Ctrl-r` to redo you could put the
 following in `bindings.json`:
 
-```json
+```jsonc
 {
     "Ctrl-r": "Redo"
 }
@@ -102,7 +102,7 @@ end
 Alternatively, you could get rid of the `TryBindKey` line, and put this line in
 the `bindings.json` file:
 
-```json
+```jsonc
 {
     "Ctrl-r": "lua:initlua.gorun"
 }

@@ -556,7 +556,7 @@ at `~/.config/micro`), and should contain only options which have been modified
 from their default setting. Here is the full list of options in json format,
 so that you can see what the formatting should look like.
 
-```json
+```jsonc
 {
     "autoclose": true,
     "autoindent": true,
@@ -659,7 +659,7 @@ In the `settings.json` file you can also put set options locally by specifying
 either a glob or a filetype. Here is an example which has `tabstospaces` on for
 all files except Go files, and `tabsize` 4 for all files except Ruby files:
 
-```json
+```jsonc
 {
     "ft:go": {
         "tabstospaces": false
@@ -674,7 +674,7 @@ all files except Go files, and `tabsize` 4 for all files except Ruby files:
 
 Or similarly you can match with globs:
 
-```json
+```jsonc
 {
     "glob:*.go": {
         "tabstospaces": false
@@ -689,7 +689,7 @@ Or similarly you can match with globs:
 
 You can also omit the `glob:` prefix before globs:
 
-```json
+```jsonc
 {
     "*.go": {
         "tabstospaces": false
