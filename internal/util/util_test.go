@@ -1,6 +1,8 @@
 package util
 
 import (
+	"os"
+	"os/user"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,6 +13,30 @@ func TestStringWidth(t *testing.T) {
 
 	n := StringWidth(bytes, 23, 4)
 	assert.Equal(t, 26, n)
+}
+
+func TestReplaceHome(t *testing.T) {
+	usr, err := user.Current()
+	if err != nil {
+		t.Fatal(err)
+	}
+	home := usr.HomeDir
+
+	path, err := ReplaceHome("~")
+	assert.NoError(t, err)
+	assert.Equal(t, home, path)
+
+	// Both separators are valid on Windows, so `~` has to be recognized
+	// regardless of which one follows it.
+	for _, sep := range []string{"/", string(os.PathSeparator)} {
+		path, err = ReplaceHome("~" + sep + "foo.txt")
+		assert.NoError(t, err)
+		assert.Equal(t, home+sep+"foo.txt", path)
+	}
+
+	path, err = ReplaceHome("foo~bar")
+	assert.NoError(t, err)
+	assert.Equal(t, "foo~bar", path)
 }
 
 func TestSliceVisualEnd(t *testing.T) {
