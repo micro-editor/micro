@@ -110,7 +110,7 @@ brew install micro
 key. By default, macOS terminals do not forward alt key events. To fix this, please see
 the section on [macOS terminals](https://github.com/micro-editor/micro#macos-terminal) further below.
 
-On Linux, you can install micro through [snap](https://snapcraft.io/docs/core/install)
+On Linux, you can install micro through [snap](https://snapcraft.io/docs/installing-snapd)
 
 ```
 snap install micro --classic
@@ -182,7 +182,7 @@ and doesn't disable debug mode.
 ### Fully static or dynamically linked binary
 
 By default, the micro binary is linked statically to increase the portability of the prebuilt binaries.
-This behavior can simply be overriden by providing `CGO_ENABLED=1` to the build target.
+This behavior can simply be overridden by providing `CGO_ENABLED=1` to the build target.
 
 ```
 CGO_ENABLED=1 make build
