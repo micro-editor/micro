@@ -76,7 +76,6 @@ These may vary widely based on the 16 colors selected for your terminal.
 * `solarized` (must have the solarized color palette in your terminal to use
    this colorscheme properly)
 * `cmc-16`
-* `cmc-paper`
 * `geany`
 
 ### True color
@@ -161,8 +160,7 @@ told to use a true color colorscheme it will attempt to map the colors to the
 available 256 colors.
 
 Generally colorschemes which require true color terminals to look good are
-marked with a `-tc` suffix and colorschemes which supply a white background are
-marked with a `-paper` suffix.
+marked with a `-tc` suffix.
 
 ---
 
