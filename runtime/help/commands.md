@@ -133,6 +133,9 @@ quotes here but these are not necessary when entering the command in micro.
    `deinit()` function (if it exists), and then loaded again by calling the
    `preinit()`, `init()` and `postinit()` functions (if they exist).
 
+   On Unix-like systems, sending `SIGUSR1` to a running micro process has the
+   same effect as running `reload` in it, e.g. `pkill -USR1 -x micro`.
+
 * `cd 'path'`: Change the working directory to the given `path`.
 
 * `pwd`: Print the current working directory.
