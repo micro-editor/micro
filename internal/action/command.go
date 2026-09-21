@@ -631,7 +631,21 @@ func doSetGlobalOptionNative(option string, nativeValue any) error {
 	return nil
 }
 
-func SetGlobalOptionNative(option string, nativeValue any, writeToFile bool) error {
+func shouldWriteSettings(source string) bool {
+	writesettings, ok := config.GetGlobalOption("writesettings").(string)
+	if !ok {
+		return false
+	}
+
+	for _, writer := range strings.Split(writesettings, ",") {
+		if strings.TrimSpace(writer) == source {
+			return true
+		}
+	}
+	return false
+}
+
+func setGlobalOptionNative(option string, nativeValue any, writeToFile bool, source string) error {
 	if err := config.OptionIsValid(option, nativeValue); err != nil {
 		return err
 	}
@@ -654,7 +668,9 @@ func SetGlobalOptionNative(option string, nativeValue any, writeToFile bool) err
 		delete(b.LocalSettings, option)
 	}
 
-	if !writeToFile {
+	// The writesettings option must remain writable so users can change the
+	// policy from the command line even after disabling command persistence.
+	if !writeToFile || (option != "writesettings" && !shouldWriteSettings(source)) {
 		return nil
 	}
 
@@ -670,7 +686,15 @@ func SetGlobalOptionNative(option string, nativeValue any, writeToFile bool) err
 	return nil
 }
 
+func SetGlobalOptionNative(option string, nativeValue any, writeToFile bool) error {
+	return setGlobalOptionNative(option, nativeValue, writeToFile, "set")
+}
+
 func SetGlobalOption(option, value string, writeToFile bool) error {
+	return setGlobalOption(option, value, writeToFile, "set")
+}
+
+func setGlobalOption(option, value string, writeToFile bool, source string) error {
 	if _, ok := config.GlobalSettings[option]; !ok {
 		return config.ErrInvalidOption
 	}
@@ -680,15 +704,15 @@ func SetGlobalOption(option, value string, writeToFile bool) error {
 		return err
 	}
 
-	return SetGlobalOptionNative(option, nativeValue, writeToFile)
+	return setGlobalOptionNative(option, nativeValue, writeToFile, source)
 }
 
 func SetGlobalOptionNativePlug(option string, nativeValue any) error {
-	return SetGlobalOptionNative(option, nativeValue, false)
+	return setGlobalOptionNative(option, nativeValue, true, "plugins")
 }
 
 func SetGlobalOptionPlug(option, value string) error {
-	return SetGlobalOption(option, value, false)
+	return setGlobalOption(option, value, true, "plugins")
 }
 
 // ResetCmd resets a setting to its default value

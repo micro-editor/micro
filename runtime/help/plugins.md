@@ -228,12 +228,15 @@ The packages and their contents are listed below (in Go type signatures):
     - `SetGlobalOption(option, value string) error`: sets an option to a
        given value. This will try to convert the value into the proper
        type for the option. Can return an error if the option name is not
-       valid, or the value can not be converted.
+       valid, or the value can not be converted. Changes are kept for the
+       current session by default; set `writesettings` to `plugins` or
+       `set,plugins` to save them to `settings.json`.
 
     - `SetGlobalOptionNative(option string, value any) error`: sets
        an option to a given value, where the type of value is the actual
        type of the value internally. Can return an error if the provided value
-       is not valid for the given option.
+       is not valid for the given option. It follows the same `writesettings`
+       policy as `SetGlobalOption`.
 
     - `ConfigDir`: the path to micro's currently active config directory.
 
