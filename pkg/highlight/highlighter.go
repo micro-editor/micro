@@ -125,7 +125,7 @@ func (h *Highlighter) highlightRegion(highlights LineMatch, start int, canMatchE
 	searchNesting := true
 	endLoc := findIndex(curRegion.end, curRegion.skip, line)
 	if endLoc != nil {
-		if start == endLoc[0] {
+		if endLoc[0] == 0 {
 			searchNesting = false
 		} else {
 			firstLoc = endLoc
