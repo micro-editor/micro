@@ -3,6 +3,7 @@ package display
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	runewidth "github.com/mattn/go-runewidth"
 	"github.com/micro-editor/micro/v2/internal/buffer"
@@ -11,6 +12,40 @@ import (
 	"github.com/micro-editor/micro/v2/internal/util"
 	"github.com/micro-editor/tcell/v2"
 )
+
+// RenderState captures the visual rendering state of a BufWindow and its decorations.
+// It detects state changes and gates redundant redrawing when events occur
+// without buffer edits (such as external clipboard synchronization).
+type RenderState struct {
+	// Window geometry
+	X, Y          int
+	Width, Height int
+
+	// Viewport scroll
+	StartLine SLoc
+	StartCol  int
+
+	// Buffer state
+	BufModified bool
+	BufLinesNum int
+
+	// Cursor & selection
+	CursorLoc    buffer.Loc
+	NumCursors   int
+	HasSelection bool
+	SelStart     buffer.Loc
+	SelEnd       buffer.Loc
+
+	// Window decorations
+	Active           bool
+	DrawDivider      bool
+	GutterOffset     int
+	MaxLineNumLength int
+	HasMessage       bool
+	ScrollBarStart   int
+	ScrollBarSize    int
+	StatusLineText   string
+}
 
 // The BufWindow provides a way of displaying a certain section of a buffer.
 type BufWindow struct {
@@ -29,6 +64,13 @@ type BufWindow struct {
 	hasMessage       bool
 	maxLineNumLength int
 	drawDivider      bool
+
+	// Rendering state cache and gating
+	lastRenderState RenderState
+	hasRendered     bool
+	forceRedraw     bool
+	redrawDebounce  time.Duration
+	lastRedrawTime  time.Time
 }
 
 // NewBufWindow creates a new window at a location in the screen with a width and height
@@ -47,6 +89,7 @@ func NewBufWindow(x, y, width, height int, buf *buffer.Buffer) *BufWindow {
 // SetBuffer sets this window's buffer.
 func (w *BufWindow) SetBuffer(b *buffer.Buffer) {
 	w.Buf = b
+	w.Invalidate()
 	b.OptionCallback = func(option string, nativeValue any) {
 		if option == "softwrap" {
 			if nativeValue.(bool) {
@@ -82,19 +125,24 @@ func (w *BufWindow) GetView() *View {
 // SetView sets the view.
 func (w *BufWindow) SetView(view *View) {
 	w.View = view
+	w.Invalidate()
 }
 
 // Resize resizes this window.
 func (w *BufWindow) Resize(width, height int) {
 	w.Width, w.Height = width, height
 	w.updateDisplayInfo()
+	w.Invalidate()
 
 	w.Relocate()
 }
 
 // SetActive marks the window as active.
 func (w *BufWindow) SetActive(b bool) {
-	w.active = b
+	if w.active != b {
+		w.active = b
+		w.Invalidate()
+	}
 }
 
 // IsActive returns true if this window is active.
@@ -175,7 +223,7 @@ func (w *BufWindow) updateDisplayInfo() {
 func (w *BufWindow) getStartInfo(n, lineN int) ([]byte, int, int, *tcell.Style) {
 	tabsize := util.IntOpt(w.Buf.Settings["tabsize"])
 	width := 0
-	bloc := buffer.Loc{0, lineN}
+	bloc := buffer.Loc{X: 0, Y: lineN}
 	b := w.Buf.LineBytes(lineN)
 	curStyle := config.DefStyle
 	var s *tcell.Style
@@ -893,11 +941,103 @@ func (w *BufWindow) displayScrollBar() {
 	}
 }
 
+// GetRenderState returns the current visual rendering state of the window and its decorations.
+func (w *BufWindow) GetRenderState() RenderState {
+	var rs RenderState
+	if w.View != nil {
+		rs.X = w.X
+		rs.Y = w.Y
+		rs.Width = w.Width
+		rs.Height = w.Height
+		rs.StartLine = w.StartLine
+		rs.StartCol = w.StartCol
+	}
+
+	if w.Buf != nil {
+		rs.BufModified = w.Buf.Modified()
+		rs.BufLinesNum = w.Buf.LinesNum()
+
+		c := w.Buf.GetActiveCursor()
+		if c != nil {
+			rs.CursorLoc = c.Loc
+			rs.HasSelection = c.HasSelection()
+			rs.SelStart = c.CurSelection[0]
+			rs.SelEnd = c.CurSelection[1]
+		}
+		rs.NumCursors = w.Buf.NumCursors()
+
+		if w.Buf.Settings != nil {
+			if sb, ok := w.Buf.Settings["scrollbar"].(bool); ok && sb && w.Buf.LinesNum() > w.Height && w.Width > 0 {
+				rs.ScrollBarSize = int(float64(w.Height) / float64(w.Buf.LinesNum()) * float64(w.Height))
+				if rs.ScrollBarSize < 1 {
+					rs.ScrollBarSize = 1
+				}
+				rs.ScrollBarStart = w.Y + int(float64(w.StartLine.Line)/float64(w.Buf.LinesNum())*float64(w.Height))
+			}
+		}
+	}
+
+	rs.Active = w.active
+	rs.DrawDivider = w.drawDivider
+	rs.GutterOffset = w.gutterOffset
+	rs.MaxLineNumLength = w.maxLineNumLength
+	rs.HasMessage = w.hasMessage
+
+	if w.sline != nil {
+		rs.StatusLineText = w.sline.StatusString()
+	}
+
+	return rs
+}
+
+// Invalidate forces the next Display call to redraw regardless of state changes.
+func (w *BufWindow) Invalidate() {
+	w.forceRedraw = true
+}
+
+// ShouldRedraw returns whether the window needs redrawing based on render state changes.
+func (w *BufWindow) ShouldRedraw() bool {
+	if !w.hasRendered || w.forceRedraw {
+		return true
+	}
+	return w.GetRenderState() != w.lastRenderState
+}
+
+// NeedsRedraw is an alias for ShouldRedraw.
+func (w *BufWindow) NeedsRedraw() bool {
+	return w.ShouldRedraw()
+}
+
+// SetRedrawDebounce configures debouncing duration for redraws when no buffer edits occur.
+func (w *BufWindow) SetRedrawDebounce(d time.Duration) {
+	w.redrawDebounce = d
+}
+
+// LastRenderState returns the RenderState recorded during the last render.
+func (w *BufWindow) LastRenderState() RenderState {
+	return w.lastRenderState
+}
+
 // Display displays the buffer and the statusline
 func (w *BufWindow) Display() {
 	w.updateDisplayInfo()
 
+	if !w.ShouldRedraw() {
+		return
+	}
+
+	if w.hasRendered && !w.forceRedraw && w.redrawDebounce > 0 && w.Buf != nil && !w.Buf.Modified() {
+		if time.Since(w.lastRedrawTime) < w.redrawDebounce {
+			return
+		}
+	}
+
 	w.displayStatusLine()
 	w.displayScrollBar()
 	w.displayBuffer()
+
+	w.lastRenderState = w.GetRenderState()
+	w.hasRendered = true
+	w.forceRedraw = false
+	w.lastRedrawTime = time.Now()
 }

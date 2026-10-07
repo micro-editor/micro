@@ -69,7 +69,7 @@ func (i *InfoWindow) LocFromVisual(vloc buffer.Loc) buffer.Loc {
 	c := i.Buffer.GetActiveCursor()
 	l := i.Buffer.LineBytes(0)
 	n := util.CharacterCountInString(i.Msg)
-	return buffer.Loc{c.GetCharPosInLine(l, vloc.X-n), 0}
+	return buffer.Loc{X: c.GetCharPosInLine(l, vloc.X-n), Y: 0}
 }
 
 func (i *InfoWindow) BufView() View {
@@ -78,16 +78,16 @@ func (i *InfoWindow) BufView() View {
 		Y:         i.Y,
 		Width:     i.Width,
 		Height:    1,
-		StartLine: SLoc{0, 0},
+		StartLine: SLoc{Line: 0, Row: 0},
 		StartCol:  0,
 	}
 }
 
 func (i *InfoWindow) Scroll(s SLoc, n int) SLoc        { return s }
 func (i *InfoWindow) Diff(s1, s2 SLoc) int             { return 0 }
-func (i *InfoWindow) SLocFromLoc(loc buffer.Loc) SLoc  { return SLoc{0, 0} }
-func (i *InfoWindow) VLocFromLoc(loc buffer.Loc) VLoc  { return VLoc{SLoc{0, 0}, loc.X} }
-func (i *InfoWindow) LocFromVLoc(vloc VLoc) buffer.Loc { return buffer.Loc{vloc.VisualX, 0} }
+func (i *InfoWindow) SLocFromLoc(loc buffer.Loc) SLoc  { return SLoc{Line: 0, Row: 0} }
+func (i *InfoWindow) VLocFromLoc(loc buffer.Loc) VLoc  { return VLoc{SLoc: SLoc{Line: 0, Row: 0}, VisualX: loc.X} }
+func (i *InfoWindow) LocFromVLoc(vloc VLoc) buffer.Loc { return buffer.Loc{X: vloc.VisualX, Y: 0} }
 
 func (i *InfoWindow) Clear() {
 	for x := 0; x < i.Width; x++ {

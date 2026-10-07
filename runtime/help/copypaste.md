@@ -147,3 +147,19 @@ means that for copying multiple lines using the terminal selection, you
 should first disable line numbers and diff indicators (turn off the `ruler`
 and `diffgutter` options), otherwise they might be part of your selection
 and copied.
+
+# Wayland and wl-clipboard
+
+On Linux systems using Wayland, micro uses `wl-clipboard` (`wl-copy` and `wl-paste`)
+for external clipboard integration.
+
+Certain Wayland compositors (such as KWin on KDE Plasma) do not implement the
+unstable `wlr-data-control` protocol. In these environments, `wl-clipboard`
+creates a temporary transparent Wayland surface to access the clipboard.
+This can cause visual artifacts such as window decoration flashing or focus flicker
+when text is selected or copied.
+
+To mitigate this behavior:
+* Set `clipboard` to `terminal` if your terminal emulator supports OSC 52 copy sequences.
+* Set `useprimary` to `false` to avoid external clipboard synchronization on mouse selection.
+* Alternatively, set `clipboard` to `internal` to isolate micro clipboard registers from the system clipboard.
