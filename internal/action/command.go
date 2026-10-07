@@ -601,6 +601,8 @@ func doSetGlobalOptionNative(option string, nativeValue any) error {
 		} else {
 			config.SetAutoTime(0)
 		}
+	} else if option == "ambiguouswidth" {
+		util.SetAmbiguousWidth(nativeValue.(string))
 	} else if option == "paste" {
 		screen.Screen.SetPaste(nativeValue.(bool))
 	} else if option == "clipboard" {

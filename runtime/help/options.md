@@ -11,6 +11,23 @@ if you have set either of the above environment variables).
 
 Here are the available options:
 
+* `ambiguouswidth`: how wide the characters with the East Asian Ambiguous
+   width property (as defined by [Unicode Standard Annex
+   #11](https://www.unicode.org/reports/tr11)) are considered to be. These
+   characters, e.g. Greek and Cyrillic letters, accented Latin letters and box
+   drawing characters, are drawn one column wide by most terminals but two
+   columns wide by some terminals in an East Asian environment. If micro's
+   choice does not match your terminal, text is misaligned and the cursor is
+   drawn in the wrong column. This setting is `global only`.
+   * `auto`: use two columns if the locale environment variables (`LC_ALL`,
+      `LC_CTYPE`, `LANG`) indicate a Chinese, Japanese or Korean locale,
+      otherwise one column. Can be overridden with the `RUNEWIDTH_EASTASIAN`
+      environment variable.
+   * `single`: always use one column, like `wcwidth(3)` and most terminals do.
+   * `double`: always use two columns.
+
+    default value: `auto`
+
 * `autoindent`: when creating a new line, use the same indentation as the
    previous line.
 
