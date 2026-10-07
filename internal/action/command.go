@@ -332,6 +332,12 @@ func (h *BufPane) ToggleLogCmd(args []string) {
 
 // ReloadCmd reloads all files (syntax files, colorschemes, plugins...)
 func (h *BufPane) ReloadCmd(args []string) {
+	Reload()
+}
+
+// Reload reloads all files (syntax files, colorschemes, plugins...),
+// same as the `reload` command
+func Reload() {
 	reloadRuntime(true)
 }
 

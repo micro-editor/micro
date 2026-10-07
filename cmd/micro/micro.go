@@ -50,7 +50,8 @@ var (
 	flagExec      multiStringFlag
 	optionFlags   map[string]*string
 
-	sighup chan os.Signal
+	sighup    chan os.Signal
+	sigreload chan os.Signal
 
 	timerChan chan func()
 )
@@ -386,6 +387,8 @@ func main() {
 	sighup = make(chan os.Signal, 1)
 	signal.Notify(util.Sigterm, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGABRT)
 	signal.Notify(sighup, syscall.SIGHUP)
+	sigreload = make(chan os.Signal, 1)
+	notifyReload(sigreload)
 
 	m := clipboard.SetMethod(config.GetGlobalOption("clipboard").(string))
 	clipErr := clipboard.Initialize(m)
@@ -537,6 +540,8 @@ func DoEvent() {
 		f()
 	case <-sighup:
 		exit(0)
+	case <-sigreload:
+		action.Reload()
 	case <-util.Sigterm:
 		exit(0)
 	}
