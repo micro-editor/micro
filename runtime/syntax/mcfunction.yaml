@@ -1,0 +1,52 @@
+filetype: mcfunction
+
+detect:
+  filename: "\\.mcfunction$"
+
+rules:
+  # === COMMENTS ===
+  - comment:
+      start: "(^|\\s)#"
+      end: "$"
+      rules: []
+
+  # === JSON KEYS ===
+  - special: "\"(text|color|bold|italic|underlined|strikethrough|obfuscated|extra|translate|with|score|name|objective)\"\\s*:"
+
+  # === ENTITY / SELECTORS ===
+  - type: "@[pares]"
+  - special: "@[pares]\\[[^\\]]*\\]"
+
+  # === AXES ===
+  - special: "[~^]"
+
+  # === IDENTIFIERS ===
+  - identifier: "\\bminecraft:[a-z0-9_./]+\\b"
+  - identifier: "\\b[a-z0-9_]+:[a-z0-9_./]+\\b"
+
+  # === EFFECTS ===
+  - constant: "\\b(speed|slowness|haste|mining_fatigue|strength|instant_health|instant_damage|jump_boost|nausea|regeneration|resistance|fire_resistance|water_breathing|invisibility|blindness|night_vision|hunger|weakness|poison|wither|health_boost|absorption|saturation|glowing|levitation|luck|unluck|slow_falling|conduit_power|dolphins_grace|bad_omen|hero_of_the_village|darkness)\\b"
+
+  # === MAIN COMMANDS ===
+  - statement: "\\b(effect|execute|item|scoreboard|data|tag|tp|teleport|give|say|tellraw|summon|kill|function|schedule|loot|damage|attribute|bossbar|title|particle|playsound|stopsound|fill|setblock|clone|clear)\\b"
+
+  # === SUBCOMMANDS ===
+  - preproc: "\\b(give|clear|run|if|unless|store|as|at|positioned|facing|align|anchored|rotated|matches|modify|merge|get|set|add|remove|append|prepend|insert|entity|block|storage)\\b"
+
+  # === SCORE / CONDITIONS ===
+  - special: "\\b(score|scores|range|limit|distance|dx|dy|dz|x|y|z|level|sort|type|name|team|tag)\\b"
+
+  # === SLOTS ===
+  - identifier: "\\b[a-z0-9_]+:(mainhand|offhand|head|chest|legs|feet)\\b"
+
+  # === SYMBOLS ===
+  - symbol: "[{}\\[\\](),=]"
+
+
+  # === DANGEROUS COMMANDS ===
+  - error: "^\\s*(kill|tp|teleport)\\s+@([ae])(\\s|$).*$"
+
+  # === CONSTANTS ===
+  - constant.number: "\\b-?[0-9]+(?:\\.[0-9]+)?\\b"
+  - constant.bool: "\\b(true|false)\\b"
+  - constant.string: "\"([^\"\\\\]|\\\\.)*\""
