@@ -43,6 +43,7 @@ fetch-tags:
 
 generate:
 	GOOS=$(shell go env GOHOSTOS) GOARCH=$(shell go env GOHOSTARCH) go generate ./runtime
+	GOOS=$(shell go env GOHOSTOS) GOARCH=$(shell go env GOHOSTARCH) go generate ./internal/config
 
 testgen:
 	mkdir -p tools/vscode-tests
