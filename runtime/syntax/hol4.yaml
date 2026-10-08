@@ -1,0 +1,179 @@
+filetype: hol4
+
+detect:
+    filename: "Script\\.sml$"
+    signature: "^(Theory|Theorem|Definition|Datatype|Inductive|CoInductive)\\b"
+
+rules:
+    # ============================================================
+    # Comments — must come first
+    # ============================================================
+    - comment:
+        start: "\\(\\*"
+        end: "\\*\\)"
+        rules:
+            - todo: "(TODO|FIXME|XXX|HACK|NOTE):?"
+
+    # ============================================================
+    # ML String literals with escape sequences
+    # ============================================================
+    - constant.string:
+        start: "\""
+        end: "\""
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\[abtnvfr\"\\\\]"
+            - constant.specialChar: "\\\\\\^[@A-Z\\[\\\\\\]\\^_]"
+            - constant.specialChar: "\\\\[0-9]{3}"
+            - constant.specialChar: "\\\\u[0-9A-Fa-f]{4}"
+
+    # Character literals: #"x" or #"\n" etc.
+    - constant.string: "#\"(\\\\.|[^\"\\\\])\""
+
+    # ============================================================
+    # HOL4 script keywords (line-based, stable when opening mid-file)
+    # ============================================================
+    # Named declaration headers:
+    #   Definition get_value_def[simp]:
+    #   Theorem foo:
+    #   Theorem bar = ...;
+    # Start at the keyword (colored as statement), stop at ':' or '='.
+    - statement:
+        start: "^(Definition|Theorem|Triviality|Datatype|Inductive|CoInductive)\\b"
+        end: "[:=]"
+        rules:
+            - statement: "\\b(Definition|Theorem|Triviality|Datatype|Inductive|CoInductive)\\b"
+            - identifier.class: "\\b[A-Za-z][A-Za-z0-9_']*\\b"
+            - symbol.brackets: "[\\[\\]]"
+            - preproc: "\\[(?:\\s*[A-Za-z][A-Za-z0-9_']*\\s*)(?:,\\s*[A-Za-z][A-Za-z0-9_']*\\s*)*\\]"
+
+    - statement: "^(Theory|Libs|Ancestors|Definition|Theorem|Triviality|Proof|QED|Termination|Datatype|Inductive|CoInductive|Quote|Overload|Type|End)\\b"
+
+    # ============================================================
+    # HOL4 quotation regions (outside script forms, in ML context)
+    # ============================================================
+
+    # Backtick quotations
+    - constant.string:
+        start: "`"
+        end: "`"
+        rules:
+            - constant: "\\b(T|F|EMPTY|UNIV)\\b"
+            - statement: "\\b(case|of|if|then|else|let|in)\\b"
+            - symbol.operator: "(/\\\\|\\\\/|==>|<=>|[!?])"
+            - symbol.operator: "(<₊|>₊|≤₊|≥₊)"
+            - symbol.operator: "[∀∃λ∧∨¬⇒⇔⇎≠⊢＆≤≥−∅⊆∩∪∈∉‖⊕≪≫⋙⇆⇄←→⟵⟶⇐⟸⟹↦↤⟼⟻↩↪]"
+            - symbol.operator: "[=<>~+\\-*/^|.]"
+            - constant.number: "~?\\b[0-9]+\\b"
+            - identifier: "\\b[A-Za-z][A-Za-z0-9_']*\\b"
+
+    # Unicode single-quote quotations (LEFT/RIGHT SINGLE QUOTATION MARK)
+    - constant.string:
+        start: "‘"
+        end: "’"
+        rules:
+            - constant: "\\b(T|F|EMPTY|UNIV)\\b"
+            - statement: "\\b(case|of|if|then|else|let|in)\\b"
+            - symbol.operator: "(/\\\\|\\\\/|==>|<=>|[!?])"
+            - symbol.operator: "(<₊|>₊|≤₊|≥₊)"
+            - symbol.operator: "[∀∃λ∧∨¬⇒⇔⇎≠⊢＆≤≥−∅⊆∩∪∈∉‖⊕≪≫⋙⇆⇄←→⟵⟶⇐⟸⟹↦↤⟼⟻↩↪]"
+            - symbol.operator: "[=<>~+\\-*/^|.]"
+            - constant.number: "~?\\b[0-9]+\\b"
+            - identifier: "\\b[A-Za-z][A-Za-z0-9_']*\\b"
+
+    # Unicode double-quote quotations (LEFT/RIGHT DOUBLE QUOTATION MARK)
+    - constant.string:
+        start: "“"
+        end: "”"
+        rules:
+            - constant: "\\b(T|F|EMPTY|UNIV)\\b"
+            - statement: "\\b(case|of|if|then|else|let|in)\\b"
+            - symbol.operator: "(/\\\\|\\\\/|==>|<=>|[!?])"
+            - symbol.operator: "(<₊|>₊|≤₊|≥₊)"
+            - symbol.operator: "[∀∃λ∧∨¬⇒⇔⇎≠⊢＆≤≥−∅⊆∩∪∈∉‖⊕≪≫⋙⇆⇄←→⟵⟶⇐⟸⟹↦↤⟼⟻↩↪]"
+            - symbol.operator: "[=<>~+\\-*/^|.]"
+            - constant.number: "~?\\b[0-9]+\\b"
+            - identifier: "\\b[A-Za-z][A-Za-z0-9_']*\\b"
+
+    # ============================================================
+    # cheat in ML context — always error
+    # ============================================================
+    - error: "\\bcheat\\b"
+
+    # ============================================================
+    # Tacticals (in ML context outside proof regions)
+    # ============================================================
+    - statement: "(>>-|>>>|>\\||>>|>-|>~|\\\\\\\\)"
+    - statement: "\\b(THEN|THEN1|THENL|THEN_LT|THEN_TCL|ORELSE|ORELSE_LT|ORELSE_TCL|EVERY|EVERY_LT|EVERY_TCL|FIRST|FIRST_LT|FIRST_TCL|FIRST_PROVE|TRY|TRYALL|TRY_LT|REPEAT|REPEAT_LT|REPEAT_TCL|REPEAT_GTCL|VALID|VALID_LT|VALIDATE|VALIDATE_LT|GEN_VALIDATE|GEN_VALIDATE_LT|CONJ_VALIDATE|ALLGOALS|HEADGOAL|LASTGOAL|NTH_GOAL|MAP_EVERY|MAP_FIRST|map_every|REVERSE|reverse|IF|TIDY_ABBREVS|WITHOUT_ABBREVS|MK_ABBREVS_OLDSTYLE|allasms|SELECT_LT|SELECT_LT_THEN|SELECT_GOALS_LT_THEN1|ASSUM_LIST|PAT_ASSUM|PAT_X_ASSUM|PRED_ASSUM|POP_ASSUM|POP_LAST_ASSUM|POP_ASSUM_LIST|SUBGOAL_THEN|USE_SG_THEN|Q_TAC|Q_TAC0|QTY_TAC|TAC_PROOF|by|byA|on|using|via|suffices_by|Know|Suff)\\b"
+
+    # ============================================================
+    # Tactics (in ML context outside proof regions)
+    # ============================================================
+    # Covers HOL4 naming conventions from Trindemossen-2 docs:
+    # *_TAC/*_tac, *_THEN/*_then, *_LT/*_lt, *_TCL/*_tcl + irregular short names.
+    - preproc: "\\b(SPEC|SPECL|SPEC_ALL|GEN|GENL|GEN_ALL|MP|EQ_MP|MATCH_MP|HO_MATCH_MP|PART_MATCH|INST|INST_TYPE|DISCH|UNDISCH|UNDISCH_ALL|PROVE_HYP|CHOOSE|CHOOSEL|CONJ|CONJUNCT1|CONJUNCT2|CONJUNCTS|DISJ1|DISJ2|DISJ_CASES|NOT_INTRO|NOT_ELIM|CCONTR|EXISTS|LIST_EXISTS|SUBST|SUBST_ALL|REWRITE_RULE|PURE_REWRITE_RULE|ONCE_REWRITE_RULE|ASM_REWRITE_RULE|PURE_ASM_REWRITE_RULE|ONCE_ASM_REWRITE_RULE|SIMP_RULE|ASM_SIMP_RULE|GSYM|SYM|TRANS|AP_TERM|AP_THM|MK_COMB|REFL|ASSUME)\\b"
+    - preproc: "\\b(ABB|Rewr)'"
+    - preproc: "\\b([A-Za-z][A-Za-z0-9_']*(?:_TAC|_tac|TAC|tac|_THEN|_then|_LT|_lt|_TCL|_tcl|_ASSUM|_assum|_GOAL|_goal|_VALIDATE|_validate|_VALID|_valid|_ORELSE|_orelse|_REPEAT|_repeat|_TRY|_try|_CASES|_cases|_INDUCT|_induct)|rw|fs|rfs|lfs|gs|rgs|gvs|gns|gnvs|lrw|lrfs|sg|simp|dsimp|csimp|psr|rpt|drule|drule_all|drule_at|drule_then|drule_at_then|dxrule|dxrule_all|dxrule_at|rev_drule|rev_drule_all|rev_drule_at|rev_dxrule|rev_dxrule_all|rev_dxrule_at|irule|irule_at|prim_irule|qexists|qexistsl|qexists_tac|qrefine|qrefinel|rename|rename1|stripDup|suggest|convert|Rewr|Rewr'|ABB|ABB'|ttt|ttt_tnn|hh|hh_pb|main_hh|isolate_to_front|record_tactic|record_proof|tactic_of|tactic_of_sml|subgoal|maybe_using|provehyp|tmCases_on|namedCases|namedCases_on|completeInduct_on|measureInduct_on|recInduct|primInduct|Cases|Cases_on|Induct|Induct_on|PairCases|PairCases_on|Induct_word|Cases_word|Cases_word_value|Cases_on_word|Cases_on_word_value|Cases_on_i2w|Cases_on_v2w|app_wrap_proof|check_delta|first_assum_term|last_assum_term|first_fv_term|fv_term|goal_term|subtm_assum_term|POP_ORW|ASM_MATCH_MP_TAC_N|CONJUNCTS_THEN2|CASES_THENL|DISJ_CASES_THEN2|DISJ_CASES_THENL|COPY_ASM_NO)\\b"
+
+    # ============================================================
+    # SML keywords (same as sml.yaml)
+    # ============================================================
+
+    # Control flow keywords
+    - statement: "\\b(if|then|else|case|of|fn|raise|handle|while|do)\\b"
+
+    # Declaration keywords
+    - statement: "\\b(val|rec|fun|and|let|local|in|end|datatype|withtype|abstype|type|exception|with|op|as|before)\\b"
+
+    # Module system keywords
+    - preproc: "\\b(struct|sig|structure|signature|functor|open|sharing|where|eqtype|include)\\b"
+
+    # Fixity keywords
+    - statement: "\\b(infix|infixl|infixr|nonfix)\\b"
+
+    # Boolean operators
+    - statement: "\\b(andalso|orelse)\\b"
+
+    # Boolean constants
+    - constant.bool: "\\b(true|false)\\b"
+
+    # Built-in types
+    - type: "\\b(int|real|char|string|bool|unit|exn|word|list|option|ref|array|vector|order|substring)\\b"
+
+    # Word operators
+    - symbol.operator: "\\b(div|mod|not|o|abs)\\b"
+
+    # HOL4 multi-char operators (must come before single-char operators)
+    - symbol.operator: "(/\\\\|\\\\/|==>|<=>)"
+
+    # SML multi-char operators
+    - symbol.operator: "(=>|->|:=|::|:>|<>|>=|<=|\\.\\.\\.|;;)"
+
+    # Unicode HOL operators and operator families from UnicodeChars
+    - symbol.operator: "(<₊|>₊|≤₊|≥₊)"
+    - symbol.operator: "[∀∃λ∧∨¬⇒⇔⇎≠⊢＆≤≥−∅⊆∩∪∈∉‖⊕≪≫⋙⇆⇄←→⟵⟶⇐⟸⟹↦↤⟼⟻↩↪]"
+
+    # Single-char operators
+    - symbol.operator: "[=<>@^!#~+\\-*/|]"
+
+    # Semicolon, comma and dot
+    - symbol: "[;,.]"
+
+    # Wildcard
+    - symbol: "\\b_\\b"
+
+    # ============================================================
+    # Numeric literals
+    # ============================================================
+    - constant.number: "~?\\b0x[0-9A-Fa-f]+\\b"
+    - constant.number: "\\b0wx[0-9A-Fa-f]+\\b"
+    - constant.number: "\\b0w[0-9]+\\b"
+    - constant.number: "~?\\b[0-9]+(\\.[0-9]+)?[eE]~?[0-9]+\\b"
+    - constant.number: "~?\\b[0-9]+\\.[0-9]+\\b"
+    - constant.number: "~?\\b[0-9]+\\b"
+
+    # Type variables
+    - type: "'{1,2}[A-Za-z_][A-Za-z0-9_']*"
+
+    # Brackets
+    - symbol.brackets: "[(){}]|\\[|\\]"
