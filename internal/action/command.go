@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -1013,19 +1012,9 @@ func (h *BufPane) ReplaceCmd(args []string) {
 		}
 	}
 
-	if noRegex {
-		search = regexp.QuoteMeta(search)
-	}
-
 	replace := []byte(replaceStr)
 
-	var regex *regexp.Regexp
-	var err error
-	if h.Buf.Settings["ignorecase"].(bool) {
-		regex, err = regexp.Compile("(?im)" + search)
-	} else {
-		regex, err = regexp.Compile("(?m)" + search)
-	}
+	search, regex, err := h.Buf.CompileSearchRegex(search, !noRegex, true)
 	if err != nil {
 		// There was an error with the user's regex
 		InfoBar.Error(err)
