@@ -330,6 +330,9 @@ Here are the available options:
 
 * `readonly`: when enabled, disallows edits to the buffer. It is recommended
    to only ever set this option locally using `setlocal`.
+   This includes undo/redo, replace, retab, autocomplete, and plugin edits.
+   Reloading from disk still updates the buffer. Log buffers still accept
+   log output. Rejected edits leave the undo/redo history unchanged.
 
     default value: `false`
 

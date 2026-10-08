@@ -41,14 +41,32 @@ type Delta struct {
 	End   Loc
 }
 
+// Internal updates carry permission on the call, never on the shared buffer.
+// A plugin called during an internal update still uses the guarded public API.
+type textEventPermission bool
+
+const (
+	userEdit     textEventPermission = false
+	internalEdit textEventPermission = true
+)
+
 // DoTextEvent runs a text event
 func (eh *EventHandler) DoTextEvent(t *TextEvent, useUndo bool) {
+	eh.doTextEvent(t, useUndo, userEdit)
+}
+
+func (eh *EventHandler) doTextEvent(t *TextEvent, useUndo bool, permission textEventPermission) {
+	if !eh.buf.canEdit(permission) {
+		return
+	}
 	oldl := eh.buf.LinesNum()
 
 	if useUndo {
-		eh.Execute(t)
+		if !eh.execute(t, permission) {
+			return
+		}
 	} else {
-		ExecuteTextEvent(t, eh.buf)
+		executeTextEvent(t, eh.buf, permission)
 	}
 
 	if len(t.Deltas) != 1 {
@@ -114,18 +132,26 @@ func (eh *EventHandler) DoTextEvent(t *TextEvent, useUndo bool) {
 
 // ExecuteTextEvent runs a text event
 func ExecuteTextEvent(t *TextEvent, buf *SharedBuffer) {
+	if !buf.canEdit(userEdit) {
+		return
+	}
+	executeTextEvent(t, buf, userEdit)
+}
+
+// executeTextEvent applies an event whose permission has already been checked.
+func executeTextEvent(t *TextEvent, buf *SharedBuffer, permission textEventPermission) {
 	if t.EventType == TextEventInsert {
 		for _, d := range t.Deltas {
-			buf.insert(d.Start, d.Text)
+			buf.insert(d.Start, d.Text, permission)
 		}
 	} else if t.EventType == TextEventRemove {
 		for i, d := range t.Deltas {
-			t.Deltas[i].Text = buf.remove(d.Start, d.End)
+			t.Deltas[i].Text = buf.remove(d.Start, d.End, permission)
 		}
 	} else if t.EventType == TextEventReplace {
 		for i, d := range t.Deltas {
-			t.Deltas[i].Text = buf.remove(d.Start, d.End)
-			buf.insert(d.Start, d.Text)
+			t.Deltas[i].Text = buf.remove(d.Start, d.End, permission)
+			buf.insert(d.Start, d.Text, permission)
 			t.Deltas[i].Start = d.Start
 			t.Deltas[i].End = Loc{d.Start.X + util.CharacterCount(d.Text), d.Start.Y}
 		}
@@ -137,6 +163,9 @@ func ExecuteTextEvent(t *TextEvent, buf *SharedBuffer) {
 
 // UndoTextEvent undoes a text event
 func (eh *EventHandler) UndoTextEvent(t *TextEvent) {
+	if !eh.buf.canEdit(userEdit) {
+		return
+	}
 	t.EventType = -t.EventType
 	eh.DoTextEvent(t, false)
 }
@@ -165,15 +194,22 @@ func NewEventHandler(buf *SharedBuffer, cursors []*Cursor) *EventHandler {
 // This means that we can transform the buffer into any string and still preserve undo/redo
 // through insert and delete events
 func (eh *EventHandler) ApplyDiff(new string) {
+	eh.applyDiff(new, userEdit)
+}
+
+func (eh *EventHandler) applyDiff(new string, permission textEventPermission) {
+	if !eh.buf.canEdit(permission) {
+		return
+	}
 	differ := dmp.New()
 	diff := differ.DiffMain(string(eh.buf.Bytes()), new, false)
 	loc := eh.buf.Start()
 	for _, d := range diff {
 		if d.Type == dmp.DiffDelete {
-			eh.Remove(loc, loc.MoveLA(util.CharacterCountInString(d.Text), eh.buf.LineArray))
+			eh.remove(loc, loc.MoveLA(util.CharacterCountInString(d.Text), eh.buf.LineArray), permission)
 		} else {
 			if d.Type == dmp.DiffInsert {
-				eh.Insert(loc, d.Text)
+				eh.insertBytes(loc, []byte(d.Text), permission)
 			}
 			loc = loc.MoveLA(util.CharacterCountInString(d.Text), eh.buf.LineArray)
 		}
@@ -188,6 +224,10 @@ func (eh *EventHandler) Insert(start Loc, textStr string) {
 
 // InsertBytes creates an insert text event and executes it
 func (eh *EventHandler) InsertBytes(start Loc, text []byte) {
+	eh.insertBytes(start, text, userEdit)
+}
+
+func (eh *EventHandler) insertBytes(start Loc, text []byte, permission textEventPermission) {
 	if len(text) == 0 {
 		return
 	}
@@ -198,11 +238,15 @@ func (eh *EventHandler) InsertBytes(start Loc, text []byte) {
 		Deltas:    []Delta{{text, start, Loc{0, 0}}},
 		Time:      time.Now(),
 	}
-	eh.DoTextEvent(e, true)
+	eh.doTextEvent(e, true, permission)
 }
 
 // Remove creates a remove text event and executes it
 func (eh *EventHandler) Remove(start, end Loc) {
+	eh.remove(start, end, userEdit)
+}
+
+func (eh *EventHandler) remove(start, end Loc, permission textEventPermission) {
 	if start == end {
 		return
 	}
@@ -214,7 +258,7 @@ func (eh *EventHandler) Remove(start, end Loc) {
 		Deltas:    []Delta{{[]byte{}, start, end}},
 		Time:      time.Now(),
 	}
-	eh.DoTextEvent(e, true)
+	eh.doTextEvent(e, true, permission)
 }
 
 // MultipleReplace creates a replace text event with multiple deltas and executes it
@@ -236,25 +280,37 @@ func (eh *EventHandler) Replace(start, end Loc, replace string) {
 
 // Execute a textevent and add it to the undo stack
 func (eh *EventHandler) Execute(t *TextEvent) {
-	if eh.RedoStack.Len() > 0 {
-		eh.RedoStack = new(TEStack)
+	eh.execute(t, userEdit)
+}
+
+func (eh *EventHandler) execute(t *TextEvent, permission textEventPermission) bool {
+	if !eh.buf.canEdit(permission) {
+		return false
 	}
-	eh.UndoStack.Push(t)
 
 	b, err := config.RunPluginFnBool(nil, "onBeforeTextEvent", luar.New(ulua.L, eh.buf), luar.New(ulua.L, t))
 	if err != nil {
 		screen.TermMessage(err)
 	}
 
-	if !b {
-		return
+	// A plugin may have made the buffer read-only while handling the event.
+	if !b || !eh.buf.canEdit(permission) {
+		return false
 	}
 
-	ExecuteTextEvent(t, eh.buf)
+	if eh.RedoStack.Len() > 0 {
+		eh.RedoStack = new(TEStack)
+	}
+	eh.UndoStack.Push(t)
+	executeTextEvent(t, eh.buf, permission)
+	return true
 }
 
-// Undo the first event in the undo stack. Returns false if the stack is empty.
+// Undo the first event in the undo stack. Returns false if read-only or empty.
 func (eh *EventHandler) Undo() bool {
+	if !eh.buf.canEdit(userEdit) {
+		return false
+	}
 	t := eh.UndoStack.Peek()
 	if t == nil {
 		return false
@@ -280,6 +336,9 @@ func (eh *EventHandler) Undo() bool {
 
 // UndoOneEvent undoes one event
 func (eh *EventHandler) UndoOneEvent() {
+	if !eh.buf.canEdit(userEdit) {
+		return
+	}
 	// This event should be undone
 	// Pop it off the stack
 	t := eh.UndoStack.Pop()
@@ -300,8 +359,11 @@ func (eh *EventHandler) UndoOneEvent() {
 	eh.RedoStack.Push(t)
 }
 
-// Redo the first event in the redo stack. Returns false if the stack is empty.
+// Redo the first event in the redo stack. Returns false if read-only or empty.
 func (eh *EventHandler) Redo() bool {
+	if !eh.buf.canEdit(userEdit) {
+		return false
+	}
 	t := eh.RedoStack.Peek()
 	if t == nil {
 		return false
@@ -327,6 +389,9 @@ func (eh *EventHandler) Redo() bool {
 
 // RedoOneEvent redoes one event
 func (eh *EventHandler) RedoOneEvent() {
+	if !eh.buf.canEdit(userEdit) {
+		return
+	}
 	t := eh.RedoStack.Pop()
 	if t == nil {
 		return
