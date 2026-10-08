@@ -1,0 +1,98 @@
+filetype: vyper
+
+detect:
+    filename: "\\.vy(i)?$"
+
+rules:
+    # Compiler directives are comments syntactically, but deserve preprocessor styling.
+    # Must be a region (not a pattern) to win over the comment region below.
+
+    # Declarations and definitions.
+    - identifier.class: "\\b(event|struct|interface|flag|enum)\\s+[A-Za-z_][A-Za-z0-9_]*"
+    - identifier.function: "\\bdef\\s+[A-Za-z_][A-Za-z0-9_]*"
+    - statement: "\\b(def|event|struct|interface|flag|enum)\\b"
+    - identifier: "\\b__(init|default)__\\b"
+
+    # Keywords with standalone usage: variable/event annotations and interface mutability.
+    - type.keyword: "\\b(public|view|pure|payable|nonpayable|reentrant|indexed|constant|immutable|transient)\\b"
+
+    # Decorators. Must come after type.keyword so that @keyword overrides the
+    # standalone color for keywords like @view, @payable, @reentrant that have
+    # dual usage. Decorator-only keywords (external, internal, deploy, etc.)
+    # are not in type.keyword, so they are only colored via this rule.
+    - preproc: "^\\s*@(external|internal|deploy|view|pure|payable|nonpayable|nonreentrant|reentrant|raw_return|abstract|override)(\\([^)]*\\))?"
+
+    # Control flow, imports, calls, module composition, and declarations.
+    - statement: "\\b(UNREACHABLE|and|as|assert|break|continue|elif|else|exports|extcall|for|from|if|implements|import|in|initializes|is|log|not|or|pass|raise|range|return|staticcall|uses|while)\\b"
+
+    # Built-in scalar and container types.
+    - type: "\\b(bool|address|decimal|HashMap|DynArray|Bytes|String)\\b"
+    - type: "\\b(u?int(8|16|24|32|40|48|56|64|72|80|88|96|104|112|120|128|136|144|152|160|168|176|184|192|200|208|216|224|232|240|248|256))\\b"
+    - type: "\\bbytes(1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32)\\b"
+
+    # Current Vyper built-ins, including low-level EVM helpers.
+    - identifier: "\\b(abi_decode|abi_encode|abs|as_wei_value|blobhash|blockhash|breakpoint|ceil|concat|convert|create_copy_of|create_from_blueprint|create_minimal_proxy_to|ecadd|ecmul|ecrecover|empty|epsilon|extract32|floor|isqrt|keccak256|len|max|max_value|method_id|min|min_value|pow_mod256|print|raw_call|raw_create|raw_log|raw_revert|selfdestruct|send|sha256|shift|slice|sqrt|uint2str|uint256_addmod|uint256_mulmod|unsafe_add|unsafe_div|unsafe_mul|unsafe_sub)\\b"
+
+    # Environment variables and module namespaces.
+    - constant: "\\b(self|msg|block|tx|chain)\\b"
+    # Note: no MIN_UINT256 — unsigned minimum is always 0.
+    - constant: "\\b(INF|ZERO_ADDRESS|ZERO_WEI|EMPTY_BYTES32|MAX_INT128|MIN_INT128|MAX_DECIMAL|MIN_DECIMAL|MAX_UINT256)\\b"
+    - constant: "\\b(inf|zero_address|zero_wei|empty_bytes32|max_int128|min_int128|max_decimal|min_decimal|max_uint256)\\b"
+    # Lowercase true/false/none are Vyper <0.4 legacy forms, kept for readability.
+    - constant.bool.true: "\\b(True|true)\\b"
+    - constant.bool.false: "\\b(False|false)\\b"
+    - constant: "\\b(None|none)\\b"
+
+    # Ether denominations.
+    - constant: "\\b(wei|kwei|babbage|mwei|lovelace|gwei|shannon|szabo|finney|ether|twei|pwei|ada)\\b"
+
+    # Operators and delimiters.
+    - symbol.operator: "(\\*\\*|//|<<|>>|[-+*/%&|^~!=<>]=?|:=|->|[.:,;])"
+    # Ellipsis (...) after dot operator so three-dot sequence wins per-char.
+    - constant: "\\.\\.\\."  # interface/abstract body placeholder
+    - symbol.brackets: "([(){}]|\\[|\\])"
+
+    # Numeric literals.
+    - constant.number: "\\b0x(_?[0-9a-fA-F])+\\b"
+    - constant.number: "\\b0b(_?[01])+\\b"
+    - constant.number: "\\b0o(_?[0-7])+\\b"
+    - constant.number: "\\b[0-9](_?[0-9])*(\\.([0-9](_?[0-9])*)?)?(e[+-]?[0-9](_?[0-9])*)?\\b"
+
+    # Triple-quoted strings: no skip pattern, backslash cannot escape
+    # the three-char closing delimiter (matches Python3 convention in Micro).
+    - constant.string:
+        start: "[bBxX]?\"\"\""
+        end: "\"\"\""
+        rules:
+            - constant.specialChar: "\\\\."
+
+    - constant.string:
+        start: "[bBxX]?'''"
+        end: "'''"
+        rules:
+            - constant.specialChar: "\\\\."
+
+    - constant.string:
+        start: "[bBxX]?\""
+        end: "(\"|$)"
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\."
+
+    - constant.string:
+        start: "[bBxX]?'"
+        end: "('|$)"
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\."
+
+    - preproc:
+        start: "^\\s*#\\s*(pragma|@version)\\b"
+        end: "$"
+        rules: []
+
+    - comment:
+        start: "#"
+        end: "$"
+        rules:
+            - todo: "(TODO|FIXME|HACK|BUG|NOTE|WARNING|XXX):?"
