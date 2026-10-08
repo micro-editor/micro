@@ -92,6 +92,7 @@ function preinit()
     makeLinter("swiftc-linux", "swift", "swiftc", {"%f"}, "%f:%l:%c:.+: %m", {"linux"}, true)
     makeLinter("yaml", "yaml", "yamllint", {"--format", "parsable", "%f"}, "%f:%l:%c:.+ %m")
     makeLinter("nix-linter", "nix", "nix-linter", {"%f"}, "%m at %f:%l:%c", {"linux"}, true)
+    makeLinter("dockerfile", "dockerfile", "hadolint", {"%f"}, "%f:%l .+: %m")
 
     config.MakeCommand("lint", function(bp, args)
         bp:Save()
