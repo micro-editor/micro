@@ -37,6 +37,7 @@ var optionValidators = map[string]optionValidator{
 	"scrollspeed":     validateNonNegativeValue,
 	"tabsize":         validatePositiveValue,
 	"truecolor":       validateChoice,
+	"writesettings":   validateChoice,
 }
 
 // a list of settings with pre-defined choices
@@ -48,6 +49,7 @@ var OptionChoices = map[string][]string{
 	"multiopen":       {"tab", "hsplit", "vsplit"},
 	"reload":          {"prompt", "auto", "disabled"},
 	"truecolor":       {"auto", "on", "off"},
+	"writesettings":   {"", "set", "plugins", "set,plugins"},
 }
 
 // a list of settings that can be globally and locally modified and their
@@ -132,6 +134,7 @@ var DefaultGlobalOnlySettings = map[string]any{
 	"tabalways":      false,
 	"tabhighlight":   false,
 	"tabreverse":     true,
+	"writesettings":  "set",
 	"xterm":          false,
 }
 
