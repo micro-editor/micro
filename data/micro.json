@@ -133,6 +133,20 @@
             "type": "string",
             "default": "unknown"
         },
+        "hlchunk": {
+            "description": "Whether to highlight the chunk containing the cursor\nhttps://github.com/micro-editor/micro/blob/master/runtime/help/options.md#options",
+            "type": "boolean",
+            "default": false
+        },
+        "hlchunkmode": {
+            "description": "How hlchunk detects the chunk around the cursor\nhttps://github.com/micro-editor/micro/blob/master/runtime/help/options.md#options",
+            "type": "string",
+            "enum": [
+                "indent",
+                "bracket"
+            ],
+            "default": "indent"
+        },
         "hlsearch": {
             "description": "Whether to highlight all instances of a searched text after a successful search\nhttps://github.com/micro-editor/micro/blob/master/runtime/help/options.md#options",
             "type": "boolean",

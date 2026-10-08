@@ -3,6 +3,7 @@ package display
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	runewidth "github.com/mattn/go-runewidth"
 	"github.com/micro-editor/micro/v2/internal/buffer"
@@ -29,6 +30,9 @@ type BufWindow struct {
 	hasMessage       bool
 	maxLineNumLength int
 	drawDivider      bool
+
+	// animation state for the hlchunk guide
+	chunkAnim chunkAnim
 }
 
 // NewBufWindow creates a new window at a location in the screen with a width and height
@@ -475,6 +479,41 @@ func (w *BufWindow) displayBuffer() {
 		}
 	}
 
+	hlchunk := b.Settings["hlchunk"].(bool) && w.active
+	var chunk chunkGuide
+	if hlchunk {
+		var c buffer.Chunk
+		if b.Settings["hlchunkmode"].(string) == "bracket" {
+			c, hlchunk = b.BraceChunk(b.GetActiveCursor().Loc)
+		} else {
+			c, hlchunk = b.IndentChunk(b.GetActiveCursor().Y)
+		}
+		chunk = chunkGuide{c}
+	}
+	chunkVisible := 0
+	if hlchunk {
+		var more bool
+		chunkVisible, more = w.chunkAnim.visible(chunk)
+		if more {
+			time.AfterFunc(chunkAnimFrame, screen.Redraw)
+		}
+	} else {
+		w.chunkAnim = chunkAnim{}
+	}
+	// chunkRuneAt hides cells the animation has not yet reached
+	chunkRuneAt := func(y, vcol int) rune {
+		cr := chunk.runeAt(y, vcol)
+		if cr != 0 && chunk.cellIndex(y, vcol) >= chunkVisible {
+			return 0
+		}
+		return cr
+	}
+	chunkStyle := config.DefStyle
+	if s, ok := config.Colorscheme["hlchunk"]; ok {
+		chunkStyle = s
+	}
+	chunkFg, _, _ := chunkStyle.Decompose()
+
 	for ; vloc.Y < w.bufHeight; vloc.Y++ {
 		vloc.X = 0
 
@@ -541,6 +580,12 @@ func (w *BufWindow) displayBuffer() {
 
 			if r != '\t' && r != ' ' {
 				return r, style, false
+			}
+
+			if hlchunk && bloc.X < leadingwsEnd {
+				if cr := chunkRuneAt(bloc.Y, linex); cr != 0 {
+					return cr, style.Foreground(chunkFg), false
+				}
 			}
 
 			var indentrunes []rune
@@ -822,12 +867,29 @@ func (w *BufWindow) displayBuffer() {
 					curStyle = style.Background(fg)
 				}
 			}
-			screen.SetContent(i+w.X, vloc.Y+w.Y, ' ', nil, curStyle)
+			fillRune := ' '
+			// the guide continues through lines ending left of it
+			// (blank lines mostly); with softwrap a wrapped line is
+			// always wider than gcol, so the mapping below is safe
+			if hlchunk && totalwidth <= chunk.GuideCol {
+				if cr := chunkRuneAt(bloc.Y, i-w.gutterOffset+w.StartCol); cr != 0 {
+					fillRune = cr
+					curStyle = curStyle.Foreground(chunkFg)
+				}
+			}
+			screen.SetContent(i+w.X, vloc.Y+w.Y, fillRune, nil, curStyle)
 		}
 
 		if vloc.X != maxWidth {
 			// Display newline within a selection
 			drawrune, drawstyle, preservebg := getRuneStyle(' ', config.DefStyle, 0, totalwidth, true)
+			// the newline cell may sit exactly on the guide column
+			if hlchunk && totalwidth <= chunk.GuideCol {
+				if cr := chunkRuneAt(bloc.Y, totalwidth); cr != 0 {
+					drawrune = cr
+					drawstyle = drawstyle.Foreground(chunkFg)
+				}
+			}
 			draw(drawrune, nil, drawstyle, true, true, preservebg)
 		}
 
