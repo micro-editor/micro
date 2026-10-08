@@ -81,6 +81,8 @@ var bufdefaults = map[string]string{
 	"Ctrl-u":         "ToggleMacro",
 	"Ctrl-j":         "PlayMacro",
 	"Insert":         "ToggleOverwriteMode",
+	"Alt-<":          "JumpToOpeningBrace",
+	"Alt->":          "JumpToClosingBrace",
 
 	// Emacs-style keybindings
 	"Alt-f": "WordRight",
