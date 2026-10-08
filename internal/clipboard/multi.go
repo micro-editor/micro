@@ -9,17 +9,24 @@ type multiClipboard map[Register][]string
 
 var multi multiClipboard
 
-func (c multiClipboard) getAllText(r Register) string {
-	content := c[r]
-	if content == nil {
+func (c multiClipboard) getAllTextConcated(r Register) string {
+	multitext := c.getAllText(r)
+	if multitext == nil {
 		return ""
 	}
 
 	buf := &bytes.Buffer{}
-	for _, s := range content {
+	for i, s := range multitext {
 		buf.WriteString(s)
+		if i != len(multitext)-1 {
+			buf.WriteString("\n")
+		}
 	}
 	return buf.String()
+}
+
+func (c multiClipboard) getAllText(r Register) []string {
+	return c[r]
 }
 
 func (c multiClipboard) getText(r Register, num int) string {
@@ -35,13 +42,13 @@ func (c multiClipboard) getText(r Register, num int) string {
 // text stored in the system clipboard (provided as an argument), and therefore
 // if it is safe to use the multi-clipboard for pasting instead of the system
 // clipboard.
-func (c multiClipboard) isValid(r Register, clipboard string, ncursors int) bool {
+func (c multiClipboard) isValid(r Register, clipboard *string) bool {
 	content := c[r]
-	if content == nil || len(content) != ncursors {
+	if content == nil {
 		return false
 	}
 
-	return clipboard == c.getAllText(r)
+	return c.getAllTextConcated(r) == *clipboard
 }
 
 func (c multiClipboard) writeText(text string, r Register, num int, ncursors int) {
