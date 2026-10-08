@@ -1,0 +1,27 @@
+filetype: ssh_config
+
+detect:
+    # TODO: doesn't work if opened as 'micro config' when cwd is '~/.ssh'
+    filename: "(etc/ssh/sshd?_|\\.ssh/)config$"
+
+rules:
+    - constant: " (yes|no|auto)\\b" # ".no" is a valid tld, should not be matched
+
+    - constant.number: "\\b[0-9]+\\b" # primarily used for IP addresses and ports
+
+    - symbol.operator: "\\*"
+
+    # patterns
+    - type: "\\%[a-z]"
+
+    # attributes
+    - identifier: "^[ \t]*(AddKeysToAgent|AddressFamily|BatchMode|BindAddress|BindInterface|CanonicalDomains|CanonicalizeFallbackLocal|CanonicalizeHostname|CanonicalizeMaxDots|CanonicalizePermittedCNAMEs|CASignatureAlgorithms|CertificateFile|CheckHostIP|Ciphers|ClearAllForwardings|Compression|ConnectionAttempts|ConnectTimeout|ControlMaster|ControlPath|ControlPersist|DynamicForward|EnableSSHKeysign|EscapeChar|ExitOnForwardFailure|FingerprintHash|ForkAfterAuthentication|ForwardAgent|ForwardX11|ForwardX11Timeout|ForwardX11Trusted|GatewayPorts|GlobalKnownHostsFile|GSSAPIAuthentication|GSSAPIDelegateCredentials|HashKnownHosts|HostbasedAcceptedAlgorithms|HostbasedAuthentication|HostKeyAlgorithms|HostKeyAlias|Hostname|IdentitiesOnly|IdentityAgent|IdentityFile|IgnoreUnknown|Include|IPQoS|KbdInteractiveAuthentication|KbdInteractiveDevices|KexAlgorithms|KnownHostsCommand|LocalCommand|LocalForward|LogLevel|LogVerbose|MACs|NoHostAuthenticationForLocalhost|NumberOfPasswordPrompts|PasswordAuthentication|PermitLocalCommand|PermitRemoteOpen|PKCS11Provider|Port|PreferredAuthentications|ProxyCommand|ProxyJump|ProxyUseFdpass|PubkeyAcceptedAlgorithms|PubkeyAuthentication|RekeyLimit|RemoteCommand|RemoteForward|RequestTTY|RevokedHostKeys|SecurityKeyProvider|SendEnv|ServerAliveCountMax|ServerAliveInterval|SessionType|SetEnv|StdinNull|StreamLocalBindMask|StreamLocalBindUnlink|StrictHostKeyChecking|SyslogFacility|TCPKeepAlive|Tunnel|TunnelDevice|UpdateHostKeys|User|UserKnownHostsFile|VerifyHostKeyDNS|VisualHostKey|XAuthLocation)\\b"
+
+    # matchers
+    - statement: "^(Host|Match)\\b"
+
+    - comment:
+        start: "#"
+        end: "$"
+        rules:
+            - todo: "\\b(TODO|FIXME|WIP|HACK):?\\b"
