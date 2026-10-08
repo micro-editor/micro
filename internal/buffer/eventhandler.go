@@ -2,7 +2,9 @@ package buffer
 
 import (
 	"bytes"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/micro-editor/micro/v2/internal/config"
 	ulua "github.com/micro-editor/micro/v2/internal/lua"
@@ -161,23 +163,94 @@ func NewEventHandler(buf *SharedBuffer, cursors []*Cursor) *EventHandler {
 }
 
 // ApplyDiff takes a string and runs the necessary insertion and deletion events to make
-// the buffer equal to that string
+// the buffer equal to that string, using the buffer's line ending format.
 // This means that we can transform the buffer into any string and still preserve undo/redo
 // through insert and delete events
 func (eh *EventHandler) ApplyDiff(new string) {
-	differ := dmp.New()
-	diff := differ.DiffMain(string(eh.buf.Bytes()), new, false)
+	// Read raw lines so the snapshot does not depend on character coordinates.
+	// Line separators are LF regardless of the file's on-disk format.
+	var old strings.Builder
+	for i := 0; i < eh.buf.LinesNum(); i++ {
+		if i > 0 {
+			old.WriteByte('\n')
+		}
+		old.Write(eh.buf.LineBytes(i))
+	}
+	new = strings.ReplaceAll(new, "\r\n", "\n")
+	if old.String() == new {
+		return
+	}
+	diff := diffCharacters(old.String(), new)
 	loc := eh.buf.Start()
 	for _, d := range diff {
+		// Advance in buffer coordinates, without walking the changing line array.
+		end := loc
+		if lastnl := strings.LastIndexByte(d.Text, '\n'); lastnl >= 0 {
+			end.Y += strings.Count(d.Text, "\n")
+			end.X = util.CharacterCountInString(d.Text[lastnl+1:])
+		} else {
+			end.X += util.CharacterCountInString(d.Text)
+		}
 		if d.Type == dmp.DiffDelete {
-			eh.Remove(loc, loc.MoveLA(util.CharacterCountInString(d.Text), eh.buf.LineArray))
+			eh.Remove(loc, end)
 		} else {
 			if d.Type == dmp.DiffInsert {
 				eh.Insert(loc, d.Text)
 			}
-			loc = loc.MoveLA(util.CharacterCountInString(d.Text), eh.buf.LineArray)
+			loc = end
 		}
 	}
+}
+
+// diffCharacters diffs whole buffer characters: a rune and its combining marks.
+// The diff library operates on runes, so give each distinct character a rune ID
+// shared by both inputs. This keeps edit boundaries out of combining sequences.
+func diffCharacters(old, new string) []dmp.Diff {
+	characters := []string{""}
+	ids := make(map[string]rune)
+	encode := func(text string) ([]rune, bool) {
+		var encoded []rune
+		for len(text) > 0 {
+			size := 1
+			if text[0] != '\n' {
+				_, _, size = util.DecodeCharacterInString(text)
+			}
+			character := text[:size]
+			text = text[size:]
+			id, ok := ids[character]
+			if !ok {
+				// IDs must survive the library's conversion from runes to strings.
+				if len(characters) == 0xd800 {
+					characters = append(characters, make([]string, 0x800)...)
+				}
+				if len(characters) > utf8.MaxRune {
+					return nil, false
+				}
+				id = rune(len(characters))
+				ids[character] = id
+				characters = append(characters, character)
+			}
+			encoded = append(encoded, id)
+		}
+		return encoded, true
+	}
+	oldRunes, oldOK := encode(old)
+	newRunes, newOK := encode(new)
+	if !oldOK || !newOK {
+		// A whole-text edit is still reversible if there are too many distinct
+		// characters to represent with Unicode scalar values.
+		return []dmp.Diff{{Type: dmp.DiffDelete, Text: old}, {Type: dmp.DiffInsert, Text: new}}
+	}
+	differ := dmp.New()
+	diffs := differ.DiffMainRunes(oldRunes, newRunes, false)
+	for i := range diffs {
+		var text strings.Builder
+		for _, id := range diffs[i].Text {
+			text.WriteString(characters[id])
+		}
+		diffs[i].Text = text.String()
+	}
+	return diffs
 }
 
 // Insert creates an insert text event and executes it
