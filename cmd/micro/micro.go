@@ -227,7 +227,21 @@ func LoadInput(args []string) []*buffer.Buffer {
 		// Option 1
 		// We go through each file and load it
 		for i := 0; i < len(files); i++ {
-			buf, err := buffer.NewBufferFromFileWithCommand(files[i], buffer.BTDefault, command)
+			autoSu := config.GlobalSettings["autosu"].(bool)
+			buf, err := buffer.NewBufferFromFileWithCommand(files[i], buffer.BTDefault, command, autoSu)
+			// Don't retry if sudo was already used
+			// os.isPermission is used instead of errors.is as it is based of the
+			// builtin errors package instead of the custom one included in this file
+			if !autoSu && os.IsPermission(err) {
+				msg := fmt.Sprintf("Permission denied trying to read %s\nDo you want to load this file using %s? (y,n)", files[i], config.GlobalSettings["sucmd"].(string))
+				retryWithSudo := screen.TermPrompt(msg, []string{"y", "n"}, true) == 0
+				if (retryWithSudo) {
+					buf, err = buffer.NewBufferFromFileWithCommand(files[i], buffer.BTDefault, command, true)
+					// fallthrough
+				} else {
+					continue
+				}
+			}
 			if err != nil {
 				screen.TermMessage(err)
 				continue

@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/go-errors/errors"
 	"github.com/micro-editor/micro/v2/internal/action"
@@ -157,6 +158,7 @@ func openFile(file string) {
 }
 
 func findBuffer(file string) *buffer.Buffer {
+	time.Sleep(time.Second / 10) // TODO wait for open command to be done instead of waiting
 	var buf *buffer.Buffer
 	file = util.ResolvePath(file)
 	for _, b := range buffer.OpenBuffers {

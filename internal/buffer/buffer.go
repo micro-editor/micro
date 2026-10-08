@@ -9,7 +9,10 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"os/exec"
+	"os/signal"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -268,11 +271,101 @@ type Buffer struct {
 	OverwriteMode bool
 }
 
+// Reads a file with root
+// Similar to os.Open(path) for the purposes of reading
+// Requires the screen to be closed
+func readerFromFileWithSudo(path string) (io.ReadCloser, error) {
+	args := []string{"dd", "bs=4k", "if=" + path}
+	// TODO: both platforms do not support dd with conv=fsync yet
+	if !(runtime.GOOS == "illumos" || runtime.GOOS == "netbsd") {
+		args = append(args, "conv=fsync")
+	}
+
+	cmd := exec.Command(config.GlobalSettings["sucmd"].(string), args...)
+	writeCloser, err := cmd.StdinPipe()
+	if err != nil {
+		return nil, err
+	}
+	defer writeCloser.Close()
+
+	var readCloser io.ReadCloser
+	readCloser, err = cmd.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Reset(os.Interrupt)
+	signal.Notify(sigChan, os.Interrupt)
+
+	// need to start the process now, otherwise when we flush the file
+	// contents to its stdin it might hang because the kernel's pipe size
+	// is too small to handle the full file contents all at once
+	err = cmd.Start()
+	if err != nil {
+		readCloser.Close()
+		signal.Notify(util.Sigterm, os.Interrupt)
+		signal.Stop(sigChan)
+		return nil, err
+	}
+
+	return readCloser, nil
+}
+
+// Gets the size in bytes of a file
+// Requires the screen to be closed
+func sizeFromFileWithSudo(path string) (int64, error) {
+	args := []string{"stat", "-c%s", path}
+
+	cmd := exec.Command(config.GlobalSettings["sucmd"].(string), args...)
+	writeCloser, err := cmd.StdinPipe()
+	if err != nil {
+		return 0, err
+	}
+	defer writeCloser.Close()
+
+	var readCloser io.ReadCloser
+	readCloser, err = cmd.StdoutPipe()
+	if err != nil {
+		return 0, err
+	}
+	defer readCloser.Close()
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Reset(os.Interrupt)
+	signal.Notify(sigChan, os.Interrupt)
+
+	err = cmd.Start()
+	if err != nil {
+		signal.Notify(util.Sigterm, os.Interrupt)
+		signal.Stop(sigChan)
+		return 0, err
+	}
+
+	output := make([]byte, 65) // size of the int (negatives allowed) and a newline
+	outputSize, err := readCloser.Read(output)
+	if (err != nil) {
+		return 0, err
+	}
+	if (outputSize <= 1) {
+		return 0, errors.New("Failed to read file size with stat")
+	}
+	var size int64
+	size, err = strconv.ParseInt(strings.TrimSpace(string(output[:outputSize])), 10, 64)
+	if (err != nil) {
+		return 0, err
+	}
+	if (size < 0) {
+		return 0, errors.New("Got negative size with stat")
+	}
+	return size, nil
+}
+
 // NewBufferFromFileWithCommand opens a new buffer with a given command
 // If cmd.StartCursor is {-1, -1} the location does not overwrite what the cursor location
 // would otherwise be (start of file, or saved cursor position if `savecursor` is
 // enabled)
-func NewBufferFromFileWithCommand(path string, btype BufType, cmd Command) (*Buffer, error) {
+func NewBufferFromFileWithCommand(path string, btype BufType, cmd Command, withSudo bool) (*Buffer, error) {
 	var err error
 	filename := path
 	if config.GetGlobalOption("parsecursor").(bool) && cmd.StartCursor.X == -1 && cmd.StartCursor.Y == -1 {
@@ -290,7 +383,7 @@ func NewBufferFromFileWithCommand(path string, btype BufType, cmd Command) (*Buf
 	}
 
 	fileInfo, serr := os.Stat(filename)
-	if serr != nil && !errors.Is(serr, fs.ErrNotExist) {
+	if serr != nil && !errors.Is(serr, fs.ErrNotExist) && !errors.Is(serr, fs.ErrPermission) {
 		return nil, serr
 	}
 	if serr == nil && fileInfo.IsDir() {
@@ -300,13 +393,44 @@ func NewBufferFromFileWithCommand(path string, btype BufType, cmd Command) (*Buf
 		return nil, errors.New("Error: " + filename + " is not a regular file and cannot be opened")
 	}
 
-	f, err := os.OpenFile(filename, os.O_WRONLY, 0)
-	readonly := errors.Is(err, fs.ErrPermission)
+	// TODO this is more nuanced some files may be write only, some write only, some in unreadable dirs, etc
+	f, err := os.OpenFile(filename, os.O_RDWR, 0)
+	sudoRequired := errors.Is(err, fs.ErrPermission) || errors.Is(serr, fs.ErrPermission)
 	f.Close()
 
-	file, err := os.Open(filename)
-	if err == nil {
-		defer file.Close()
+	var reader io.ReadCloser
+	var size int64
+	if (sudoRequired) {
+		if (!withSudo) {
+			return nil, err
+		}
+		_, err = exec.LookPath(config.GlobalSettings["sucmd"].(string))
+		if err != nil {
+			return nil, err
+		}
+		screenb := screen.TempFini()
+		if (fileInfo != nil) {
+			size = fileInfo.Size()
+		} else {
+			// TODO get the size with only one call to sudo
+			size, err = sizeFromFileWithSudo(filename)
+			if (errors.Is(err, io.EOF)) {
+				// If read failed, it probably doesn't exist
+				err = fs.ErrNotExist
+			} else if (err != nil) {
+				screen.TempStart(screenb)
+				return nil, err
+			}
+		}
+		// Preserve value of readonly, we don't deal with elevating on save here
+		reader, err = readerFromFileWithSudo(filename)
+		screen.TempStart(screenb)
+	} else if (!errors.Is(err, fs.ErrNotExist)) {
+		size = fileInfo.Size()
+		reader, err = os.Open(filename)
+	}
+	if reader != nil {
+		defer reader.Close()
 	}
 
 	var buf *Buffer
@@ -316,13 +440,13 @@ func NewBufferFromFileWithCommand(path string, btype BufType, cmd Command) (*Buf
 	} else if err != nil {
 		return nil, err
 	} else {
-		buf = NewBuffer(file, util.FSize(file), filename, btype, cmd)
+		buf = NewBuffer(reader, size, filename, btype, cmd)
 		if buf == nil {
 			return nil, errors.New("could not open file")
 		}
 	}
 
-	if readonly && prompt != nil {
+	if sudoRequired && prompt != nil {
 		prompt.Message(fmt.Sprintf("Warning: file is readonly - %s will be attempted when saving", config.GlobalSettings["sucmd"].(string)))
 		// buf.SetOptionNative("readonly", true)
 	}
@@ -334,8 +458,8 @@ func NewBufferFromFileWithCommand(path string, btype BufType, cmd Command) (*Buf
 // It will also automatically handle `~`, and line/column with filename:l:c
 // It will return an empty buffer if the path does not exist
 // and an error if the file is a directory
-func NewBufferFromFile(path string, btype BufType) (*Buffer, error) {
-	return NewBufferFromFileWithCommand(path, btype, emptyCommand)
+func NewBufferFromFile(path string, btype BufType, withSudo bool) (*Buffer, error) {
+	return NewBufferFromFileWithCommand(path, btype, emptyCommand, withSudo)
 }
 
 // NewBufferFromStringWithCommand creates a new buffer containing the given string
