@@ -17,7 +17,7 @@ rules:
     - statement: "\\b(for|if|while|do|else|case|default|switch)\\b"
     - statement: "\\b(try|throw|catch|operator|new|delete|static_assert)\\b"
     - statement: "\\b(goto|continue|break|return)\\b"
-    - preproc: "^[[:space:]]*#[[:space:]]*(define|pragma|include|(un|ifn?)def|endif|el(if|se)|if|warning|error)|_Pragma"
+    - preproc: "^[[:space:]]*#[[:space:]]*(define|pragma|(un|ifn?)def|endif|el(if|se)|if|warning|error)|_Pragma"
 
       # Conditionally-supported/extension keywords
     - statement: "\\b(asm|fortran)\\b"
@@ -60,6 +60,16 @@ rules:
     - constant.number: "(\\b0[Xx]([0-9a-zA-Z][0-9a-zA-Z']*[0-9a-zA-Z])+[.]([0-9a-zA-Z][0-9a-zA-Z']*[0-9a-zA-Z])?([Pp][+-]?[0-9][0-9']*[0-9])?[FfLl]?)"      # Optional fractional part with exponent
 
     - constant.bool: "(\\b(true|false|NULL|nullptr|TRUE|FALSE)\\b)"
+
+      # #include lines are a region so that the header name (e.g. <float.h>)
+      # is not matched by the type rules above
+    - preproc:
+        start: "^[[:space:]]*#[[:space:]]*include(_next)?\\b"
+        end: "$"
+        rules:
+            - identifier: "\\b[A-Z_][0-9A-Z_]*\\b"
+            - constant.string: "<[^>]*>|\"[^\"]*\""
+            - comment: "//.*|/\\*.*?\\*/"
 
     - constant.string:
         start: "\""

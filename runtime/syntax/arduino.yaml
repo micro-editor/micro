@@ -67,10 +67,20 @@ rules:
     - identifier: "\\b(setup|loop)\\b"
 
       ##
-    - statement: "^[[:space:]]*#[[:space:]]*(define|include(_next)?|(un|ifn?)def|endif|el(if|se)|if|warning|error|pragma)"
+    - statement: "^[[:space:]]*#[[:space:]]*(define|(un|ifn?)def|endif|el(if|se)|if|warning|error|pragma)"
 
       ## GCC builtins
     - constant: "(__attribute__[[:space:]]*\\(\\([^)]*\\)\\)|__(aligned|asm|builtin|hidden|inline|packed|restrict|section|typeof|weak)__)"
+
+      # #include lines are a region so that the header name (e.g. <float.h>)
+      # is not matched by the type rules above
+    - statement:
+        start: "^[[:space:]]*#[[:space:]]*include(_next)?\\b"
+        end: "$"
+        rules:
+            - identifier: "\\b[A-Z_][0-9A-Z_]+\\b"
+            - constant.string: "<[^>]*>|\"[^\"]*\""
+            - comment: "//.*|/\\*.*?\\*/"
 
     - constant.string:
         start: "\""
