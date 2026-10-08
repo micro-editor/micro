@@ -1,7 +1,7 @@
 filetype: json
 
 detect:
-    filename: "\\.json$"
+    filename: "\\.json(c|5)?$"
     header: "^\\{$"
 
 rules:
