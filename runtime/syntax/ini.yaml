@@ -1,7 +1,7 @@
 filetype: ini
 
 detect:
-    filename: "\\.(ini|desktop|lfl|override|tscn|tres)$|(mimeapps\\.list|pinforc|setup\\.cfg|project\\.godot)$|weechat/.+\\.conf$"
+    filename: "\\.(ini|desktop|lfl|override|tscn|tres|conf)$|(mimeapps\\.list|pinforc|setup\\.cfg|project\\.godot)$|weechat/.+\\.conf$"
 
 rules:
     - constant.bool.true: "\\btrue\\b"
