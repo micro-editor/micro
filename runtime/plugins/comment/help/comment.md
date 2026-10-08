@@ -72,6 +72,7 @@ but it is only available for certain filetypes:
 * tex: `% %s`
 * toml: `# %s`
 * twig: `{# %s #}`
+* typst: `// %s`
 * v: `// %s`
 * xml: `<!-- %s -->`
 * yaml: `# %s`

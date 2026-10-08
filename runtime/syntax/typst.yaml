@@ -1,0 +1,66 @@
+filetype: typst
+
+detect:
+    filename: "\\.typ$"
+
+# Typst switches between markup, code and math mode at any point, which these
+# rules can't follow, so they stick to constructs that look the same in every
+# mode. Keywords are left out on purpose: in markup mode words like let, set
+# and show are just words.
+
+rules:
+      # headings
+    - underlined: "^=+[[:space:]].*$"
+
+      # the name that starts a code expression, e.g. #set, #emph, #z.at
+    - statement: "#[A-Za-z_][A-Za-z0-9_-]*(\\.[A-Za-z_][A-Za-z0-9_-]*)*"
+
+      # character escapes. These are a region so that an escaped delimiter
+      # (\$, \#, \`, \/) doesn't start math, a code expression, raw text or a
+      # comment, and they end at the end of the line because a trailing
+      # backslash is a line break.
+    - constant.specialChar:
+        start: "\\\\"
+        end: "u\\{[0-9A-Fa-f]+\\}|.|$"
+        rules: []
+
+      # raw text; the fenced form has to come first
+    - constant.string:
+        start: "```"
+        end: "```"
+        rules: []
+
+    - constant.string:
+        start: "`"
+        end: "`"
+        rules: []
+
+    - constant.string:
+        start: "\""
+        end: "\""
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\(u\\{[0-9A-Fa-f]+\\}|.)"
+
+      # math mode
+    - special:
+        start: "\\$"
+        end: "\\$"
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\(u\\{[0-9A-Fa-f]+\\}|.)"
+
+      # "//" is not a comment when it follows ":", so that URLs, which typst
+      # turns into links, aren't commented out (the same idiom tex.yaml uses
+      # for an escaped "%")
+    - comment:
+        start: "(^|[^:])//"
+        end: "$"
+        rules:
+            - todo: "(TODO|XXX|FIXME):?"
+
+    - comment:
+        start: "/\\*"
+        end: "\\*/"
+        rules:
+            - todo: "(TODO|XXX|FIXME):?"
