@@ -86,9 +86,15 @@ func (w *BufWindow) SetView(view *View) {
 
 // Resize resizes this window.
 func (w *BufWindow) Resize(width, height int) {
+	oldWidth := w.bufWidth
 	w.Width, w.Height = width, height
 	w.updateDisplayInfo()
 
+	// Reveal text scrolled out while the pane was narrower. Relocate alone
+	// keeps the cursor visible but can leave the view at the end of the line.
+	if !w.Buf.Settings["softwrap"].(bool) && w.bufWidth > oldWidth {
+		w.StartCol = util.Max(0, w.StartCol-(w.bufWidth-oldWidth))
+	}
 	w.Relocate()
 }
 
