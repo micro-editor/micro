@@ -1513,6 +1513,12 @@ func (h *BufPane) MoveLinesUp() bool {
 			InfoBar.Message("Cannot move further up")
 			return false
 		}
+		active := -1
+		if h.Cursor.Loc == h.Cursor.CurSelection[0] {
+			active = 0
+		} else if h.Cursor.Loc == h.Cursor.CurSelection[1] {
+			active = 1
+		}
 		start := h.Cursor.CurSelection[0].Y
 		end := h.Cursor.CurSelection[1].Y
 		sel := 1
@@ -1534,6 +1540,9 @@ func (h *BufPane) MoveLinesUp() bool {
 		)
 		if compensate {
 			h.Cursor.CurSelection[sel].Y -= 1
+		}
+		if active >= 0 {
+			h.Cursor.Loc = h.Cursor.CurSelection[active]
 		}
 	} else {
 		if h.Cursor.Loc.Y == 0 {
@@ -1557,6 +1566,12 @@ func (h *BufPane) MoveLinesDown() bool {
 			InfoBar.Message("Cannot move further down")
 			return false
 		}
+		active := -1
+		if h.Cursor.Loc == h.Cursor.CurSelection[0] {
+			active = 0
+		} else if h.Cursor.Loc == h.Cursor.CurSelection[1] {
+			active = 1
+		}
 		start := h.Cursor.CurSelection[0].Y
 		end := h.Cursor.CurSelection[1].Y
 		sel := 1
@@ -1573,6 +1588,9 @@ func (h *BufPane) MoveLinesDown() bool {
 			start,
 			end,
 		)
+		if active >= 0 {
+			h.Cursor.Loc = h.Cursor.CurSelection[active]
+		}
 	} else {
 		if h.Cursor.Loc.Y >= h.Buf.LinesNum()-1 {
 			InfoBar.Message("Cannot move further down")
