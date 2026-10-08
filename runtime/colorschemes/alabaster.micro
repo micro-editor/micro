@@ -1,0 +1,26 @@
+# Alabaster Theme
+
+# Light Gray (Default)
+color-link default         "252"
+color-link symbol          "252"
+color-link preproc         "252"
+color-link type            "252"
+color-link statement       "252"
+
+# Green
+color-link constant.string "71"
+
+# Purple
+color-link constant        "135"
+
+# Yellow
+color-link comment         "220"
+
+# Light Blue
+color-link identifier      "75"
+
+# Red
+color-link error           "167"
+
+# Gray
+color-link line-number     "102"
