@@ -2,6 +2,8 @@ package clipboard
 
 import (
 	"errors"
+	"log"
+	"sync"
 
 	"github.com/zyedidia/clipper"
 )
@@ -37,6 +39,11 @@ const (
 
 var clipboard clipper.Clipboard
 
+var (
+	initDone   = make(chan struct{})
+	initClosed sync.Once
+)
+
 // Initialize attempts to initialize the clipboard using the given method
 func Initialize(m Method) error {
 	var err error
@@ -52,7 +59,17 @@ func Initialize(m Method) error {
 	if err != nil {
 		CurrentMethod = Internal
 	}
+	initClosed.Do(func() { close(initDone) })
 	return err
+}
+
+// InitAsync runs Initialize in a background goroutine
+func InitAsync(m Method) {
+	go func() {
+		if err := Initialize(m); err != nil {
+			log.Println(err, " or change 'clipboard' option")
+		}
+	}()
 }
 
 // SetMethod changes the clipboard access method
@@ -70,11 +87,13 @@ func SetMethod(m string) Method {
 
 // Read reads from a clipboard register
 func Read(r Register) (string, error) {
+	<-initDone
 	return read(r, CurrentMethod)
 }
 
 // Write writes text to a clipboard register
 func Write(text string, r Register) error {
+	<-initDone
 	return write(text, r, CurrentMethod)
 }
 
@@ -92,6 +111,7 @@ func ReadMulti(r Register, num, ncursors int) (string, error) {
 
 // WriteMulti writes text to a clipboard register for a certain multi-cursor
 func WriteMulti(text string, r Register, num int, ncursors int) error {
+	<-initDone
 	return writeMulti(text, r, num, ncursors, CurrentMethod)
 }
 

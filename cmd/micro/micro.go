@@ -388,7 +388,7 @@ func main() {
 	signal.Notify(sighup, syscall.SIGHUP)
 
 	m := clipboard.SetMethod(config.GetGlobalOption("clipboard").(string))
-	clipErr := clipboard.Initialize(m)
+	clipboard.InitAsync(m)
 
 	defer func() {
 		if err := recover(); err != nil {
@@ -454,10 +454,6 @@ func main() {
 	err = config.InitColorscheme()
 	if err != nil {
 		screen.TermMessage(err)
-	}
-
-	if clipErr != nil {
-		log.Println(clipErr, " or change 'clipboard' option")
 	}
 
 	config.StartAutoSave()
