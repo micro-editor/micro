@@ -1,0 +1,10 @@
+filetype: hosts
+
+detect: 
+    filename: "hosts$"
+
+rules:
+    
+    - constant.number: "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}"
+    - constant.number: "([a-f0-9:]+:+)+[a-f0-9]+"
+    - comment: "#.*$"
