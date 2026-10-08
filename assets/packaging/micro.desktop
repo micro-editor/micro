@@ -2,12 +2,15 @@
 
 Name=Micro
 GenericName=Text Editor
+GenericName[ru]=Текстовый редактор
 Comment=Edit text files in a terminal
+Comment[ru]=Редактирование текстовых файлов в терминале
 
 Icon=micro
 Type=Application
 Categories=Utility;TextEditor;Development;
 Keywords=text;editor;syntax;terminal;
+Keywords[ru]=текст;текстовый;редактор;подсветка;синтаксис;терминал;консоль;
 
 Exec=micro %F
 StartupNotify=false
