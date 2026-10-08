@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/go-errors/errors"
 	"github.com/micro-editor/micro/v2/internal/action"
 	"github.com/micro-editor/micro/v2/internal/buffer"
 	"github.com/micro-editor/micro/v2/internal/config"
+	"github.com/micro-editor/micro/v2/internal/display"
 	"github.com/micro-editor/micro/v2/internal/screen"
 	"github.com/micro-editor/micro/v2/internal/util"
 	"github.com/micro-editor/tcell/v2"
@@ -327,6 +329,62 @@ func TestSearchAndReplace(t *testing.T) {
 	}
 
 	assert.Equal(t, srTest3, string(data))
+}
+
+func TestSoftwrapScroll(t *testing.T) {
+	// lines of 1, 3, 6 and 8 rows, so rows and lines don't match up
+	var sb strings.Builder
+	for i := 0; i < 50; i++ {
+		fmt.Fprintf(&sb, "%d %s\n", i, strings.Repeat("word ", i%4*40))
+	}
+	text := sb.String()
+	openFile(createTestFile(t, text))
+	h := action.MainTab().CurPane()
+	h.Buf.SetOptionNative("softwrap", true)
+	height := h.BufView().Height
+	end := h.SLocFromLoc(h.Buf.End())
+	lastPage := h.Scroll(end, -height+1)
+
+	// check against Diff() for every StartLine near the end
+	v := h.GetView()
+	for s := h.Scroll(end, -3*height); s != end; s = h.Scroll(s, 1) {
+		v.StartLine = s
+		assert.Equal(t, h.Diff(s, end) < height, h.ScrollReachedEnd(), "ScrollReachedEnd at %v", s)
+		want := s
+		if h.Diff(s, end) < height-1 {
+			want = lastPage
+		}
+		h.ScrollAdjust()
+		assert.Equal(t, want, h.GetView().StartLine, "ScrollAdjust at %v", s)
+	}
+
+	// PageDown stops with the last line at the bottom of the view
+	h.GotoLoc(buffer.Loc{X: 0, Y: 0})
+	for i := 0; i < 50; i++ {
+		h.PageDown()
+	}
+	assert.Equal(t, lastPage, h.GetView().StartLine)
+
+	// GotoLoc recenters only when the cursor moves by at least a view height
+	from := h.Scroll(end, -2*height)
+	for _, d := range []int{height - 1, height, 1 - height, -height} {
+		h.GotoLoc(h.LocFromVLoc(display.VLoc{SLoc: from}))
+		sloc := h.Scroll(from, d)
+		h.GotoLoc(h.LocFromVLoc(display.VLoc{SLoc: sloc}))
+		recentered := h.GetView().StartLine == h.Scroll(sloc, -height/4)
+		assert.Equal(t, util.Abs(d) >= height, recentered, "GotoLoc by %d rows", d)
+	}
+
+	// opening a buffer recenters only when the cursor is not on the first page
+	for _, d := range []int{height - 1, height} {
+		sloc := h.Scroll(display.SLoc{}, d)
+		b := buffer.NewBufferFromString(text, "", buffer.BTDefault)
+		b.SetOptionNative("softwrap", true)
+		b.GetActiveCursor().GotoLoc(h.LocFromVLoc(display.VLoc{SLoc: sloc}))
+		h.OpenBuffer(b)
+		recentered := h.GetView().StartLine == h.Scroll(sloc, -height/4)
+		assert.Equal(t, d >= height, recentered, "open at row %d", d)
+	}
 }
 
 func TestMultiCursor(t *testing.T) {

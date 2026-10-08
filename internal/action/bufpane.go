@@ -361,14 +361,14 @@ func (h *BufPane) OpenBuffer(b *buffer.Buffer) {
 // Use GotoLoc when the new location may be far away from the current location.
 func (h *BufPane) GotoLoc(loc buffer.Loc) {
 	sloc := h.SLocFromLoc(loc)
-	d := h.Diff(h.SLocFromLoc(h.Cursor.Loc), sloc)
+	cur := h.SLocFromLoc(h.Cursor.Loc)
 
 	h.Cursor.GotoLoc(loc)
 
 	// If the new location is far away from the previous one,
 	// ensure the cursor is at 25% of the window height
 	height := h.BufView().Height
-	if util.Abs(d) >= height {
+	if sloc.GreaterThan(h.Scroll(cur, height-1)) || sloc.LessThan(h.Scroll(cur, -height+1)) {
 		v := h.GetView()
 		v.StartLine = h.Scroll(sloc, -height/4)
 		h.ScrollAdjust()
@@ -384,7 +384,7 @@ func (h *BufPane) initialRelocate() {
 	// If the initial cursor location is far away from the beginning
 	// of the buffer, ensure the cursor is at 25% of the window height
 	v := h.GetView()
-	if h.Diff(display.SLoc{0, 0}, sloc) < height {
+	if sloc.LessEqual(h.Scroll(display.SLoc{0, 0}, height-1)) {
 		v.StartLine = display.SLoc{0, 0}
 	} else {
 		v.StartLine = h.Scroll(sloc, -height/4)
