@@ -1,6 +1,10 @@
 package display
 
 import (
+	"regexp"
+	"slices"
+	"strings"
+
 	runewidth "github.com/mattn/go-runewidth"
 	"github.com/micro-editor/micro/v2/internal/buffer"
 	"github.com/micro-editor/micro/v2/internal/config"
@@ -14,7 +18,8 @@ type InfoWindow struct {
 	*info.InfoBuf
 	*View
 
-	hscroll int
+	hscroll    int
+	keydisplay []string
 }
 
 func (i *InfoWindow) errStyle() tcell.Style {
@@ -43,6 +48,8 @@ func NewInfoWindow(b *info.InfoBuf) *InfoWindow {
 	iw := new(InfoWindow)
 	iw.InfoBuf = b
 	iw.View = new(View)
+
+	iw.keydisplay = getKeyDisplay()
 
 	iw.Width, iw.Y = screen.Screen.Size()
 	iw.Y--
@@ -163,20 +170,68 @@ func (i *InfoWindow) displayBuffer() {
 	}
 }
 
-var keydisplay = []string{"^Q Quit, ^S Save, ^O Open, ^G Help, ^E Command Bar, ^K Cut Line", "^F Find, ^Z Undo, ^Y Redo, ^A Select All, ^D Duplicate Line, ^T New Tab"}
-
 func (i *InfoWindow) displayKeyMenu() {
-	// TODO: maybe make this based on the actual keybindings
-
-	for y := 0; y < len(keydisplay); y++ {
+	for y := 0; y < len(i.keydisplay); y++ {
 		for x := 0; x < i.Width; x++ {
-			if x < len(keydisplay[y]) {
-				screen.SetContent(x, i.Y-len(keydisplay)+y, rune(keydisplay[y][x]), nil, i.defStyle())
+			if x < len(i.keydisplay[y]) {
+				screen.SetContent(x, i.Y-len(i.keydisplay)+y, rune(i.keydisplay[y][x]), nil, i.defStyle())
 			} else {
-				screen.SetContent(x, i.Y-len(keydisplay)+y, ' ', nil, i.defStyle())
+				screen.SetContent(x, i.Y-len(i.keydisplay)+y, ' ', nil, i.defStyle())
 			}
 		}
 	}
+}
+
+func getKeyDisplay() []string {
+	keybinds := strings.Split(config.GlobalSettings["helpactions"].(string), ",")
+	mid := len(keybinds) / 2
+
+	return []string{
+		getKeyBinds(keybinds[:mid]),
+		getKeyBinds(keybinds[mid:]),
+	}
+}
+
+func getKeyBinds(actions []string) string {
+	keys := make(map[string][]string, 0)
+	re := regexp.MustCompile(`[&|,]+`)
+
+	for key, binding := range config.Bindings["buffer"] {
+		for _, action := range actions {
+			if slices.Index(re.Split(binding, -1), action) != -1 {
+				k := key
+
+				if strings.Contains(key, "Ctrl-") {
+					k = "^" + key[len(key)-1:]
+				}
+
+				keys[action] = append(keys[action], k)
+			}
+		}
+	}
+
+	var sb strings.Builder
+
+	for i, action := range actions {
+		slices.Sort(keys[action])
+
+		// TODO Those hardcoded keys could also be editable in the settings file
+		sb.WriteString(action + ": ")
+
+		for j, key := range keys[action] {
+			sb.WriteString(key)
+
+			if len(keys[action])-1 != j {
+				sb.WriteString(", ")
+			}
+		}
+
+		if len(actions)-1 != i {
+			sb.WriteString(" | ")
+		}
+	}
+
+	return sb.String()
 }
 
 func (i *InfoWindow) totalSize() int {
@@ -252,7 +307,7 @@ func (i *InfoWindow) Display() {
 		}
 		keymenuOffset := 0
 		if config.GetGlobalOption("keymenu").(bool) {
-			keymenuOffset = len(keydisplay)
+			keymenuOffset = len(i.keydisplay)
 		}
 
 		draw := func(r rune, s tcell.Style) {
