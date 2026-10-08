@@ -51,6 +51,12 @@ var (
 // To be used for file writes before umask is applied
 const FileMode os.FileMode = 0666
 
+// To be used for directory creation before umask is applied
+const DirMode os.FileMode = 0755
+
+// maxUnzipSize is the most Unzip will extract from a single archive
+const maxUnzipSize = 1 << 30
+
 const BackupSuffix = ".micro-backup"
 
 const OverwriteFailMsg = `An error occurred while writing to the file:
@@ -637,7 +643,9 @@ func Unzip(src, dest string) error {
 	}
 	defer r.Close()
 
-	os.MkdirAll(dest, 0755)
+	os.MkdirAll(dest, DirMode)
+
+	var remaining int64 = maxUnzipSize
 
 	// Closure to address file descriptors issue with all the deferred .Close() methods
 	extractAndWriteFile := func(f *zip.File) error {
@@ -654,20 +662,28 @@ func Unzip(src, dest string) error {
 			return fmt.Errorf("illegal file path: %s", path)
 		}
 
+		// Check for zip bombs (output far larger than the archive). archive/zip
+		// refuses to read past the size declared in an entry's header, so the
+		// declared size is what gets checked against the budget.
+		if f.UncompressedSize64 > uint64(remaining) {
+			return fmt.Errorf("file too large: %s", path)
+		}
+
 		if f.FileInfo().IsDir() {
 			os.MkdirAll(path, f.Mode())
 		} else {
-			os.MkdirAll(filepath.Dir(path), f.Mode())
+			os.MkdirAll(filepath.Dir(path), DirMode)
 			f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 			if err != nil {
 				return err
 			}
 			defer f.Close()
 
-			_, err = io.Copy(f, rc)
+			n, err := io.Copy(f, rc)
 			if err != nil {
 				return err
 			}
+			remaining -= n
 		}
 		return nil
 	}
