@@ -61,17 +61,17 @@ func (m *Message) Style() tcell.Style {
 	return config.DefStyle
 }
 
-func (b *Buffer) AddMessage(m *Message) {
+func (b *SharedBuffer) AddMessage(m *Message) {
 	b.Messages = append(b.Messages, m)
 }
 
-func (b *Buffer) removeMsg(i int) {
+func (b *SharedBuffer) removeMsg(i int) {
 	copy(b.Messages[i:], b.Messages[i+1:])
 	b.Messages[len(b.Messages)-1] = nil
 	b.Messages = b.Messages[:len(b.Messages)-1]
 }
 
-func (b *Buffer) ClearMessages(owner string) {
+func (b *SharedBuffer) ClearMessages(owner string) {
 	for i := len(b.Messages) - 1; i >= 0; i-- {
 		if b.Messages[i].Owner == owner {
 			b.removeMsg(i)
@@ -79,7 +79,7 @@ func (b *Buffer) ClearMessages(owner string) {
 	}
 }
 
-func (b *Buffer) ClearAllMessages() {
+func (b *SharedBuffer) ClearAllMessages() {
 	b.Messages = make([]*Message, 0)
 }
 
