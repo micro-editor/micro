@@ -110,6 +110,29 @@ func (h *BufPane) PluginCmd(args []string) {
 		return
 	}
 
+	switch args[0] {
+	case "install":
+		InfoBar.Message("Downloading plugin, please wait...")
+	case "remove":
+	case "update":
+		InfoBar.Message("Updating plugins, please wait...")
+	case "available":
+		InfoBar.Message("Fetching plugins, please wait...")
+	case "list":
+	case "search":
+		InfoBar.Message("Fetching plugins, please wait...")
+	default:
+		InfoBar.Error("Invalid plugin command:", args[0])
+	}
+
+	// NOTE: Display the message in info bar immediately before we get hang in PluginCommand()
+	// 		 Ideally we should lock it but it seems like main func in micro.go is constantly locking it
+	// 		 Locking it here will cause a deadlock
+	// screen.Lock()
+	InfoBar.Display()
+	screen.Show()
+	// screen.Unlock()
+
 	if h.Buf.Type != buffer.BTLog {
 		h.OpenLogBuf()
 	}
