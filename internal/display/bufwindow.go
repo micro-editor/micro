@@ -510,6 +510,18 @@ func (w *BufWindow) displayBuffer() {
 		bline := b.LineBytes(bloc.Y)
 		blineLen := util.CharacterCount(bline)
 
+		// An exact-width line has no extra row for a cursor at its end,
+		// so keep the wrapped row while a cursor is there.
+		cursorAtEOL := false
+		if w.active && softwrap {
+			for _, c := range cursors {
+				if !c.HasSelection() && c.Y == bloc.Y && c.X == blineLen {
+					cursorAtEOL = true
+					break
+				}
+			}
+		}
+
 		leadingwsEnd := len(util.GetLeadingWhitespace(bline))
 		trailingwsStart := blineLen - util.CharacterCount(util.GetTrailingWhitespace(bline))
 
@@ -791,7 +803,7 @@ func (w *BufWindow) displayBuffer() {
 			wordwidth = 0
 
 			// If we reach the end of the window then we either stop or we wrap for softwrap
-			if vloc.X >= maxWidth {
+			if vloc.X >= maxWidth && (len(line) > 0 || cursorAtEOL) {
 				if !softwrap {
 					break
 				} else {

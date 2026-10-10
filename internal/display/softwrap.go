@@ -134,7 +134,7 @@ func (w *BufWindow) getVLocFromLoc(loc buffer.Loc) VLoc {
 		wordwidth = 0
 		wordoffset = 0
 
-		if vloc.VisualX >= w.bufWidth {
+		if vloc.VisualX >= w.bufWidth && len(line) > 0 {
 			vloc.Row++
 			vloc.VisualX = 0
 		}
@@ -215,7 +215,9 @@ func (w *BufWindow) getLocFromVLoc(svloc VLoc) buffer.Loc {
 		widths = widths[:0]
 		wordwidth = 0
 
-		if vloc.VisualX >= w.bufWidth {
+		// len(line) > 0 is a no-op here (loc is returned, not vloc), kept in
+		// sync with getVLocFromLoc in case vloc is ever read past the loop.
+		if vloc.VisualX >= w.bufWidth && len(line) > 0 {
 			vloc.Row++
 			vloc.VisualX = 0
 		}
