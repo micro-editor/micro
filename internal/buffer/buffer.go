@@ -1468,8 +1468,13 @@ func (b *Buffer) SearchMatch(pos Loc) bool {
 	return b.LineArray.SearchMatch(b, pos)
 }
 
-// WriteLog writes a string to the log buffer
+// WriteLog writes a string to the log buffer.
+// Plugins can reach this before the log buffer exists, from preinit or from
+// the log buffer's own onBufferOpen.
 func WriteLog(s string) {
+	if LogBuf == nil {
+		return
+	}
 	LogBuf.EventHandler.Insert(LogBuf.End(), s)
 }
 

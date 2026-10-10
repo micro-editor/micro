@@ -21,6 +21,9 @@ import (
 	"github.com/micro-editor/micro/v2/internal/util"
 )
 
+// ErrNoPane is returned when an operation needs the current pane and there is none.
+var ErrNoPane = errors.New("No pane open")
+
 // A Command contains information about how to execute a command
 // It has the action for that command as well as a completer function
 type Command struct {
@@ -588,7 +591,10 @@ func doSetGlobalOptionNative(option string, nativeValue any) error {
 			b.UpdateRules()
 		}
 	} else if option == "infobar" || option == "keymenu" || option == "tabalways" {
-		Tabs.Resize()
+		// InitTabs reads the new value itself if a plugin sets it before then.
+		if Tabs != nil {
+			Tabs.Resize()
+		}
 	} else if option == "mouse" {
 		if !nativeValue.(bool) {
 			screen.Screen.DisableMouse()
@@ -639,7 +645,11 @@ func SetGlobalOptionNative(option string, nativeValue any, writeToFile bool) err
 	// check for local option first...
 	for _, s := range config.LocalSettings {
 		if s == option {
-			return MainTab().CurPane().Buf.SetOptionNative(option, nativeValue)
+			t := MainTab()
+			if t == nil {
+				return ErrNoPane
+			}
+			return t.CurPane().Buf.SetOptionNative(option, nativeValue)
 		}
 	}
 
