@@ -346,6 +346,19 @@ pluginLoop:
 	return
 }
 
+func printPluginList(out io.Writer, plugins PluginPackages) {
+	for i, p := range plugins {
+		if i > 0 {
+			fmt.Fprintf(out, "\n")
+		}
+		if p.Website == "" {
+			fmt.Fprintf(out, "%s (%s) - No website found.\n", p.Name, p.Description)
+		} else {
+			fmt.Fprintf(out, "%s (%s) - %s\n", p.Name, p.Description, p.Website)
+		}
+	}
+}
+
 func isUnknownCoreVersion() bool {
 	_, err := semver.ParseTolerant(util.Version)
 	return err != nil
@@ -720,25 +733,16 @@ func PluginCommand(out io.Writer, cmd string, args []string) {
 		}
 	case "search":
 		plugins := SearchPlugin(out, args)
-		fmt.Fprintln(out, len(plugins), "plugins found")
-		for _, p := range plugins {
-			fmt.Fprintln(out, "----------------")
-			fmt.Fprintln(out, p.String())
+		plugins_n := len(plugins)
+		if plugins_n <= 0 {
+			fmt.Fprintf(out, "No plugins found, check for typos\n")
+			return
 		}
-		fmt.Fprintln(out, "----------------")
+		fmt.Fprintf(out, "%d plugins found:\n", plugins_n)
+		printPluginList(out, plugins)
 	case "available":
-		packages := GetAllPluginPackages(out)
-		separator := ""
-		fmt.Fprintln(out, "Available Plugins:")
-		for _, pkg := range packages {
-			fmt.Fprintf(out, separator)
-			separator = "\n\n"
-			if pkg.Website == "" {
-				fmt.Fprintf(out, "%s\n\t%s", pkg.Name, pkg.Description)
-			} else {
-				fmt.Fprintf(out, "%s\n\t%s\n\t%s", pkg.Name, pkg.Description, pkg.Website)
-			}
-		}
+		plugins := GetAllPluginPackages(out)
+		printPluginList(out, plugins)
 	default:
 		fmt.Fprintln(out, "Invalid plugin command")
 	}
