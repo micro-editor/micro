@@ -318,13 +318,20 @@ func resolveIncludesInDef(files []*File, d *Def) {
 		}
 	}
 	for _, r := range d.rules.regions {
-		resolveIncludesInRegion(files, r)
+		resolveIncludesInRegion(files, r, nil)
 		r.parent = nil
 	}
 }
 
-func resolveIncludesInRegion(files []*File, region *region) {
+// included lists the filetypes already included by the enclosing regions.
+// They are not included again, so that a syntax file including itself
+// (directly or through another included file) does not recurse forever.
+func resolveIncludesInRegion(files []*File, region *region, included []string) {
 	for _, lang := range region.rules.includes {
+		if isIncluded(lang, included) {
+			continue
+		}
+		included = append(included, lang)
 		for _, searchFile := range files {
 			if lang == searchFile.FileType {
 				searchDef, err := ParseDef(searchFile, nil)
@@ -337,9 +344,18 @@ func resolveIncludesInRegion(files []*File, region *region) {
 		}
 	}
 	for _, r := range region.rules.regions {
-		resolveIncludesInRegion(files, r)
+		resolveIncludesInRegion(files, r, included)
 		r.parent = region
 	}
+}
+
+func isIncluded(lang string, included []string) bool {
+	for _, l := range included {
+		if l == lang {
+			return true
+		}
+	}
+	return false
 }
 
 func parseRules(input []any, curRegion *region) (ru *rules, err error) {
