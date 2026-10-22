@@ -2,6 +2,9 @@ package buffer
 
 import (
 	"math/rand"
+	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -320,4 +323,86 @@ func BenchmarkEdit1000000Lines100Cursors(b *testing.B) {
 
 func BenchmarkEdit1000000Lines1000Cursors(b *testing.B) {
 	benchEdit(b, 1000000, 1000)
+}
+
+func TestExecutableShellSyntaxDetection(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("executable bits are not supported on Windows")
+	}
+
+	dir := t.TempDir()
+	writeFile := func(name, content string, perm os.FileMode) string {
+		path := filepath.Join(dir, name)
+		if err := os.WriteFile(path, []byte(content), perm); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chmod(path, perm); err != nil {
+			t.Fatal(err)
+		}
+		return path
+	}
+
+	tests := []struct {
+		name     string
+		filename string
+		content  string
+		perm     os.FileMode
+		filetype string
+	}{
+		{
+			name:     "executable without shebang",
+			filename: "script",
+			content:  "echo hello\n",
+			perm:     0755,
+			filetype: "shell",
+		},
+		{
+			name:     "non-executable without shebang",
+			filename: "plain",
+			content:  "echo hello\n",
+			perm:     0644,
+			filetype: "unknown",
+		},
+		{
+			name:     "executable with unknown shebang",
+			filename: "unknown-interpreter",
+			content:  "#!/usr/bin/definitely-not-an-interpreter\necho hello\n",
+			perm:     0755,
+			filetype: "unknown",
+		},
+		{
+			name:     "executable with shell shebang",
+			filename: "shebang-script",
+			content:  "#!/bin/sh\necho hello\n",
+			perm:     0755,
+			filetype: "shell",
+		},
+		{
+			name:     "executable with known filename",
+			filename: "script.py",
+			content:  "print('hello')\n",
+			perm:     0755,
+			filetype: "python",
+		},
+		{
+			name:     "executable binary",
+			filename: "binary",
+			content:  "\x7fELF\x00binary\n",
+			perm:     0755,
+			filetype: "unknown",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := writeFile(tt.filename, tt.content, tt.perm)
+			buf, err := NewBufferFromFile(path, BTDefault)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer buf.Close()
+
+			assert.Equal(t, tt.filetype, buf.FileType())
+		})
+	}
 }

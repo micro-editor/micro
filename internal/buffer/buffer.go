@@ -3,6 +3,7 @@ package buffer
 import (
 	"bufio"
 	"bytes"
+	"cmp"
 	"crypto/md5"
 	"errors"
 	"fmt"
@@ -818,6 +819,52 @@ func resolveIncludes(syndef *highlight.Def) {
 	highlight.ResolveIncludes(syndef, files)
 }
 
+func looksBinary(b *Buffer) bool {
+	n := 0
+	for i := range b.lines {
+		for _, c := range b.lines[i].data {
+			if c == 0 || (c < 0x20 && c != '\t' && c != '\r' && c != '\n' && c != '\f' && c != '\b' && c != 0x1b) {
+				return true
+			}
+			if n++; n >= 1024 {
+				return false
+			}
+		}
+	}
+	return false
+}
+
+// isExecutableTextFileWithoutShebang returns true if the buffer points to a
+// regular file on disk that has an executable bit set, is not binary, and does
+// not start with a shebang.
+func (b *Buffer) isExecutableTextFileWithoutShebang() bool {
+	if len(b.lines) == 0 {
+		return false
+	}
+	if looksBinary(b) {
+		return false
+	}
+	for i := range b.lines {
+		d := b.lines[i].data
+		if len(bytes.TrimSpace(d)) == 0 {
+			continue
+		}
+		if bytes.HasPrefix(d, []byte("#!")) {
+			return false
+		}
+		break
+	}
+	path := cmp.Or(b.AbsPath, b.Path)
+	if path == "" {
+		return false
+	}
+	info, err := os.Stat(path)
+	if err != nil || !info.Mode().IsRegular() {
+		return false
+	}
+	return info.Mode().Perm()&0111 != 0
+}
+
 // UpdateRules updates the syntax rules and filetype for this buffer
 // This is called when the colorscheme changes
 func (b *Buffer) UpdateRules() {
@@ -981,6 +1028,15 @@ func (b *Buffer) UpdateRules() {
 				}
 				header = matches[0].header
 			}
+		}
+	}
+
+	if syntaxFile == "" && b.isExecutableTextFileWithoutShebang() {
+		// Executable text files without a shebang contain no information
+		// about their interpreter, so assume they are shell scripts.
+		b.SyntaxDef = findRealRuntimeSyntaxDef("sh", nil)
+		if b.SyntaxDef == nil {
+			b.SyntaxDef = findRuntimeSyntaxDef("sh", nil)
 		}
 	}
 
