@@ -386,6 +386,13 @@ func (la *LineArray) SearchMatch(b *Buffer, pos Loc) bool {
 	}
 
 	lineN := pos.Y
+
+	// Prevent crash if the highlighting occurs during a line deletion,
+	// before the draw position is updated.
+	if lineN >= len(la.lines) {
+		return false
+	}
+
 	if la.lines[lineN].search == nil {
 		la.lines[lineN].search = make(map[*Buffer]*searchState)
 	}
