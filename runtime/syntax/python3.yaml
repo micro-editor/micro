@@ -19,10 +19,10 @@ rules:
     - identifier: "def [a-zA-Z_0-9]+"
       # keywords
     - statement: "\\b(and|as|assert|async|await|break|case|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|match|nonlocal|not|or|pass|raise|return|try|while|with|yield)\\b"
-      # decorators
-    - preproc: "^\\s*@[^(]*"
       # operators
     - symbol.operator: "([~^.:;,+*|=!\\%@]|<|>|/|-|&)"
+      # decorators
+    - preproc: "^\\s*@[^(]*"
       # parentheses
     - symbol.brackets: "([(){}]|\\[|\\])"
       # numbers
