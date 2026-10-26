@@ -10,28 +10,6 @@ import (
 	"github.com/micro-editor/micro/v2/pkg/highlight"
 )
 
-// Finds the byte index of the nth rune in a byte slice
-func runeToByteIndex(n int, txt []byte) int {
-	if n == 0 {
-		return 0
-	}
-
-	count := 0
-	i := 0
-	for len(txt) > 0 {
-		_, _, size := util.DecodeCharacter(txt)
-
-		txt = txt[size:]
-		count += size
-		i++
-
-		if i == n {
-			break
-		}
-	}
-	return count
-}
-
 // A searchState contains the search match info for a single line
 type searchState struct {
 	search     string
@@ -41,10 +19,14 @@ type searchState struct {
 	done       bool
 }
 
-// A Line contains the data in bytes as well as a highlight state, match
+type Character struct {
+	combc []rune
+}
+
+// A Line contains the slice of runes as well as a highlight state, match
 // and a flag for whether the highlighting needs to be updated
 type Line struct {
-	data []byte
+	runes []Character
 
 	state highlight.State
 	match highlight.LineMatch
@@ -57,6 +39,24 @@ type Line struct {
 	// which have distinct searches, so in the general case there are multiple
 	// searches per a line, one search per a Buffer containing this line.
 	search map[*Buffer]*searchState
+}
+
+// data returns the line as byte slice
+func (l Line) data() []byte {
+	var runes []rune
+	for _, r := range l.runes {
+		runes = append(runes, r.combc[0:]...)
+	}
+	return []byte(string(runes))
+}
+
+// String returns the line as string
+func (l Line) String() string {
+	var runes []rune
+	for _, r := range l.runes {
+		runes = append(runes, r.combc[0:]...)
+	}
+	return string(runes)
 }
 
 const (
@@ -94,7 +94,7 @@ func Append(slice []Line, data ...Line) []Line {
 	return slice
 }
 
-// NewLineArray returns a new line array from an array of bytes
+// NewLineArray returns a new line array from an array of runes
 func NewLineArray(size uint64, endings FileFormat, reader io.Reader) *LineArray {
 	la := new(LineArray)
 
@@ -144,10 +144,16 @@ func NewLineArray(size uint64, endings FileFormat, reader io.Reader) *LineArray 
 			loaded += dlen
 		}
 
+		var runes []Character
 		if err != nil {
 			if err == io.EOF {
+				for len(data) > 0 {
+					combc, s := util.DecodeCombinedCharacter(data)
+					runes = append(runes, Character{combc})
+					data = data[s:]
+				}
 				la.lines = Append(la.lines, Line{
-					data:  data,
+					runes: runes,
 					state: nil,
 					match: nil,
 				})
@@ -155,8 +161,14 @@ func NewLineArray(size uint64, endings FileFormat, reader io.Reader) *LineArray 
 			// Last line was read
 			break
 		} else {
+			data = data[:dlen-1]
+			for len(data) > 0 {
+				combc, s := util.DecodeCombinedCharacter(data)
+				runes = append(runes, Character{combc})
+				data = data[s:]
+			}
 			la.lines = Append(la.lines, Line{
-				data:  data[:dlen-1],
+				runes: runes,
 				state: nil,
 				match: nil,
 			})
@@ -174,7 +186,7 @@ func (la *LineArray) Bytes() []byte {
 	// initsize should provide a good estimate
 	b.Grow(int(la.initsize + 4096))
 	for i, l := range la.lines {
-		b.Write(l.data)
+		b.Write(l.data())
 		if i != len(la.lines)-1 {
 			if la.Endings == FFDos {
 				b.WriteByte('\r')
@@ -188,13 +200,13 @@ func (la *LineArray) Bytes() []byte {
 // newlineBelow adds a newline below the given line number
 func (la *LineArray) newlineBelow(y int) {
 	la.lines = append(la.lines, Line{
-		data:  []byte{' '},
+		runes: []Character{},
 		state: nil,
 		match: nil,
 	})
 	copy(la.lines[y+2:], la.lines[y+1:])
 	la.lines[y+1] = Line{
-		data:  []byte{},
+		runes: []Character{},
 		state: la.lines[y].state,
 		match: nil,
 	}
@@ -205,41 +217,65 @@ func (la *LineArray) insert(pos Loc, value []byte) {
 	la.lock.Lock()
 	defer la.lock.Unlock()
 
-	x, y := runeToByteIndex(pos.X, la.lines[pos.Y].data), pos.Y
-	for i := 0; i < len(value); i++ {
-		if value[i] == '\n' || (value[i] == '\r' && i < len(value)-1 && value[i+1] == '\n') {
-			la.split(Loc{x, y})
-			x = 0
-			y++
+	var runes []Character
+	for len(value) > 0 {
+		combc, s := util.DecodeCombinedCharacter(value)
+		runes = append(runes, Character{combc})
+		value = value[s:]
+	}
+	x, y := util.Min(pos.X, len(la.lines[pos.Y].runes)), pos.Y
+	start := -1
 
-			if value[i] == '\r' {
-				i++
+outer:
+	for i, r := range runes {
+		for j := 0; j < len(r.combc); j++ {
+			if r.combc[j] == '\n' || (r.combc[j] == '\r' && i < len(runes)-1 && r.combc[j+1] == '\n') {
+				la.split(Loc{x, y})
+				if i > 0 && start < len(runes) && start < i {
+					if start < 0 {
+						start = 0
+					}
+					la.insertRunes(Loc{x, y}, runes[start:i])
+				}
+
+				x = 0
+				y++
+
+				if r.combc[j] == '\r' {
+					i++
+				}
+				if i+1 <= len(runes) {
+					start = i + 1
+				}
+
+				continue outer
 			}
-
-			continue
 		}
-		la.insertByte(Loc{x, y}, value[i])
-		x++
+	}
+	if start < 0 {
+		la.insertRunes(Loc{x, y}, runes)
+	} else if start < len(runes) {
+		la.insertRunes(Loc{x, y}, runes[start:])
 	}
 }
 
-// InsertByte inserts a byte at a given location
-func (la *LineArray) insertByte(pos Loc, value byte) {
-	la.lines[pos.Y].data = append(la.lines[pos.Y].data, 0)
-	copy(la.lines[pos.Y].data[pos.X+1:], la.lines[pos.Y].data[pos.X:])
-	la.lines[pos.Y].data[pos.X] = value
+// Inserts a rune array at a given location
+func (la *LineArray) insertRunes(pos Loc, runes []Character) {
+	la.lines[pos.Y].runes = append(la.lines[pos.Y].runes, runes...)
+	copy(la.lines[pos.Y].runes[pos.X+len(runes):], la.lines[pos.Y].runes[pos.X:])
+	copy(la.lines[pos.Y].runes[pos.X:], runes)
 }
 
 // joinLines joins the two lines a and b
 func (la *LineArray) joinLines(a, b int) {
-	la.lines[a].data = append(la.lines[a].data, la.lines[b].data...)
+	la.insertRunes(Loc{len(la.lines[a].runes), a}, la.lines[b].runes)
 	la.deleteLine(b)
 }
 
 // split splits a line at a given position
 func (la *LineArray) split(pos Loc) {
 	la.newlineBelow(pos.Y)
-	la.lines[pos.Y+1].data = append(la.lines[pos.Y+1].data, la.lines[pos.Y].data[pos.X:]...)
+	la.insertRunes(Loc{0, pos.Y + 1}, la.lines[pos.Y].runes[pos.X:])
 	la.lines[pos.Y+1].state = la.lines[pos.Y].state
 	la.lines[pos.Y].state = nil
 	la.lines[pos.Y].match = nil
@@ -253,10 +289,10 @@ func (la *LineArray) remove(start, end Loc) []byte {
 	defer la.lock.Unlock()
 
 	sub := la.Substr(start, end)
-	startX := runeToByteIndex(start.X, la.lines[start.Y].data)
-	endX := runeToByteIndex(end.X, la.lines[end.Y].data)
+	startX := util.Min(start.X, len(la.lines[start.Y].runes))
+	endX := util.Min(end.X, len(la.lines[end.Y].runes))
 	if start.Y == end.Y {
-		la.lines[start.Y].data = append(la.lines[start.Y].data[:startX], la.lines[start.Y].data[endX:]...)
+		la.lines[start.Y].runes = append(la.lines[start.Y].runes[:startX], la.lines[start.Y].runes[endX:]...)
 	} else {
 		la.deleteLines(start.Y+1, end.Y-1)
 		la.deleteToEnd(Loc{startX, start.Y})
@@ -268,12 +304,12 @@ func (la *LineArray) remove(start, end Loc) []byte {
 
 // deleteToEnd deletes from the end of a line to the position
 func (la *LineArray) deleteToEnd(pos Loc) {
-	la.lines[pos.Y].data = la.lines[pos.Y].data[:pos.X]
+	la.lines[pos.Y].runes = la.lines[pos.Y].runes[:pos.X]
 }
 
 // deleteFromStart deletes from the start of a line to the position
 func (la *LineArray) deleteFromStart(pos Loc) {
-	la.lines[pos.Y].data = la.lines[pos.Y].data[pos.X+1:]
+	la.lines[pos.Y].runes = la.lines[pos.Y].runes[pos.X+1:]
 }
 
 // deleteLine deletes the line number
@@ -287,22 +323,35 @@ func (la *LineArray) deleteLines(y1, y2 int) {
 
 // Substr returns the string representation between two locations
 func (la *LineArray) Substr(start, end Loc) []byte {
-	startX := runeToByteIndex(start.X, la.lines[start.Y].data)
-	endX := runeToByteIndex(end.X, la.lines[end.Y].data)
-	if start.Y == end.Y {
-		src := la.lines[start.Y].data[startX:endX]
-		dest := make([]byte, len(src))
-		copy(dest, src)
-		return dest
+	startX := util.Min(start.X, len(la.lines[start.Y].runes))
+	endX := util.Min(end.X, len(la.lines[end.Y].runes))
+	var runes []rune
+	if start.Y == end.Y && startX <= endX {
+		for _, r := range la.lines[start.Y].runes[startX:endX] {
+			runes = append(runes, r.combc[0:]...)
+		}
+		return []byte(string(runes))
 	}
-	str := make([]byte, 0, len(la.lines[start.Y+1].data)*(end.Y-start.Y))
-	str = append(str, la.lines[start.Y].data[startX:]...)
+
+	var str []byte
+	for _, r := range la.lines[start.Y].runes[startX:] {
+		runes = append(runes, r.combc[0:]...)
+	}
+	str = append(str, []byte(string(runes))...)
 	str = append(str, '\n')
 	for i := start.Y + 1; i <= end.Y-1; i++ {
-		str = append(str, la.lines[i].data...)
+		runes = runes[:0]
+		for _, r := range la.lines[i].runes {
+			runes = append(runes, r.combc[0:]...)
+		}
+		str = append(str, []byte(string(runes))...)
 		str = append(str, '\n')
 	}
-	str = append(str, la.lines[end.Y].data[:endX]...)
+	runes = runes[:0]
+	for _, r := range la.lines[end.Y].runes[:endX] {
+		runes = append(runes, r.combc[0:]...)
+	}
+	str = append(str, []byte(string(runes))...)
 	return str
 }
 
@@ -319,15 +368,38 @@ func (la *LineArray) Start() Loc {
 // End returns the location of the last character in the buffer
 func (la *LineArray) End() Loc {
 	numlines := len(la.lines)
-	return Loc{util.CharacterCount(la.lines[numlines-1].data), numlines - 1}
+	return Loc{len(la.lines[numlines-1].runes), numlines - 1}
+}
+
+// LineCharacters returns line n as an array of characters
+func (la *LineArray) LineCharacters(n int) []Character {
+	if n >= len(la.lines) || n < 0 {
+		return []Character{}
+	}
+
+	return la.lines[n].runes
 }
 
 // LineBytes returns line n as an array of bytes
-func (la *LineArray) LineBytes(lineN int) []byte {
-	if lineN >= len(la.lines) || lineN < 0 {
+func (la *LineArray) LineBytes(n int) []byte {
+	if n >= len(la.lines) || n < 0 {
 		return []byte{}
 	}
-	return la.lines[lineN].data
+	return la.lines[n].data()
+}
+
+// LineString returns line n as an string
+func (la *LineArray) LineString(n int) string {
+	if n >= len(la.lines) || n < 0 {
+		return string("")
+	}
+
+	var runes []rune
+	for _, r := range la.lines[n].runes {
+		runes = append(runes, r.combc[0:]...)
+	}
+
+	return string(runes)
 }
 
 // State gets the highlight state for the given line number
@@ -409,7 +481,7 @@ func (la *LineArray) SearchMatch(b *Buffer, pos Loc) bool {
 	if !s.done {
 		s.match = nil
 		start := Loc{0, lineN}
-		end := Loc{util.CharacterCount(la.lines[lineN].data), lineN}
+		end := Loc{len(la.lines[lineN].runes), lineN}
 		for start.X < end.X {
 			m, found, _ := b.FindNext(b.LastSearch, start, end, start, true, b.LastSearchRegex)
 			if !found {
