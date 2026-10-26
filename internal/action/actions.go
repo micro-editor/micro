@@ -35,6 +35,22 @@ func (h *BufPane) ScrollDown(n int) {
 	h.SetView(v)
 }
 
+// ScrollLeft is not an action
+func (h *BufPane) ScrollLeft(n int) bool {
+	v := h.GetView()
+	v.StartCol = h.HScroll(v.StartCol, -n)
+	h.SetView(v)
+	return true
+}
+
+// ScrollRight is not an action
+func (h *BufPane) ScrollRight(n int) bool {
+	v := h.GetView()
+	v.StartCol = h.HScroll(v.StartCol, n)
+	h.SetView(v)
+	return true
+}
+
 // ScrollAdjust can be used to shift the view so that the last line is at the
 // bottom if the user has scrolled past the last line.
 func (h *BufPane) ScrollAdjust() {
@@ -156,6 +172,18 @@ func (h *BufPane) ScrollUpAction() bool {
 // ScrollDownAction scrolls the view down
 func (h *BufPane) ScrollDownAction() bool {
 	h.ScrollDown(util.IntOpt(h.Buf.Settings["scrollspeed"]))
+	return true
+}
+
+// ScrollDownAction scrolls the view left
+func (h *BufPane) ScrollLeftAction() bool {
+	h.ScrollLeft(util.IntOpt(h.Buf.Settings["scrollspeed"]))
+	return true
+}
+
+// ScrollUpAction scrolls the view right
+func (h *BufPane) ScrollRightAction() bool {
+	h.ScrollRight(util.IntOpt(h.Buf.Settings["scrollspeed"]))
 	return true
 }
 
