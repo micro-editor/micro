@@ -41,9 +41,103 @@ rules:
       # urls
     - underlined: "https?://[^ )>]+"
 
-    - special: "^```$"
+      # html tags
+    - identifier: "\\<[^!].*?\\>"
 
+      # inline code
+    - special: "`[^`]*(`|$)"
+
+      # import syntaxes for different code blocks
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```(c\\+\\+|cpp)\\s*$",      rules: [{include: "c++"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```(sh|shell|bash)\\s*$",    rules: [{include: "shell"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```apacheconf\\s*$",         rules: [{include: "apacheconf"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```asm\\s*$",                rules: [{include: "asm"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```awk\\s*$",                rules: [{include: "awk"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```bat\\s*$",                rules: [{include: "batch"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```make\\s*$",               rules: [{include: "makefile"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```c\\s*$",                  rules: [{include: "c"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```clojure\\s*$",            rules: [{include: "clojure"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```cmake\\s*$",              rules: [{include: "cmake"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```coffeescript\\s*$",       rules: [{include: "coffeescript"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```conf\\s*$",               rules: [{include: "conf"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```crontab\\s*$",            rules: [{include: "crontab"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```csharp\\s*$",             rules: [{include: "csharp"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```css\\s*$",                rules: [{include: "css"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```cython\\s*$",             rules: [{include: "cython"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```d\\s*$",                  rules: [{include: "d"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```dart\\s*$",               rules: [{include: "dart"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```dockerfile\\s*$",         rules: [{include: "dockerfile"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```dogelang\\s*$",           rules: [{include: "dogelang"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```dot\\s*$",                rules: [{include: "dot"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```elixir\\s*$",             rules: [{include: "elixir"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```elm\\s*$",                rules: [{include: "elm"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```erb\\s*$",                rules: [{include: "erb"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```erlang\\s*$",             rules: [{include: "erlang"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```fish\\s*$",               rules: [{include: "fish"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```forth\\s*$",              rules: [{include: "forth"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```fortran\\s*$",            rules: [{include: "fortran"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```fsharp\\s*$",             rules: [{include: "fsharp"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```gdscript\\s*$",           rules: [{include: "gdscript"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```glsl\\s*$",               rules: [{include: "glsl"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```go\\s*$",                 rules: [{include: "go"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```golo\\s*$",               rules: [{include: "golo"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```graphql\\s*$",            rules: [{include: "graphql"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```groff\\s*$",              rules: [{include: "groff"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```haml\\s*$",               rules: [{include: "haml"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```haskell\\s*$",            rules: [{include: "haskell"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```html\\s*$",               rules: [{include: "html"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```ini\\s*$",                rules: [{include: "ini"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```java\\s*$",               rules: [{include: "java"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```javascript\\s*$",         rules: [{include: "javascript"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```jinja2\\s*$",             rules: [{include: "jinja2"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```json\\s*$",               rules: [{include: "json"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```julia\\s*$",              rules: [{include: "julia"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```kotlin\\s*$",             rules: [{include: "kotlin"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```lisp\\s*$",               rules: [{include: "lisp"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```lua\\s*$",                rules: [{include: "lua"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```micro\\s*$",              rules: [{include: "micro"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```mpdconf\\s*$",            rules: [{include: "mpd"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```nanorc\\s*$",             rules: [{include: "nanorc"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```nginx\\s*$",              rules: [{include: "nginx"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```nim\\s*$",                rules: [{include: "nim"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```objc\\s*$",               rules: [{include: "objective-c"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```ocaml\\s*$",              rules: [{include: "ocaml"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```pascal\\s*$",             rules: [{include: "pascal"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```(diff|patch)\\s*$",       rules: [{include: "patch"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```peg\\s*$",                rules: [{include: "peg"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```perl6\\s*$",              rules: [{include: "perl6"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```perl\\s*$",               rules: [{include: "perl"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```php\\s*$",                rules: [{include: "php"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```pkg-config\\s*$",         rules: [{include: "pc"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```pony\\s*$",               rules: [{include: "pony"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```puppet\\s*$",             rules: [{include: "puppet"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```python2\\s*$",            rules: [{include: "python2"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```python3?\\s*$",           rules: [{include: "python"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```r\\s*$",                  rules: [{include: "r"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```ruby\\s*$",               rules: [{include: "ruby"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```rust\\s*$",               rules: [{include: "rust"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```scala\\s*$",              rules: [{include: "scala"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```sed\\s*$",                rules: [{include: "sed"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```sls\\s*$",                rules: [{include: "salt"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```sql\\s*$",                rules: [{include: "sql"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```swift\\s*$",              rules: [{include: "swift"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```systemd\\s*$",            rules: [{include: "systemd"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```tcl\\s*$",                rules: [{include: "tcl"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```tex\\s*$",                rules: [{include: "tex"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```toml\\s*$",               rules: [{include: "toml"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```typescript\\s*$",         rules: [{include: "typescript"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```v\\s*$",                  rules: [{include: "v"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```vala\\s*$",               rules: [{include: "vala"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```verilog\\s*$",            rules: [{include: "verilog"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```vhdl\\s*$",               rules: [{include: "vhdl"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```vue\\s*$",                rules: [{include: "vue"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```xml\\s*$",                rules: [{include: "xml"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```yaml\\s*$",               rules: [{include: "yaml"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```yum\\s*$",                rules: [{include: "yum"}] }
+    - default: {end: "^\\s*```\\s*$", start: "^\\s*```zig\\s*$",                rules: [{include: "zig"}] }
+
+      # the default code block:
     - special:
-        start: "`"
-        end: "`"
+        start: "^\\s*```.*\\s*$"
+        end: "^\\s*```\\s*$"
         rules: []
