@@ -281,21 +281,29 @@ func hasIncludesInRegion(region *region) bool {
 	return hasIncludes
 }
 
-// GetIncludes returns a list of filetypes that are included by this syntax def
+// GetIncludes returns a list of filetypes that are included by this syntax def,
+// without duplicates
 func GetIncludes(d *Def) []string {
-	includes := d.rules.includes
+	var includes []string
+	add := func(langs []string) {
+		for _, lang := range langs {
+			if !isIncluded(lang, includes) {
+				includes = append(includes, lang)
+			}
+		}
+	}
+	add(d.rules.includes)
 	for _, r := range d.rules.regions {
-		includes = append(includes, getIncludesInRegion(r)...)
+		getIncludesInRegion(r, add)
 	}
 	return includes
 }
 
-func getIncludesInRegion(region *region) []string {
-	includes := region.rules.includes
+func getIncludesInRegion(region *region, add func([]string)) {
+	add(region.rules.includes)
 	for _, r := range region.rules.regions {
-		includes = append(includes, getIncludesInRegion(r)...)
+		getIncludesInRegion(r, add)
 	}
-	return includes
 }
 
 // ResolveInclude combines the rules of the given file with the Def wherever
