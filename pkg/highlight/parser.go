@@ -298,55 +298,60 @@ func getIncludesInRegion(region *region) []string {
 	return includes
 }
 
-// ResolveIncludes will sort out the rules for including other filetypes
-// You should call this after parsing all the Defs
-func ResolveIncludes(def *Def, files []*File) {
-	resolveIncludesInDef(files, def)
+// ResolveInclude combines the rules of the given file with the Def wherever
+// the Def includes the file's filetype. It returns the error if the file
+// fails to parse.
+func ResolveInclude(def *Def, file *File) error {
+	return resolveIncludeInDef(file, def)
 }
 
-func resolveIncludesInDef(files []*File, d *Def) {
+func resolveIncludeInDef(file *File, d *Def) error {
 	for _, lang := range d.rules.includes {
-		for _, searchFile := range files {
-			if lang == searchFile.FileType {
-				searchDef, err := ParseDef(searchFile, nil)
-				if err != nil {
-					continue
-				}
-				d.rules.patterns = append(d.rules.patterns, searchDef.rules.patterns...)
-				d.rules.regions = append(d.rules.regions, searchDef.rules.regions...)
+		if lang == file.FileType {
+			searchDef, err := ParseDef(file, nil)
+			if err != nil {
+				return err
 			}
+			d.rules.patterns = append(d.rules.patterns, searchDef.rules.patterns...)
+			d.rules.regions = append(d.rules.regions, searchDef.rules.regions...)
 		}
 	}
 	for _, r := range d.rules.regions {
-		resolveIncludesInRegion(files, r, nil)
+		err := resolveIncludeInRegion(file, r, nil)
+		if err != nil {
+			return err
+		}
 		r.parent = nil
 	}
+	return nil
 }
 
 // included lists the filetypes already included by the enclosing regions.
 // They are not included again, so that a syntax file including itself
 // (directly or through another included file) does not recurse forever.
-func resolveIncludesInRegion(files []*File, region *region, included []string) {
+func resolveIncludeInRegion(file *File, region *region, included []string) error {
 	for _, lang := range region.rules.includes {
 		if isIncluded(lang, included) {
 			continue
 		}
 		included = append(included, lang)
-		for _, searchFile := range files {
-			if lang == searchFile.FileType {
-				searchDef, err := ParseDef(searchFile, nil)
-				if err != nil {
-					continue
-				}
-				region.rules.patterns = append(region.rules.patterns, searchDef.rules.patterns...)
-				region.rules.regions = append(region.rules.regions, searchDef.rules.regions...)
+		if lang == file.FileType {
+			searchDef, err := ParseDef(file, nil)
+			if err != nil {
+				return err
 			}
+			region.rules.patterns = append(region.rules.patterns, searchDef.rules.patterns...)
+			region.rules.regions = append(region.rules.regions, searchDef.rules.regions...)
 		}
 	}
 	for _, r := range region.rules.regions {
-		resolveIncludesInRegion(files, r, included)
+		err := resolveIncludeInRegion(file, r, included)
+		if err != nil {
+			return err
+		}
 		r.parent = region
 	}
+	return nil
 }
 
 func isIncluded(lang string, included []string) bool {

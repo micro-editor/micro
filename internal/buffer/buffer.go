@@ -806,6 +806,11 @@ func resolveIncludes(syndef *highlight.Def) {
 					screen.TermMessage("Error parsing syntax file " + f.Name() + ": " + err.Error())
 					continue
 				}
+				err = highlight.ResolveInclude(syndef, file)
+				if err != nil {
+					screen.TermMessage("Error parsing syntax file " + f.Name() + ": " + err.Error())
+					continue
+				}
 				files = append(files, file)
 				break
 			}
@@ -814,8 +819,6 @@ func resolveIncludes(syndef *highlight.Def) {
 			break
 		}
 	}
-
-	highlight.ResolveIncludes(syndef, files)
 }
 
 // UpdateRules updates the syntax rules and filetype for this buffer
