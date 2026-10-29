@@ -101,6 +101,8 @@ func luaImportMicroShell() *lua.LTable {
 	ulua.L.SetField(pkg, "ExecCommand", luar.New(ulua.L, shell.ExecCommand))
 	ulua.L.SetField(pkg, "RunCommand", luar.New(ulua.L, shell.RunCommand))
 	ulua.L.SetField(pkg, "RunBackgroundShell", luar.New(ulua.L, shell.RunBackgroundShell))
+	ulua.L.SetField(pkg, "ExecBackgroundCommand", luar.New(ulua.L, shell.ExecBackgroundCommand))
+	ulua.L.SetField(pkg, "RunBackgroundCommand", luar.New(ulua.L, shell.RunBackgroundCommand))
 	ulua.L.SetField(pkg, "RunInteractiveShell", luar.New(ulua.L, shell.RunInteractiveShell))
 	ulua.L.SetField(pkg, "JobStart", luar.New(ulua.L, shell.JobStart))
 	ulua.L.SetField(pkg, "JobSpawn", luar.New(ulua.L, shell.JobSpawn))
