@@ -781,12 +781,11 @@ func findRuntimeSyntaxDef(name string, header *highlight.Header) *highlight.Def 
 
 func resolveIncludes(syndef *highlight.Def) {
 	includes := highlight.GetIncludes(syndef)
-	if len(includes) == 0 {
-		return
-	}
-
-	var files []*highlight.File
 	for _, f := range config.ListRuntimeFiles(config.RTSyntax) {
+		if len(includes) == 0 {
+			break
+		}
+
 		data, err := f.Data()
 		if err != nil {
 			screen.TermMessage("Error loading syntax file " + f.Name() + ": " + err.Error())
@@ -799,23 +798,32 @@ func resolveIncludes(syndef *highlight.Def) {
 			continue
 		}
 
-		for _, i := range includes {
-			if header.FileType == i {
-				file, err := highlight.ParseFile(data)
-				if err != nil {
-					screen.TermMessage("Error parsing syntax file " + f.Name() + ": " + err.Error())
-					continue
-				}
-				files = append(files, file)
-				break
-			}
+		i := indexOf(includes, header.FileType)
+		if i < 0 {
+			continue
 		}
-		if len(files) >= len(includes) {
-			break
+
+		file, err := highlight.ParseFile(data)
+		if err != nil {
+			screen.TermMessage("Error parsing syntax file " + f.Name() + ": " + err.Error())
+			continue
+		}
+		err = highlight.ResolveInclude(syndef, file)
+		if err != nil {
+			screen.TermMessage("Error parsing syntax file " + f.Name() + ": " + err.Error())
+			continue
+		}
+		includes = append(includes[:i], includes[i+1:]...)
+	}
+}
+
+func indexOf(list []string, s string) int {
+	for i, l := range list {
+		if l == s {
+			return i
 		}
 	}
-
-	highlight.ResolveIncludes(syndef, files)
+	return -1
 }
 
 // UpdateRules updates the syntax rules and filetype for this buffer
