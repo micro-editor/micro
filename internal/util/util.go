@@ -397,23 +397,26 @@ func ReplaceHome(path string) (string, error) {
 
 	var userData *user.User
 	var err error
+	var home string
 
-	homeString := strings.Split(path, "/")[0]
-	if homeString == "~" {
+	if len(path) == 1 || path[1] == '/' {
 		userData, err = user.Current()
 		if err != nil {
-			return "", errors.New("Could not find user: " + err.Error())
+			return "", fmt.Errorf("Could not find user: %w", err)
 		}
+		home = userData.HomeDir
+		path = path[1:]
 	} else {
-		userData, err = user.Lookup(homeString[1:])
+		homeString := strings.SplitN(path[1:], "/", 2)[0]
+		userData, err = user.Lookup(homeString)
 		if err != nil {
-			return "", errors.New("Could not find user: " + err.Error())
+			return "", fmt.Errorf("Could not find user: %w", err)
 		}
+		home = userData.HomeDir
+		path = path[1+len(homeString):]
 	}
 
-	home := userData.HomeDir
-
-	return strings.Replace(path, homeString, home, 1), nil
+	return home + path, nil
 }
 
 // GetPathAndCursorPosition returns a filename without everything following a `:`
