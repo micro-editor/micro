@@ -886,7 +886,8 @@ func (h *BufPane) UnbindCmd(args []string) {
 
 // RunCmd runs a shell command in the background
 func (h *BufPane) RunCmd(args []string) {
-	runf, err := shell.RunBackgroundShell(shellquote.Join(args...))
+	// using strings.Join instead of shellquote to prevent escaping certain chars
+	runf, err := shell.RunBackgroundShell(strings.Join(args, " "))
 	if err != nil {
 		InfoBar.Error(err)
 	} else {
