@@ -406,3 +406,43 @@ func TestExecutableShellSyntaxDetection(t *testing.T) {
 		})
 	}
 }
+
+func TestHasNoShebang(t *testing.T) {
+	tests := []struct {
+		name  string
+		lines []string
+		want  bool
+	}{
+		{
+			name:  "no shebang",
+			lines: []string{"echo hello"},
+			want:  true,
+		},
+		{
+			name:  "shebang on first line",
+			lines: []string{"#!/bin/sh", "echo hello"},
+			want:  false,
+		},
+		{
+			name:  "shebang after empty lines",
+			lines: []string{"", "   ", "\t", "#!/bin/sh"},
+			want:  false,
+		},
+		{
+			name:  "leading whitespace is not a shebang",
+			lines: []string{"  #!/bin/sh"},
+			want:  true,
+		},
+		{
+			name:  "only whitespace",
+			lines: []string{"", "   ", "\t"},
+			want:  true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := NewBufferFromString(strings.Join(tt.lines, "\n"), "", BTDefault)
+			assert.Equal(t, tt.want, b.hasNoShebang())
+		})
+	}
+}

@@ -11,6 +11,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -819,50 +820,49 @@ func resolveIncludes(syndef *highlight.Def) {
 	highlight.ResolveIncludes(syndef, files)
 }
 
-func looksBinary(b *Buffer) bool {
-	n := 0
+func isCharBinary(c byte) bool {
+	return c < 0x20 && strings.IndexByte("\t\f\r\n\b\a\x1b", c) < 0
+}
+
+func (b *Buffer) isBinary() bool {
+	nbudget := 1024
 	for i := range b.lines {
-		for _, c := range b.lines[i].data {
-			if c == 0 || (c < 0x20 && c != '\t' && c != '\r' && c != '\n' && c != '\f' && c != '\b' && c != 0x1b) {
-				return true
-			}
-			if n++; n >= 1024 {
-				return false
-			}
+		data := b.lines[i].data
+		data = data[:min(len(data), nbudget)] // like std::span, slice is reference
+		if slices.ContainsFunc(data, isCharBinary) {
+			return true
+		}
+		if nbudget -= len(data); nbudget == 0 {
+			break
 		}
 	}
 	return false
+}
+
+func (b *Buffer) hasNoShebang() bool {
+	for i := range b.lines {
+		d := b.lines[i].data
+		if len(bytes.TrimSpace(d)) == 0 {
+			continue
+		}
+		return !bytes.HasPrefix(d, []byte("#!"))
+	}
+	return true
+}
+
+func (b *Buffer) isFileExecutable() bool {
+	info, err := os.Stat(cmp.Or(b.AbsPath, b.Path))
+	return err == nil && info.Mode().IsRegular() && (info.Mode().Perm()&0111 != 0)
 }
 
 // isExecutableTextFileWithoutShebang returns true if the buffer points to a
 // regular file on disk that has an executable bit set, is not binary, and does
 // not start with a shebang.
 func (b *Buffer) isExecutableTextFileWithoutShebang() bool {
-	if len(b.lines) == 0 {
-		return false
-	}
-	if looksBinary(b) {
-		return false
-	}
-	for i := range b.lines {
-		d := b.lines[i].data
-		if len(bytes.TrimSpace(d)) == 0 {
-			continue
-		}
-		if bytes.HasPrefix(d, []byte("#!")) {
-			return false
-		}
-		break
-	}
-	path := cmp.Or(b.AbsPath, b.Path)
-	if path == "" {
-		return false
-	}
-	info, err := os.Stat(path)
-	if err != nil || !info.Mode().IsRegular() {
-		return false
-	}
-	return info.Mode().Perm()&0111 != 0
+	return b.isFileExecutable() &&
+		!b.isBinary() &&
+		b.hasNoShebang()
+		
 }
 
 // UpdateRules updates the syntax rules and filetype for this buffer
