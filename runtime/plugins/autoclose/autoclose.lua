@@ -1,12 +1,29 @@
 VERSION = "1.0.0"
 
 local uutil = import("micro/util")
+local buffer = import("micro/buffer")
 local autoclosePairs = {"\"\"", "''", "``", "()", "{}", "[]"}
 local autoNewlinePairs = {"()", "{}", "[]"}
 
 function charAt(str, i)
     -- lua indexing is one off from go
     return uutil.RuneAt(str, i-1)
+end
+
+-- returns true if str ends inside an unterminated string quoted with q
+function inString(str, q)
+    local inside = false
+    local i = 1
+    while i <= #str do
+        local c = str:sub(i, i)
+        if c == "\\" then
+            i = i + 1
+        elseif c == q then
+            inside = not inside
+        end
+        i = i + 1
+    end
+    return inside
 end
 
 function onRune(bp, r)
@@ -20,8 +37,24 @@ function onRune(bp, r)
                 break
             end
 
-            if bp.Cursor.X > 1 and (uutil.IsWordChar(charAt(curLine, bp.Cursor.X-1)) or charAt(curLine, bp.Cursor.X-1) == charAt(autoclosePairs[i], 1)) then
-                break
+            local isQuote = charAt(autoclosePairs[i], 1) == charAt(autoclosePairs[i], 2)
+
+            if isQuote then
+                -- don't autoclose a quote that terminates a string
+                local before = uutil.String(bp.Buf:Substr(buffer.Loc(0, bp.Cursor.Y), buffer.Loc(bp.Cursor.X-1, bp.Cursor.Y)))
+                if inString(before, r) then
+                    break
+                end
+            end
+
+            if bp.Cursor.X > 1 then
+                local prev = charAt(curLine, bp.Cursor.X-1)
+                -- a word character before a double quote or backtick is
+                -- usually a string prefix (e.g. f"" in Python), but before
+                -- a single quote it is usually an apostrophe
+                if (uutil.IsWordChar(prev) and (not isQuote or r == "'")) or prev == charAt(autoclosePairs[i], 1) then
+                    break
+                end
             end
         end
         if r == charAt(autoclosePairs[i], 1) then

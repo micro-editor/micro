@@ -329,6 +329,45 @@ func TestSearchAndReplace(t *testing.T) {
 	assert.Equal(t, srTest3, string(data))
 }
 
+func TestAutocloseQuotes(t *testing.T) {
+	tests := []struct {
+		content  string
+		input    string
+		expected string
+	}{
+		{"", `"`, `""`},
+		{"", `f"`, `f""`},
+		{"", `print(f"{name}")`, `print(f"{name}")`},
+		{"", `x = "hello!"`, `x = "hello!"`},
+		{"", `don't`, `don't`},
+		{`f"{name}`, `"`, `f"{name}"`},
+		{`"hello!`, `"`, `"hello!"`},
+		{`"a\"b`, `"`, `"a\"b"`},
+		{`"a" + `, `"`, `"a" + ""`},
+	}
+
+	for _, test := range tests {
+		file := createTestFile(t, test.content)
+
+		openFile(file)
+
+		if findBuffer(file) == nil {
+			t.Fatalf("Could not find buffer %s", file)
+		}
+
+		injectKey(tcell.KeyEnd, 0, tcell.ModNone)
+		injectString(test.input)
+		injectKey(tcell.KeyCtrlS, rune(tcell.KeyCtrlS), tcell.ModCtrl)
+
+		data, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, test.expected+"\n", string(data), "typing %q", test.input)
+	}
+}
+
 func TestMultiCursor(t *testing.T) {
 	// TODO
 }
