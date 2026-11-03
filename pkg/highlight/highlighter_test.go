@@ -55,3 +55,40 @@ func TestRegionRulesAppliedAtAnyStartOffset(t *testing.T) {
 		}
 	}
 }
+
+// The rules inside a region must be applied even if it contains a nested region.
+const regionSyntax2 = `filetype: test
+
+detect:
+    filename: "\\.test$"
+
+rules:
+    - comment:
+        start: "//"
+        end: "$"
+        rules:
+            - todo: "TODO"
+            - comment:
+                start: "<"
+                end: ">"
+                rules:
+                    - error: "FIXME"
+`
+
+func TestRegionRulesApplyWithNestedRegion(t *testing.T) {
+	line := "xxx // TODO < FIXME > "
+
+	h := testHighlighter(t, regionSyntax2)
+
+	todo, ok := Groups["todo"]
+	if !ok {
+		t.Fatal("todo group not defined")
+	}
+
+	matches := h.HighlightString(line)
+
+	g, ok2 := matches[0][7]
+	if !ok2 || g != todo {
+		t.Errorf("%q: todo inside the comment was not highlighted", line)
+	}
+}
