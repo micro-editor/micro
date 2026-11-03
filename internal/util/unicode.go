@@ -15,6 +15,9 @@ import (
 // treat a character with combining code points as just the original code point.
 // For rendering, micro will display the combining characters. It's not perfect
 // but it's pretty good.
+// Zero-width joiners and non-joiners (e.g. U+200C, commonly used in Persian)
+// are treated the same way, so that they are not displayed as separate blank
+// cells.
 
 var minMark = rune(unicode.Mark.R16[0].Lo)
 
@@ -23,7 +26,7 @@ func isMark(r rune) bool {
 	if r < minMark {
 		return false
 	}
-	return unicode.In(r, unicode.Mark)
+	return unicode.In(r, unicode.Mark, unicode.Join_Control)
 }
 
 // DecodeCharacter returns the next character from an array of bytes

@@ -31,3 +31,22 @@ func TestSliceVisualEnd(t *testing.T) {
 	assert.Equal(t, []byte("ello"), slc)
 	assert.Equal(t, 0, n)
 }
+
+func TestDecodeCharacterJoinControl(t *testing.T) {
+	// ZWNJ and ZWJ are zero-width and must be kept together with
+	// the preceding character instead of becoming separate characters
+	s := "sl‌‌‍am"
+
+	r, combc, size := DecodeCharacterInString(s[1:])
+	assert.Equal(t, 'l', r)
+	assert.Equal(t, []rune{'‌', '‌', '‍'}, combc)
+	assert.Equal(t, 10, size)
+
+	r, combc, size = DecodeCharacter([]byte(s[1:]))
+	assert.Equal(t, 'l', r)
+	assert.Equal(t, []rune{'‌', '‌', '‍'}, combc)
+	assert.Equal(t, 10, size)
+
+	assert.Equal(t, 4, CharacterCountInString(s))
+	assert.Equal(t, 4, CharacterCount([]byte(s)))
+}
