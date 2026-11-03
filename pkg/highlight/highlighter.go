@@ -144,7 +144,7 @@ func (h *Highlighter) highlightRegion(highlights LineMatch, start int, canMatchE
 	}
 
 	if !statesOnly {
-		fullHighlights := make([]Group, lineLen)
+		fullHighlights := make([]Group, firstLoc[0])
 		for i := 0; i < len(fullHighlights); i++ {
 			fullHighlights[i] = curRegion.group
 		}
@@ -152,12 +152,10 @@ func (h *Highlighter) highlightRegion(highlights LineMatch, start int, canMatchE
 		if searchNesting {
 			for _, p := range curRegion.rules.patterns {
 				if curRegion.group == curRegion.limitGroup || p.group == curRegion.limitGroup {
-					matches := findAllIndex(p.regex, line)
+					matches := findAllIndex(p.regex, sliceEnd(line, firstLoc[0]))
 					for _, m := range matches {
-						if (endLoc == nil) || (m[0] < endLoc[0]) {
-							for i := m[0]; i < m[1]; i++ {
-								fullHighlights[i] = p.group
-							}
+						for i := m[0]; i < m[1]; i++ {
+							fullHighlights[i] = p.group
 						}
 					}
 				}
