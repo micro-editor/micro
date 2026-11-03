@@ -91,6 +91,31 @@ func init() {
 	}
 
 	Stdout = new(bytes.Buffer)
+
+	envAmbiguousWide = runewidth.EastAsianWidth
+}
+
+// envAmbiguousWide is the ambiguous width detected from the environment
+// (the locale environment variables and RUNEWIDTH_EASTASIAN) at startup
+var envAmbiguousWide bool
+
+// SetAmbiguousWidth sets how wide the characters with the East Asian
+// Ambiguous width property (see Unicode Standard Annex #11) are considered
+// to be: one column ("single"), two columns ("double") or as many columns
+// as the environment implies ("auto")
+func SetAmbiguousWidth(mode string) {
+	var wide bool
+	switch mode {
+	case "single":
+		wide = false
+	case "double":
+		wide = true
+	default:
+		wide = envAmbiguousWide
+	}
+	// go-runewidth syncs DefaultCondition with runewidth.EastAsianWidth only
+	// once, in its init(), so overriding it later has to be done here
+	runewidth.DefaultCondition.EastAsianWidth = wide
 }
 
 // SliceEnd returns a byte slice where the index is a rune index
