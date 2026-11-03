@@ -18,7 +18,7 @@ rules:
     # object key separator
     - statement: ":"
     # keywords
-    - statement: "\\b(assert|else|error|for|function|if|import|importstr|in|local|tailstrict|then)\\b"
+    - statement: "\\b(assert|else|error|for|function|if|import|importstr|importbin|in|local|tailstrict|then)\\b"
     # operators
     - symbol.operator: "([.;,+*|=!\\%]|<|>|/|-|&)"
     # parentheses
