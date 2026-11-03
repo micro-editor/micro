@@ -55,6 +55,14 @@ rules:
             - constant.specialChar: "\\\\."
             - identifier: "\\x24\\{.*?\\}"
 
+    # regex literal: a slash that follows an operator, opening bracket,
+    # comma, semicolon or `return` and is not the start of a comment
+    - constant.regex:
+        start: "(^|[(,=:\\[!&|?{};]|\\breturn)\\s*/([^/*\\\\]|\\\\.)"
+        end: "(^|[^\\\\])(\\\\\\\\)*/[dgimsuvy]*|$"
+        rules:
+            - constant.specialChar: "\\\\."
+
     - constant.bool: "\\b(true|false)\\b"
     - constant.bool.false: "\\b(false)\\b"
     - constant.bool.true: "\\b(true)\\b"
