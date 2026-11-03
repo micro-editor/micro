@@ -1,0 +1,96 @@
+filetype: mojo
+
+detect:
+    filename: "\\.(mojo|🔥)$"
+
+rules:
+    # ALL_CAPS constants; CamelCase types, plus SIMD and the Self keyword
+    - constant: "\\b_*[A-Z][A-Z0-9_]*[A-Z][A-Z0-9_]*\\b"
+    - type: "\\b_*[A-Z]+[a-zA-Z0-9_]*[a-z]+[a-zA-Z0-9_]*\\b"
+    - type: "\\b(SIMD|Self)\\b"
+    # built-in constants
+    - constant: "\\b(True|False|None|self)\\b"
+    # built-in functions
+    - identifier: "\\b(abs|all|any|ascii|atof|atol|bin|breakpoint|chr|conforms_to|debug_assert|divmod|enumerate|hash|hex|input|iter|len|map|max|min|next|oct|open|ord|origin_of|pow|print|range|rebind|repr|reversed|round|sort|swap|type_of|zip|__mlir_attr|__mlir_op|__mlir_type)\\b"
+    # special method names
+    - identifier: "\\b__[A-Za-z0-9_]+__\\b"
+    # definitions
+    - identifier: "\\bdef\\s+[A-Za-z_][A-Za-z0-9_]*"
+    # keywords
+    - statement: "\\b(and|as|assert|async|await|break|case|class|comptime|continue|def|del|elif|else|except|finally|fn|for|from|global|if|import|in|is|lambda|match|nonlocal|not|or|pass|raise|ref|return|struct|trait|try|var|while|with|yield|__async|__await|__enum|__extension|__mlir_region)\\b"
+    # soft keywords
+    - statement: "\\b(capturing|raises)\\b"
+    - statement: "\\bwhere(\\s|$)"
+    # argument conventions, only when an argument name follows
+    - statement: "\\b(deinit|imm|mut|out|read)\\s+\\b"
+    # operators
+    - symbol.operator: "([~^.:;,+*|=!\\%@]|<|>|/|-|&)"
+    # parentheses
+    - symbol.brackets: "([(){}]|\\[|\\])"
+    # decorators
+    - preproc: "^\\s*@[A-Za-z_][A-Za-z0-9_.]*"
+    # numbers
+    - constant.number: "(\\b[0-9][0-9_]*(\\.[0-9_]*)?|\\B\\.[0-9][0-9_]*)([eE][+-]?[0-9][0-9_]*)?" # decimal
+    - constant.number: "\\b0[bB][01_]+\\b"          # bin
+    - constant.number: "\\b0[oO][0-7_]+\\b"         # oct
+    - constant.number: "\\b0[xX][0-9a-fA-F_]+\\b"   # hex
+
+    # t-strings: t"...", rt"..." and tr"..."; other prefixed forms fall back to plain strings
+    - constant.string:
+        start: "\\b([tT][rR]?|[rR][tT])\"\"\""
+        end: "\"\"\""
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\([\\\\\"'abfnrtv]|[0-7]{1,3}|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8}|$)"
+            - identifier: "\\{\\{|\\}\\}|\\{[^{}]*\\}"
+            - constant.specialChar: "\\{\\{|\\}\\}"
+
+    - constant.string:
+        start: "\\b([tT][rR]?|[rR][tT])\""
+        end: "(\"|$)"
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\([\\\\\"'abfnrtv]|[0-7]{1,3}|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8}|$)"
+            - identifier: "\\{\\{|\\}\\}|\\{[^{}]*\\}"
+            - constant.specialChar: "\\{\\{|\\}\\}"
+
+    # strings
+    - constant.string:
+        start: "\"\"\""
+        end: "\"\"\""
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\([\\\\\"'abfnrtv]|[0-7]{1,3}|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8}|$)"
+
+    - constant.string:
+        start: "'''"
+        end: "'''"
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\([\\\\\"'abfnrtv]|[0-7]{1,3}|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8}|$)"
+
+    - constant.string:
+        start: "\""
+        end: "(\"|$)"
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\([\\\\\"'abfnrtv]|[0-7]{1,3}|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8}|$)"
+
+    - constant.string:
+        start: "'"
+        end: "('|$)"
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\([\\\\\"'abfnrtv]|[0-7]{1,3}|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8}|$)"
+
+    # escaped identifiers: `struct`, `pop.add`
+    - default:
+        start: "`"
+        end: "(`|$)"
+        rules: []
+
+    - comment:
+        start: "#"
+        end: "$"
+        rules:
+            - todo: "(TODO|FIXME|XXX|HACK|BUG|NOTE):?"
