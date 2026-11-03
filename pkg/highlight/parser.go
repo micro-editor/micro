@@ -282,58 +282,93 @@ func hasIncludesInRegion(region *region) bool {
 }
 
 // GetIncludes returns a list of filetypes that are included by this syntax def
+// GetIncludes returns the filetypes that the Def includes, each one once
 func GetIncludes(d *Def) []string {
-	includes := d.rules.includes
-	for _, r := range d.rules.regions {
-		includes = append(includes, getIncludesInRegion(r)...)
-	}
-	return includes
-}
-
-func getIncludesInRegion(region *region) []string {
-	includes := region.rules.includes
-	for _, r := range region.rules.regions {
-		includes = append(includes, getIncludesInRegion(r)...)
-	}
-	return includes
-}
-
-// ResolveIncludes will sort out the rules for including other filetypes
-// You should call this after parsing all the Defs
-func ResolveIncludes(def *Def, files []*File) {
-	resolveIncludesInDef(files, def)
-}
-
-func resolveIncludesInDef(files []*File, d *Def) {
-	for _, lang := range d.rules.includes {
-		for _, searchFile := range files {
-			if lang == searchFile.FileType {
-				searchDef, _ := ParseDef(searchFile, nil)
-				d.rules.patterns = append(d.rules.patterns, searchDef.rules.patterns...)
-				d.rules.regions = append(d.rules.regions, searchDef.rules.regions...)
+	var includes []string
+	add := func(langs []string) {
+		for _, lang := range langs {
+			if !isIncluded(lang, includes) {
+				includes = append(includes, lang)
 			}
 		}
 	}
+	add(d.rules.includes)
 	for _, r := range d.rules.regions {
-		resolveIncludesInRegion(files, r)
+		getIncludesInRegion(r, add)
+	}
+	return includes
+}
+
+func getIncludesInRegion(region *region, add func([]string)) {
+	add(region.rules.includes)
+	for _, r := range region.rules.regions {
+		getIncludesInRegion(r, add)
+	}
+}
+
+// ResolveInclude combines the rules of the given file with the Def wherever
+// the Def includes the file's filetype. It returns the error if the file
+// fails to parse.
+func ResolveInclude(def *Def, file *File) error {
+	return resolveIncludeInDef(file, def)
+}
+
+func resolveIncludeInDef(file *File, d *Def) error {
+	for _, lang := range d.rules.includes {
+		if lang == file.FileType {
+			searchDef, err := ParseDef(file, nil)
+			if err != nil {
+				return err
+			}
+			d.rules.patterns = append(d.rules.patterns, searchDef.rules.patterns...)
+			d.rules.regions = append(d.rules.regions, searchDef.rules.regions...)
+		}
+	}
+	for _, r := range d.rules.regions {
+		err := resolveIncludeInRegion(file, r, nil)
+		if err != nil {
+			return err
+		}
 		r.parent = nil
 	}
+	return nil
 }
 
-func resolveIncludesInRegion(files []*File, region *region) {
+// included lists the filetypes already included by the enclosing regions.
+// They are not included again, so that a syntax file including itself
+// (directly or through another included file) does not recurse forever.
+func resolveIncludeInRegion(file *File, region *region, included []string) error {
 	for _, lang := range region.rules.includes {
-		for _, searchFile := range files {
-			if lang == searchFile.FileType {
-				searchDef, _ := ParseDef(searchFile, nil)
-				region.rules.patterns = append(region.rules.patterns, searchDef.rules.patterns...)
-				region.rules.regions = append(region.rules.regions, searchDef.rules.regions...)
+		if isIncluded(lang, included) {
+			continue
+		}
+		included = append(included[:len(included):len(included)], lang)
+		if lang == file.FileType {
+			searchDef, err := ParseDef(file, nil)
+			if err != nil {
+				return err
 			}
+			region.rules.patterns = append(region.rules.patterns, searchDef.rules.patterns...)
+			region.rules.regions = append(region.rules.regions, searchDef.rules.regions...)
 		}
 	}
 	for _, r := range region.rules.regions {
-		resolveIncludesInRegion(files, r)
+		err := resolveIncludeInRegion(file, r, included)
+		if err != nil {
+			return err
+		}
 		r.parent = region
 	}
+	return nil
+}
+
+func isIncluded(lang string, included []string) bool {
+	for _, l := range included {
+		if l == lang {
+			return true
+		}
+	}
+	return false
 }
 
 func parseRules(input []any, curRegion *region) (ru *rules, err error) {
