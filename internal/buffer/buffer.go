@@ -3,6 +3,7 @@ package buffer
 import (
 	"bufio"
 	"bytes"
+	"cmp"
 	"crypto/md5"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -818,6 +820,51 @@ func resolveIncludes(syndef *highlight.Def) {
 	highlight.ResolveIncludes(syndef, files)
 }
 
+func isCharBinary(c byte) bool {
+	return c < 0x20 && strings.IndexByte("\t\f\r\n\b\a\x1b", c) < 0
+}
+
+func (b *Buffer) isBinary() bool {
+	nbudget := 1024
+	for i := range b.lines {
+		data := b.lines[i].data
+		data = data[:min(len(data), nbudget)] // like std::span, slice is reference
+		if slices.ContainsFunc(data, isCharBinary) {
+			return true
+		}
+		if nbudget -= len(data); nbudget == 0 {
+			break
+		}
+	}
+	return false
+}
+
+func (b *Buffer) hasNoShebang() bool {
+	for i := range b.lines {
+		d := b.lines[i].data
+		if len(bytes.TrimSpace(d)) == 0 {
+			continue
+		}
+		return !bytes.HasPrefix(d, []byte("#!"))
+	}
+	return true
+}
+
+func (b *Buffer) isFileExecutable() bool {
+	info, err := os.Stat(cmp.Or(b.AbsPath, b.Path))
+	return err == nil && info.Mode().IsRegular() && (info.Mode().Perm()&0111 != 0)
+}
+
+// isExecutableTextFileWithoutShebang returns true if the buffer points to a
+// regular file on disk that has an executable bit set, is not binary, and does
+// not start with a shebang.
+func (b *Buffer) isExecutableTextFileWithoutShebang() bool {
+	return b.isFileExecutable() &&
+		!b.isBinary() &&
+		b.hasNoShebang()
+		
+}
+
 // UpdateRules updates the syntax rules and filetype for this buffer
 // This is called when the colorscheme changes
 func (b *Buffer) UpdateRules() {
@@ -981,6 +1028,15 @@ func (b *Buffer) UpdateRules() {
 				}
 				header = matches[0].header
 			}
+		}
+	}
+
+	if syntaxFile == "" && b.isExecutableTextFileWithoutShebang() {
+		// Executable text files without a shebang contain no information
+		// about their interpreter, so assume they are shell scripts.
+		b.SyntaxDef = findRealRuntimeSyntaxDef("sh", nil)
+		if b.SyntaxDef == nil {
+			b.SyntaxDef = findRuntimeSyntaxDef("sh", nil)
 		}
 	}
 
