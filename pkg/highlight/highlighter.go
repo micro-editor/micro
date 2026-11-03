@@ -142,14 +142,6 @@ func (h *Highlighter) highlightRegion(highlights LineMatch, start int, canMatchE
 			}
 		}
 	}
-	if firstRegion != nil && firstLoc[0] != lineLen {
-		if !statesOnly {
-			highlights[start+firstLoc[0]] = firstRegion.limitGroup
-		}
-		h.highlightEmptyRegion(highlights, start+firstLoc[1], canMatchEnd, lineNum, sliceStart(line, firstLoc[1]), statesOnly)
-		h.highlightRegion(highlights, start+firstLoc[1], canMatchEnd, lineNum, sliceStart(line, firstLoc[1]), firstRegion, statesOnly)
-		return highlights
-	}
 
 	if !statesOnly {
 		fullHighlights := make([]Group, lineLen)
@@ -176,6 +168,14 @@ func (h *Highlighter) highlightRegion(highlights LineMatch, start int, canMatchE
 				highlights[start+i] = h
 			}
 		}
+	}
+
+	if firstRegion != nil && firstLoc[0] != lineLen {
+		if !statesOnly {
+			highlights[start+firstLoc[0]] = firstRegion.limitGroup
+		}
+		h.highlightRegion(highlights, start+firstLoc[1], canMatchEnd, lineNum, sliceStart(line, firstLoc[1]), firstRegion, statesOnly)
+		return highlights
 	}
 
 	loc := endLoc
