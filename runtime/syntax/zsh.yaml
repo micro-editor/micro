@@ -33,6 +33,12 @@ rules:
       ## Variables
     - identifier: "\\$\\{?[0-9A-Z_!@#$*?-]+\\}?" #(i)
 
+      ## Escaped character, so that e.g. \' does not start a string
+    - constant.specialChar:
+        start: "\\\\"
+        end: ".|$"
+        rules: []
+
     - constant.string:
         start: "\""
         end: "\""
