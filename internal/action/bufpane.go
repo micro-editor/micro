@@ -6,13 +6,13 @@ import (
 
 	luar "layeh.com/gopher-luar"
 
+	"github.com/gdamore/tcell/v3"
 	"github.com/micro-editor/micro/v2/internal/buffer"
 	"github.com/micro-editor/micro/v2/internal/config"
 	"github.com/micro-editor/micro/v2/internal/display"
 	ulua "github.com/micro-editor/micro/v2/internal/lua"
 	"github.com/micro-editor/micro/v2/internal/screen"
 	"github.com/micro-editor/micro/v2/internal/util"
-	"github.com/micro-editor/tcell/v2"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -254,6 +254,14 @@ type BufPane struct {
 	// since we may not know the window geometry yet. In such case we finish
 	// its initialization a bit later, after the initial resize.
 	initialized bool
+
+	// pasteBuf accumulates key events that arrive between
+	// EventPaste{Start} and EventPaste{End}. tcell v3 no longer
+	// delivers the pasted payload as a single EventPaste.Text();
+	// keys arrive as intervening EventKey values and we reassemble
+	// them into a single clipboard-style insert.
+	pasteBuf strings.Builder
+	inPaste  bool
 }
 
 func newBufPane(buf *buffer.Buffer, win display.BWindow, tab *Tab) *BufPane {
@@ -450,20 +458,46 @@ func (h *BufPane) HandleEvent(event tcell.Event) {
 	}
 
 	switch e := event.(type) {
-	case *tcell.EventRaw:
-		re := RawEvent{
-			esc: e.EscSeq(),
-		}
-		h.DoKeyEvent(re)
 	case *tcell.EventPaste:
-		h.paste(e.Text())
-		h.Relocate()
+		if e.Start() {
+			h.pasteBuf.Reset()
+			h.inPaste = true
+		} else {
+			text := h.pasteBuf.String()
+			h.pasteBuf.Reset()
+			h.inPaste = false
+			if text != "" {
+				h.paste(text)
+				h.Relocate()
+			}
+		}
 	case *tcell.EventKey:
+		// While a bracketed paste is in flight, tcell v3 delivers
+		// the payload as a stream of EventKey between EventPaste
+		// Start/End. Accumulate rather than dispatching so plugin
+		// hooks and macro recording fire once at End, not per key.
+		//
+		// tcell v3 promotes control bytes to dedicated Key codes
+		// with empty Str. Map only the two that realistically
+		// appear in clipboard text (TAB, LF) back to their
+		// source bytes; everything else is dropped silently so odd
+		// control chars can't sneak into the buffer.
+		if h.inPaste {
+			switch e.Key() {
+			case tcell.KeyTab:
+				h.pasteBuf.WriteByte('\t')
+			case tcell.KeyEnter:
+				h.pasteBuf.WriteByte('\n')
+			default:
+				h.pasteBuf.WriteString(e.Str())
+			}
+			break
+		}
 		ke := keyEvent(e)
 
 		done := h.DoKeyEvent(ke)
 		if !done && e.Key() == tcell.KeyRune {
-			h.DoRuneInsert(e.Rune())
+			h.DoRuneInsert(e.Str())
 		}
 	case *tcell.EventMouse:
 		if e.Buttons() != tcell.ButtonNone {
@@ -616,15 +650,17 @@ func (h *BufPane) DoMouseEvent(e MouseEvent, te *tcell.EventMouse) bool {
 	// return false
 }
 
-// DoRuneInsert inserts a given rune into the current buffer
-// (possibly multiple times for multiple cursors)
-func (h *BufPane) DoRuneInsert(r rune) {
+// DoRuneInsert inserts the given grapheme-cluster string into the
+// current buffer (possibly multiple times for multiple cursors).
+// In tcell v3 each EventKey carries a grapheme cluster via Str(),
+// so the input width is a string rather than a single rune.
+func (h *BufPane) DoRuneInsert(s string) {
 	cursors := h.Buf.GetCursors()
 	for _, c := range cursors {
 		// Insert a character
 		h.Buf.SetCurCursor(c.Num)
 		h.Cursor = c
-		if !h.PluginCB("preRune", string(r)) {
+		if !h.PluginCB("preRune", s) {
 			continue
 		}
 		if c.HasSelection() {
@@ -635,15 +671,15 @@ func (h *BufPane) DoRuneInsert(r rune) {
 		if h.Buf.OverwriteMode {
 			next := c.Loc
 			next.X++
-			h.Buf.Replace(c.Loc, next, string(r))
+			h.Buf.Replace(c.Loc, next, s)
 		} else {
-			h.Buf.Insert(c.Loc, string(r))
+			h.Buf.Insert(c.Loc, s)
 		}
 		if recordingMacro {
-			curmacro = append(curmacro, r)
+			curmacro = append(curmacro, s)
 		}
 		h.Relocate()
-		h.PluginCB("onRune", string(r))
+		h.PluginCB("onRune", s)
 	}
 }
 

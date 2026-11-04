@@ -306,6 +306,8 @@ Here are the available options:
    keybinding) then it is a good idea to enable this option during the paste
    and disable once the paste is over. See `> help copypaste` for details about
    copying and pasting in a terminal environment.
+   Note: This option defaults to `true` in case `micro` is used in the Windows
+   Terminal App.
 
     default value: `false`
 
