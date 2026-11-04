@@ -5,10 +5,16 @@ detect:
 
 rules:
     - preproc: "[\\{\\|]\\b(atom|lit|sym|ident|call|lvalue|sideeffect|nosideeffect|param|genericparam|module|type|let|var|const|result|proc|method|iterator|converter|macro|template|field|enumfield|forvar|label|nk[a-zA-Z]+|alias|noalias)\\b[\\}\\|]"
-    - statement: "\\b(addr|and|as|asm|atomic|bind|block|break|case|cast|concept|const|continue|converter|defer|discard|distinct|div|do|elif|else|end|enum|except|export|finally|for|from|func|generic|if|import|in|include|interface|is|isnot|iterator|let|macro|method|mixin|mod|nil|not|notin|object|of|or|out|proc|ptr|raise|ref|return|shl|shr|static|template|try|tuple|type|using|var|when|while|with|without|xor|yield)\\b"
-    - statement: "\\b(deprecated|noSideEffect|constructor|destructor|override|procvar|compileTime|noReturn|acyclic|final|shallow|pure|asmNoStackFrame|error|fatal|warning|hint|line|linearScanEnd|computedGoto|unroll|immediate|checks|boundsChecks|overflowChecks|nilChecks|assertations|warnings|hints|optimization|patterns|callconv|push|pop|global|pragma|experimental|bitsize|volatile|noDecl|header|incompleteStruct|compile|link|passC|passL|emit|importc|importcpp|importobjc|codegenDecl|injectStmt|intdefine|strdefine|varargs|exportc|extern|bycopy|byref|union|packed|unchecked|dynlib|cdecl|thread|gcsafe|threadvar|guard|locks|compileTime)\\b"
-    - symbol.operator: "[=\\+\\-\\*/<>@\\$~&%\\|!\\?\\^\\.:\\\\]+"
-    - special: "\\{\\.|\\.\\}|\\[\\.|\\.\\]|\\(\\.|\\.\\)|;|,|`"
+    - statement: "\\b(addr|and|as|asm|bind|block|break|case|cast|concept|const|continue|converter|defer|discard|distinct|div|do|elif|else|end|enum|except|export|finally|for|from|func|if|import|in|include|interface|is|isnot|iterator|let|macro|method|mixin|mod|nil|not|notin|object|of|or|out|proc|ptr|raise|ref|return|shl|shr|static|template|try|tuple|type|using|var|when|while|with|xor|yield)\\b"
+    - symbol.operator: "[=\\+\\-\\*/<>@\\$~&%\\|!\\?\\^\\.:\\\\,;]+"
+    - special:
+        start: "\\{\\."
+        end: "\\.\\}"
+        rules:
+            - statement: "\\b(deprecated|compileTime|noreturn|acyclic|final|shallow|pure|asmNoStackFrame|error|fatal|warning|hint|line|linearScanEnd|computedGoto|immediate|redefine|compilation|push|pop|register|global|used|experimental|bitsize|size|align|noalias|volatile|nodecl|header|incompleteStruct|completeStruct|compile|link|passc|localPassC|passl|emit|importCpp|importJs|importObjC|codegenDecl|cppNonPod|define|intdefine|strdefine|booldefine|pragma|importc|exportc|exportCpp|extern|bycopy|byref|varargs|union|packed|dynlib|thread|threadvar|guard|locks)\\b"
+    - special:
+        start: "`"
+        end: "`"
     - statement: "\\.\\."
     - type: "\\b(int|cint|int8|int16|int32|int64|uint|uint8|uint16|uint32|uint64|float|float32|float64|bool|char|enum|string|cstring|cstringArray|cdouble|csize_t|pointer|array|openarray|seq|varargs|tuple|object|set|void|auto|cshort|clong|range|nil|T|untyped|typedesc)\\b"
     - type: "'[iI](8|16|32|64)?\\b|'[uU](8|16|32|64)?\\b|'[fF](32|64|128)?\\b|'[dD]\\b"
@@ -17,11 +23,42 @@ rules:
     - constant.number: "\\b0[ocC][0-7][0-7_]+\\b"
     - constant.number: "\\b0[bB][01][01_]+\\b"
     - constant.number: "\\b[0-9_]((\\.?)[0-9_]+)?[eE][+\\-][0-9][0-9_]+\\b"
-    - constant.string: "\"(\\\\.|[^\"])*\"|'(\\\\.|[^'])*'"
-    - comment: "[[:space:]]*(?:[^\\\\]|^)#.*$"
-    - comment:
-        start: "\\#\\["
-        end: "\\]\\#"
+
+    - constant.string:
+        start: "([a-zA-Z0-9_]+)?\"\"\""
+        end: "\"\"\"+"
+        skip: "\\\\."
         rules: []
 
-    - todo: "(TODO|FIXME|XXX):?"
+    - constant.string:
+        start: "[a-zA-Z0-9_]+\""
+        end: "\""
+        skip: '""'
+        rules: []
+
+    - constant.string:
+        start: "\""
+        end: "\""
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\([\"'abceflnprtv\\\\]|\\d+|x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|u\\{[0-9A-Fa-f]+\\})"
+
+    - constant.string:
+        start: "'"
+        end: "'"
+        skip: "\\\\."
+        rules:
+            - error: "[[:graph:]]{2,}'"
+            - constant.specialChar: "\\\\([\"'abceflnrtv\\\\]|\\d+|x[0-9A-Fa-f]{2})"
+
+    - comment:
+        start: "#\\["
+        end: "\\]#"
+        rules:
+            - todo: "(TODO|FIXME|XXX):?"
+
+    - comment:
+        start: "#"
+        end: "$"
+        rules:
+            - todo: "(TODO|FIXME|XXX):?"
