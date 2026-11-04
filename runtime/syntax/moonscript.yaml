@@ -1,0 +1,80 @@
+filetype: moonscript
+
+detect:
+    filename: "\\.moon$"
+
+rules:
+    # Block comments like --[[ ... ]]
+    - comment:
+        start: "--\\[\\["
+        end: "\\]\\]"
+        rules: []
+
+    # Line comments like -- ...
+    - comment:
+        start: "--"
+        end: "$"
+        rules: []
+
+    # Long bracket strings like [[ ... ]] or [==[ ... ]==]
+    - constant.string:
+        start: "\\[=*\\["
+        end: "\\]=*\\]"
+        rules: []
+
+    # Double-quoted strings (with #{} interpolation and escapes)
+    - constant.string:
+        start: "\""
+        end: "\""
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\."
+            - default:
+                start: "#\\{"
+                end: "\\}"
+                rules: []
+
+    # Single-quoted strings (no interpolation, but escapes still work)
+    - constant.string:
+        start: "'"
+        end: "'"
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\."
+
+    # Numbers (int, float, hex, scientific notation)
+    - constant.number: "\\b(0x[0-9a-fA-F]+|[0-9]+\\.?[0-9]*([eE][-+]?[0-9]+)?|\\.[0-9]+)\\b"
+
+    # Booleans, nil
+    - constant.bool: "\\b(true|false|nil)\\b"
+
+    # self, @ references
+    # (using "special" instead of "identifier.var" since most colorschemes
+    # define a distinct color for "special" but leave subgroups like
+    # "identifier.var" to fall back to plain "identifier")
+    - special: "@@?[A-Za-z_][A-Za-z0-9_]*"
+    - special: "\\bself\\b"
+
+    # Keywords, control flow
+    - statement: "\\b(if|then|else|elseif|unless|switch|when|for|while|until|do|in|and|or|not|return|break|continue|export|import|from|local|using|with)\\b"
+
+    # Class-related keywords
+    - statement: "\\b(class|extends|super|new)\\b"
+
+    # Function definition arrows
+    - statement: "(->|=>)"
+
+    # Table, class member access
+    - identifier: "\\.[A-Za-z_][A-Za-z0-9_]*"
+
+    # Function calls: name(...)
+    - identifier: "[A-Za-z_][A-Za-z0-9_]*\\("
+
+    # Table key shorthand, e.g. `key:` in table literals, includes the colon
+    - identifier: "\\b[A-Za-z_][A-Za-z0-9_]*:"
+
+    # Operators and punctuation
+    - symbol.operator: "(\\+|-|\\*|/|%|\\^|#|==|~=|<=|>=|<|>|=|:|\\\\|\\.\\.\\.?|::|!)"
+
+    # Braces, brackets, parens
+    - symbol.brackets: "[{}()\\[\\]]"
