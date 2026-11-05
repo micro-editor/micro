@@ -109,6 +109,7 @@ you can use `Ctrl-n` and `Ctrl-p` to cycle through matches.
 | Alt-x             | Skip multiple cursor selection                                                                |
 | Alt-m             | Spawn a new cursor at the beginning of every line in the current selection                    |
 | Ctrl-MouseLeft    | Place a multiple cursor at any location                                                       |
+| Alt-MouseLeft     | Place a multiple cursor at any location                                                       |
 
 ### Other
 

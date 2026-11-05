@@ -629,6 +629,7 @@ conventions for text editing defaults.
     "MouseLeftRelease": "MouseRelease",
     "MouseMiddle":      "PastePrimary",
     "Ctrl-MouseLeft":   "MouseMultiCursor",
+    "Alt-MouseLeft":    "MouseMultiCursor",
 
     // Multi-cursor bindings
     "Alt-n":        "SpawnMultiCursor",
