@@ -206,6 +206,9 @@ func BufUnmap(k Event) {
 type BufPane struct {
 	display.BWindow
 
+	// infoPane owns this pane when it is the embedded command-bar buffer.
+	infoPane *InfoPane
+
 	// Buf is the buffer this BufPane views
 	Buf *buffer.Buffer
 	// Bindings stores the association of key events and actions
@@ -596,11 +599,15 @@ func (h *BufPane) HasKeyEvent(e Event) bool {
 // to and executing it
 func (h *BufPane) DoMouseEvent(e MouseEvent, te *tcell.EventMouse) bool {
 	binds := h.Bindings()
-	action, _ := binds.NextEvent(e, te)
+	action, more := binds.NextEvent(e, te)
 	if action != nil {
 		action(h)
 		binds.ResetEvents()
 		return true
+	} else if !more && h.infoPane != nil {
+		// An unmatched command-bar mouse event ends an incomplete sequence,
+		// just as an unmatched key does. Document-pane dispatch is unchanged.
+		binds.ResetEvents()
 	}
 	// TODO
 	return false
