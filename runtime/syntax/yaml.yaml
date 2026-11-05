@@ -7,10 +7,10 @@ detect:
 rules:
     - type: "(^| )!!(binary|bool|float|int|map|null|omap|seq|set|str) "
     - constant:  "\\b(YES|yes|Y|y|ON|on|TRUE|True|true|NO|no|N|n|OFF|off|FALSE|False|false)\\b"
-    - statement: "(:[[:space:]]|\\[|\\]|:[[:space:]]+[|>]|^[[:space:]]*- )"
+    - statement: "(:[[:space:]]|\\[|\\]|:[[:space:]]+[|>]|^[[:space:]]*-( |$))"
     - identifier: "[[:space:]][\\*&][A-Za-z0-9]+"
-    - type: "[-.\\w]+:"
-    - statement: ":"
+    - type: "[-.\\w]+:([[:space:]]|$)"
+    - statement: ":([[:space:]]|$)"
     - special:  "(^---|^\\.\\.\\.|^%YAML|^%TAG)"
 
     - constant.string:
