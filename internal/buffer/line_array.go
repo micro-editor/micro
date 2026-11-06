@@ -200,8 +200,8 @@ func (la *LineArray) newlineBelow(y int) {
 	}
 }
 
-// Inserts a byte array at a given location
-func (la *LineArray) insert(pos Loc, value []byte) {
+// Inserts a byte array at a given location and returns the location where the insertion ends
+func (la *LineArray) insert(pos Loc, value []byte) Loc {
 	la.lock.Lock()
 	defer la.lock.Unlock()
 
@@ -221,6 +221,7 @@ func (la *LineArray) insert(pos Loc, value []byte) {
 		la.insertByte(Loc{x, y}, value[i])
 		x++
 	}
+	return Loc{x, y}
 }
 
 // InsertByte inserts a byte at a given location

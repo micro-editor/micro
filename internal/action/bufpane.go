@@ -627,17 +627,21 @@ func (h *BufPane) DoRuneInsert(r rune) {
 		if !h.PluginCB("preRune", string(r)) {
 			continue
 		}
-		if c.HasSelection() {
-			c.DeleteSelection()
-			c.ResetSelection()
-		}
 
 		if h.Buf.OverwriteMode {
+			if c.HasSelection() {
+				c.DeleteSelection()
+				c.ResetSelection()
+			}
 			next := c.Loc
 			next.X++
 			h.Buf.Replace(c.Loc, next, string(r))
 		} else {
-			h.Buf.Insert(c.Loc, string(r))
+			if c.HasSelection() {
+				h.Buf.Replace(c.CurSelection[0], c.CurSelection[1], string(r))
+			} else {
+				h.Buf.Insert(c.Loc, string(r))
+			}
 		}
 		if recordingMacro {
 			curmacro = append(curmacro, r)
