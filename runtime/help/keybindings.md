@@ -252,6 +252,7 @@ SelectToParagraphNext
 InsertNewline
 Backspace
 Delete
+DeleteSelections
 InsertTab
 Save
 SaveAll
