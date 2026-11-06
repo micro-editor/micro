@@ -751,44 +751,44 @@ func (h *BufPane) Backspace() bool {
 
 // DeleteWordRight deletes the word to the right of the cursor
 func (h *BufPane) DeleteWordRight() bool {
-	h.SelectWordRight()
-	if h.Cursor.HasSelection() {
-		h.Cursor.DeleteSelection()
-		h.Cursor.ResetSelection()
+	if !h.Cursor.HasSelection() {
+		h.SelectWordRight()
 	}
+	h.Cursor.DeleteSelection()
+	h.Cursor.ResetSelection()
 	h.Relocate()
 	return true
 }
 
 // DeleteWordLeft deletes the word to the left of the cursor
 func (h *BufPane) DeleteWordLeft() bool {
-	h.SelectWordLeft()
-	if h.Cursor.HasSelection() {
-		h.Cursor.DeleteSelection()
-		h.Cursor.ResetSelection()
+	if !h.Cursor.HasSelection() {
+		h.SelectWordLeft()
 	}
+	h.Cursor.DeleteSelection()
+	h.Cursor.ResetSelection()
 	h.Relocate()
 	return true
 }
 
 // DeleteSubWordRight deletes the sub-word to the right of the cursor
 func (h *BufPane) DeleteSubWordRight() bool {
-	h.SelectSubWordRight()
-	if h.Cursor.HasSelection() {
-		h.Cursor.DeleteSelection()
-		h.Cursor.ResetSelection()
+	if !h.Cursor.HasSelection() {
+		h.SelectSubWordRight()
 	}
+	h.Cursor.DeleteSelection()
+	h.Cursor.ResetSelection()
 	h.Relocate()
 	return true
 }
 
 // DeleteSubWordLeft deletes the sub-word to the left of the cursor
 func (h *BufPane) DeleteSubWordLeft() bool {
-	h.SelectSubWordLeft()
-	if h.Cursor.HasSelection() {
-		h.Cursor.DeleteSelection()
-		h.Cursor.ResetSelection()
+	if !h.Cursor.HasSelection() {
+		h.SelectSubWordLeft()
 	}
+	h.Cursor.DeleteSelection()
+	h.Cursor.ResetSelection()
 	h.Relocate()
 	return true
 }
