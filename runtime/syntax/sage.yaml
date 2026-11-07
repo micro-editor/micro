@@ -2,7 +2,7 @@ filetype: sage
 
 detect:
     filename: "\\.sage$"
-    header: "^#!.*/(env +)?sage( |$)"
+    header: "^#!.*/(env +((-S|--split-string(=\\w+)? +)?)?)?sage( |$)"
 
 rules:
 

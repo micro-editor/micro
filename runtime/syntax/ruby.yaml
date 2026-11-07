@@ -2,7 +2,7 @@ filetype: ruby
 
 detect:
     filename: '\.(rb|rake|gemspec)$|^(.*[\\/])?(Gemfile|config\.ru|Rakefile|Capfile|Vagrantfile|Guardfile|Appfile|Fastfile|Pluginfile|Podfile|\.?[Bb]rewfile)$'
-    header: "^#!.*/(env +)?ruby( |$)"
+    header: "^#!.*/(env +((-S|--split-string(=\\w+)? +)?)?)?ruby( |$)"
 
 rules:
     - comment.bright:

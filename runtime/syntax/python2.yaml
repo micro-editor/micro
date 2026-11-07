@@ -2,7 +2,7 @@ filetype: python2
 
 detect:
     filename: "\\.py2$"
-    header: "^#!.*/(env +)?python2$"
+    header: "^#!.*/(env +((-S|--split-string(=\\w+)? +)?)?)?python2$"
 
 rules:
 

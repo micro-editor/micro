@@ -2,7 +2,7 @@ filetype: zsh
 
 detect:
     filename: "(\\.zsh$|\\.?(zshenv|zprofile|zshrc|zlogin|zlogout)$)"
-    header: "^#!.*/(env +)?zsh( |$)"
+    header: "^#!.*/(env +((-S|--split-string(=\\w+)? +)?)?)?zsh( |$)"
 
 rules:
     ## Numbers

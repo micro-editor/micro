@@ -2,7 +2,7 @@ filetype: tcl
 
 detect:
     filename: "\\.tcl$"
-    header: "^#!.*/(env +)?tclsh( |$)"
+    header: "^#!.*/(env +((-S|--split-string(=\\w+)? +)?)?)?tclsh( |$)"
 
 rules:
     - statement: "\\b(after|append|array|auto_execok|auto_import|auto_load|auto_load_index|auto_qualify|binary|break|case|catch|cd|clock|close|concat|continue|else|elseif|encoding|eof|error|eval|exec|exit|expr|fblocked|fconfigure|fcopy|file|fileevent|flush|for|foreach|format|gets|glob|global|history|if|incr|info|interp|join|lappend|lindex|linsert|list|llength|load|lrange|lreplace|lsearch|lset|lsort|namespace|open|package|pid|puts|pwd|read|regexp|regsub|rename|return|scan|seek|set|socket|source|split|string|subst|switch|tclLog|tell|time|trace|unknown|unset|update|uplevel|upvar|variable|vwait|while)\\b"

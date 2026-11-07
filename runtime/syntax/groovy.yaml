@@ -2,7 +2,7 @@ filetype: groovy
 
 detect:
     filename: "(\\.(groovy|gy|gvy|gsh|gradle)$|^[Jj]enkinsfile$)"
-    header: "^#!.*/(env +)?groovy *$"
+    header: "^#!.*/(env +((-S|--split-string(=\\w+)? +)?)?)?groovy *$"
 
 rules:
     # And the style guide for constants is CONSTANT_CASE
