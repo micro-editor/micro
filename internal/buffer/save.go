@@ -259,7 +259,7 @@ func (b *Buffer) saveToFile(filename string, withSudo bool, autoSave bool) error
 	if b.Settings["eofnewline"].(bool) {
 		end := b.End()
 		if b.RuneAt(Loc{end.X - 1, end.Y}) != '\n' {
-			b.insert(end, []byte{'\n'})
+			b.insert(end, []byte{'\n'}, userEdit)
 		}
 	}
 
