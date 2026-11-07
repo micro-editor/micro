@@ -420,7 +420,7 @@ func (pv *PluginVersion) DownloadAndInstall(out io.Writer) error {
 		return err
 	}
 	targetDir := filepath.Join(ConfigDir, "plug", pv.pack.Name)
-	dirPerm := os.FileMode(0755)
+	dirPerm := util.DirMode
 	if err = os.MkdirAll(targetDir, dirPerm); err != nil {
 		return err
 	}
