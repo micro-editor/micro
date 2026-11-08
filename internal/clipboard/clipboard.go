@@ -1,7 +1,11 @@
 package clipboard
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
+	"os"
+	"os/exec"
 
 	"github.com/zyedidia/clipper"
 )
@@ -42,10 +46,11 @@ func Initialize(m Method) error {
 	var err error
 	switch m {
 	case External:
-		clips := make([]clipper.Clipboard, 0, len(clipper.Clipboards)+1)
+		clips := make([]clipper.Clipboard, 0, len(clipper.Clipboards)+2)
 		clips = append(clips, &clipper.Custom{
 			Name: "micro-clip",
 		})
+		clips = append(clips, &waylandTextClipboard{})
 		clips = append(clips, clipper.Clipboards...)
 		clipboard, err = clipper.GetClipboard(clips...)
 	}
@@ -160,4 +165,57 @@ func write(text string, r Register, m Method) error {
 		}
 	}
 	return nil
+}
+
+type waylandTextClipboard struct{}
+
+func (wl *waylandTextClipboard) Init() error {
+	if os.Getenv("WAYLAND_DISPLAY") == "" {
+		return fmt.Errorf("Wayland display not found")
+	}
+	if _, err := exec.LookPath("wl-paste"); err != nil {
+		return err
+	}
+	_, err := exec.LookPath("wl-copy")
+	return err
+}
+
+func (wl *waylandTextClipboard) ReadAll(reg string) ([]byte, error) {
+	args, err := waylandPasteArgs(reg)
+	if err != nil {
+		return nil, err
+	}
+	return exec.Command("wl-paste", args...).Output()
+}
+
+func (wl *waylandTextClipboard) WriteAll(reg string, p []byte) error {
+	args, err := waylandCopyArgs(reg)
+	if err != nil {
+		return err
+	}
+	cmd := exec.Command("wl-copy", args...)
+	cmd.Stdin = bytes.NewReader(p)
+	return cmd.Run()
+}
+
+func waylandPasteArgs(reg string) ([]string, error) {
+	switch reg {
+	case clipper.RegClipboard:
+		return []string{"--no-newline"}, nil
+	case clipper.RegPrimary:
+		return []string{"--no-newline", "--primary"}, nil
+	default:
+		return nil, &clipper.ErrInvalidReg{Reg: reg}
+	}
+}
+
+func waylandCopyArgs(reg string) ([]string, error) {
+	switch reg {
+	case clipper.RegClipboard:
+		return []string{"--type", "text/plain"}, nil
+	case clipper.RegPrimary:
+		return []string{"--type", "text/plain", "--primary"}, nil
+	default:
+		return nil, &clipper.ErrInvalidReg{Reg: reg}
+	}
 }
