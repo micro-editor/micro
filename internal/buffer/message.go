@@ -1,8 +1,8 @@
 package buffer
 
 import (
+	"github.com/gdamore/tcell/v3"
 	"github.com/micro-editor/micro/v2/internal/config"
-	"github.com/micro-editor/tcell/v2"
 )
 
 type MsgType int
