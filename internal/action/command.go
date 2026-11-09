@@ -300,21 +300,56 @@ func (h *BufPane) PwdCmd(args []string) {
 	}
 }
 
+// Returns the value of buffer.NewBufferFromFile(path, buffer.BTDefault, false)
+// retrying with sudo if it fails due to lacking permissions
+// If an error occurs, the error is displayed on the info bar and nil is returned
+func newBufferFromFileWithSudo(path string) <-chan *buffer.Buffer {
+	ch := make(chan *buffer.Buffer, 1)
+
+	autoSu := config.GlobalSettings["autosu"].(bool)
+	buf, err := buffer.NewBufferFromFile(path, buffer.BTDefault, autoSu)
+	// Don't retry if sudo was already used
+	if (!autoSu && errors.Is(err, os.ErrPermission)) {
+		InfoBar.YNPrompt(
+			fmt.Sprintf("Permission denied. Do you want to load this file using %s? (y,n)", config.GlobalSettings["sucmd"].(string)),
+			func(yes, canceled bool) {
+				if yes && !canceled {
+					buf, err := buffer.NewBufferFromFile(path, buffer.BTDefault, true)
+					if (err != nil) {
+						InfoBar.Error(err)
+					}
+					ch <- buf
+				} else {
+					ch <- nil
+				}
+			},
+		)
+	} else {
+		if (err != nil) {
+			InfoBar.Error(err)
+		}
+		ch <- buf
+	}
+
+	return ch
+}
+
 // OpenCmd opens a new buffer with a given filename
 func (h *BufPane) OpenCmd(args []string) {
 	if len(args) > 0 {
 		open := func() {
-			b, err := buffer.NewBufferFromFile(args[0], buffer.BTDefault)
-			if err != nil {
-				InfoBar.Error(err)
+			b := <-newBufferFromFileWithSudo(args[0])
+			if b == nil {
 				return
 			}
 			h.OpenBuffer(b)
 		}
 		if h.Buf.Modified() && !h.Buf.Shared() {
-			h.closePrompt("Save", open)
+			h.closePrompt("Save", func() {
+				go open()
+			})
 		} else {
-			open()
+			go open()
 		}
 	} else {
 		InfoBar.Error("No filename")
@@ -512,15 +547,15 @@ func (h *BufPane) VSplitCmd(args []string) {
 		return
 	}
 
-	for _, a := range args {
-		buf, err := buffer.NewBufferFromFile(a, buffer.BTDefault)
-		if err != nil {
-			InfoBar.Error(err)
-			return
+	go func() {
+		for _, a := range args {
+			b := <-newBufferFromFileWithSudo(a)
+			if b == nil {
+				return
+			}
+			h.VSplitBuf(b)
 		}
-
-		h.VSplitBuf(buf)
-	}
+	}()
 }
 
 // HSplitCmd opens one or more horizontal splits with the files given as arguments
@@ -532,15 +567,15 @@ func (h *BufPane) HSplitCmd(args []string) {
 		return
 	}
 
-	for _, a := range args {
-		buf, err := buffer.NewBufferFromFile(a, buffer.BTDefault)
-		if err != nil {
-			InfoBar.Error(err)
-			return
+	go func() {
+		for _, a := range args {
+			b := <-newBufferFromFileWithSudo(a)
+			if b == nil {
+				return
+			}
+			h.HSplitBuf(b)
 		}
-
-		h.HSplitBuf(buf)
-	}
+	}()
 }
 
 // EvalCmd evaluates a lua expression
@@ -555,9 +590,8 @@ func (h *BufPane) NewTabCmd(args []string) {
 	iOffset := config.GetInfoBarOffset()
 	if len(args) > 0 {
 		for _, a := range args {
-			b, err := buffer.NewBufferFromFile(a, buffer.BTDefault)
-			if err != nil {
-				InfoBar.Error(err)
+			b := <-newBufferFromFileWithSudo(a)
+			if b == nil {
 				return
 			}
 			tp := NewTabFromBuffer(0, 0, width, height-1-iOffset, b)
