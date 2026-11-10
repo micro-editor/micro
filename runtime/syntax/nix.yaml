@@ -4,29 +4,26 @@ detect:
     filename: "\\.nix$"
 
 rules:
-    - special: "\\b(Ellipsis|null|self|super|true|false|abort)\\b"
-    - statement: "\\b(let|in|with|import|rec|inherit)\\b"
-    - symbol.operator: "([~^.:;,+*|=!\\%@]|<|>|/|-|&)"
-    - symbol.brackets: "([(){}]|\\[|\\])"
-
-    - constant.number: "\\b[0-9](_?[0-9])*(\\.([0-9](_?[0-9])*)?)?(e[0-9](_?[0-9])*)?\\b"
+    - include: _nix_inner
 
     - constant.string:
         start: "\""
         end: "\""
-        rules: []
+        rules:
+            - symbol.brackets:
+                start: "\\$\\{"
+                end: "\\}"
+                rules:
+                    - default: ".*"
+                    - include: _nix_inner
 
     - constant.string:
         start: "''"
         end: "''"
-        rules: []
-
-    - comment:
-        start: "#"
-        end: "$"
-        rules: []
-
-    - comment:
-        start: "/\\*"
-        end: "\\*/"
-        rules: []
+        rules:
+            - symbol.brackets:
+                start: "\\$\\{"
+                end: "\\}"
+                rules:
+                    - default: ".*"
+                    - include: _nix_inner
