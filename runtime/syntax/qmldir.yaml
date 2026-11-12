@@ -1,0 +1,16 @@
+filetype: qmldir
+
+detect:
+    filename: "(qmldir$|\\.qmldir$)"
+
+rules:
+    - type: "\\b[A-Z]\\w*\\b"
+    - constant.number: "(\\bauto\\b|\\b\\d+\\.\\d+\\b)"
+    - constant.string: "[\\w\\.+\\-/]+\\.(qmltypes|qml|js)"
+
+    - identifier: "\\bmodule\\b (.*)$"
+    - constant.string: "\\bplugin\\b (.*)$"
+    - statement: "\\b(module|singleton|internal|plugin|classname|typeinfo|depends|import|prefer|linktarget)\\b"
+    - statement: "\\b(designersupported|static|system|default|optional)\\b"
+
+    - comment: "#.*"
