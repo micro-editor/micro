@@ -99,7 +99,7 @@ Here are the available options:
    A higher limit means better accuracy of guessing the filetype, but also
    taking more time.
 
-   default value: `100`
+    default value: `100`
 
 * `diffgutter`: display diff indicators before lines.
 
@@ -342,7 +342,7 @@ Here are the available options:
 * `reload`: controls the reload behavior of the current buffer in case the file
    has changed. The available options are `prompt`, `auto` & `disabled`.
 
-   default value: `prompt`
+    default value: `prompt`
 
 * `rmtrailingws`: micro will automatically trim trailing whitespaces at ends of
    lines.
@@ -504,7 +504,7 @@ Here are the available options:
 
    Note: The change will take effect after the next start of `micro`.
 
-   default value: `auto`
+    default value: `auto`
 
 * `useprimary` (only useful on unix): defines whether or not micro will use the
    primary clipboard to copy selections in the background. This does not affect
@@ -595,6 +595,7 @@ so that you can see what the formatting should look like.
     "keymenu": false,
     "linter": true,
     "literate": true,
+    "lockbindings": false,
     "matchbrace": true,
     "matchbraceleft": true,
     "matchbracestyle": "underline",
@@ -638,6 +639,7 @@ so that you can see what the formatting should look like.
     "tabreverse": false,
     "tabsize": 4,
     "tabstospaces": false,
+    "truecolor": "auto",
     "useprimary": true,
     "wordwrap": false,
     "xterm": false
