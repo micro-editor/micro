@@ -23,7 +23,11 @@ rules:
     - symbol.operator: "[-+*/%=<>.:;,~&|^!?]|\\b(offsetof|sizeof)\\b"
     - symbol.brackets: "[(){}]|\\[|\\]"
       # Integer Constants
-    - constant.number: "(\\b([1-9][0-9]*|0[0-7]*|0[Xx][0-9A-Fa-f]+|0[Bb][01]+)([Uu][Ll]?[Ll]?|[Ll][Ll]?[Uu]?)?\\b)"
+    - constant.number: "(\\b([0-9]|0[0-7]|0[Xx][0-9A-Fa-f]|0[Bb][01])([Uu][Ll]?[Ll]?|[Ll][Ll]?[Uu]?)?\\b)"
+    - constant.number: "(\\b([1-9][0-9']*[0-9])([Uu][Ll]?[Ll]?|[Ll][Ll]?[Uu]?)?\\b)"
+    - constant.number: "(\\b(0[0-7']*[0-7])([Uu][Ll]?[Ll]?|[Ll][Ll]?[Uu]?)?\\b)"
+    - constant.number: "(\\b(0[Xx][0-9A-Fa-f][0-9A-Fa-f']*[0-9A-Fa-f])([Uu][Ll]?[Ll]?|[Ll][Ll]?[Uu]?)?\\b)"
+    - constant.number: "(\\b(0[Bb][01][01']*[01])([Uu][Ll]?[Ll]?|[Ll][Ll]?[Uu]?)?\\b)"
       # Decimal Floating Constants
     - constant.number: "(\\b(([0-9]*[.][0-9]+|[0-9]+[.][0-9]*)([Ee][+-]?[0-9]+)?|[0-9]+[Ee][+-]?[0-9]+)[FfLl]?\\b)"
       # Hexadecimal Floating Constants
@@ -40,7 +44,7 @@ rules:
     - constant.string:
         start: "'"
         end: "'"
-        skip: "\\\\."
+        skip: "(\\\\.)|\\b([1-9][0-9']+[0-9]|0[0-7']+[0-7]|0[Xx][0-9A-Fa-f][0-9A-Fa-f']+[0-9A-Fa-f]|0[Bb][01][01']*[01])([Uu][Ll]?[Ll]?|[Ll][Ll]?[Uu]?)?\\b"
         rules:
               # TODO: Revert back to - error: "..+" once #3127 is merged
             - error: "[[:graph:]]{2,}'"
