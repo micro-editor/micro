@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/micro-editor/micro/v2/internal/config"
 	"github.com/micro-editor/tcell/v2"
@@ -55,6 +56,24 @@ func Redraw() {
 	default:
 		// channel is full
 	}
+}
+
+var (
+	redrawTimer     *time.Timer
+	redrawTimerLock sync.Mutex
+)
+
+// RedrawDebounced schedules a redraw after the specified duration,
+// coalescing rapid consecutive redraw requests to prevent visual flickering.
+func RedrawDebounced(d time.Duration) {
+	redrawTimerLock.Lock()
+	defer redrawTimerLock.Unlock()
+	if redrawTimer != nil {
+		redrawTimer.Stop()
+	}
+	redrawTimer = time.AfterFunc(d, func() {
+		Redraw()
+	})
 }
 
 // DrawChan returns the draw channel

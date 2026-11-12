@@ -336,7 +336,7 @@ func (w *BufWindow) LocFromVLoc(vloc VLoc) buffer.Loc {
 		tabsize := util.IntOpt(w.Buf.Settings["tabsize"])
 
 		x := util.GetCharPosInLine(w.Buf.LineBytes(vloc.Line), vloc.VisualX, tabsize)
-		return buffer.Loc{x, vloc.Line}
+		return buffer.Loc{X: x, Y: vloc.Line}
 	}
 	return w.getLocFromVLoc(vloc)
 }
