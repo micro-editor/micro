@@ -8,11 +8,31 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"runtime"
 
 	shellquote "github.com/kballard/go-shellquote"
 	"github.com/micro-editor/micro/v2/internal/screen"
 	"github.com/micro-editor/micro/v2/internal/util"
 )
+
+// getShell returns user's default shell and the arg needed to run a command string
+func getShell() (shell string, arg string) {
+	if runtime.GOOS == "windows" {
+		// use powershell if available, otherwise cmd
+		if pwsh := os.Getenv("ComSpec"); pwsh != "" {
+			return pwsh, "/C"
+		}
+		return "cmd", "/C"
+	}
+
+	// unix-like
+	shell = os.Getenv("SHELL")
+	if shell == "" {
+		shell = "/bin/sh"
+	}
+	return shell, "-c"
+	// TODO check if the user's shell actually uses this flag
+}
 
 // ExecCommand executes a command using exec
 // It returns any output/errors
@@ -33,16 +53,12 @@ func ExecCommand(name string, arg ...string) (string, error) {
 
 // RunCommand executes a shell command and returns the output/error
 func RunCommand(input string) (string, error) {
-	args, err := shellquote.Split(input)
-	if err != nil {
-		return "", err
+	if input == "" {
+		return "", errors.New("No command")
 	}
-	if len(args) == 0 {
-		return "", errors.New("No arguments")
-	}
-	inputCmd := args[0]
 
-	return ExecCommand(inputCmd, args[1:]...)
+	shell, flag := getShell()
+	return ExecCommand(shell, flag, input)
 }
 
 // RunBackgroundShell runs a shell command in the background
@@ -77,7 +93,6 @@ func RunInteractiveShell(input string, wait bool, getOutput bool) (string, error
 	if len(args) == 0 {
 		return "", errors.New("No arguments")
 	}
-	inputCmd := args[0]
 
 	// Shut down the screen because we're going to interact directly with the shell
 	screenb := screen.TempFini()
@@ -86,7 +101,8 @@ func RunInteractiveShell(input string, wait bool, getOutput bool) (string, error
 
 	// Set up everything for the command
 	outputBytes := &bytes.Buffer{}
-	cmd := exec.Command(inputCmd, args...)
+	shell, flag := getShell()
+	cmd := exec.Command(shell, flag, input)
 	cmd.Stdin = os.Stdin
 	if getOutput {
 		cmd.Stdout = io.MultiWriter(os.Stdout, outputBytes)
