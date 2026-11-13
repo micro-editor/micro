@@ -19,10 +19,8 @@ rules:
     - statement: "\\b(nonatomic|atomic|readonly|readwrite|strong|weak|assign)\\b"
     - statement: "@(encode|end|interface|implementation|class|selector|protocol|synchronized|try|catch|finally|property|optional|required|import|autoreleasepool)"
 
-    - preproc: "^[[:space:]]*#[[:space:]]*(define|include|import|(un|ifn?)def|endif|el(if|se)|if|warning|error|pragma).*$"
+    - preproc: "^[[:space:]]*#[[:space:]]*(define|(un|ifn?)def|endif|el(if|se)|if|warning|error|pragma).*$"
     - preproc: "__[A-Z0-9_]*__"
-
-    - special: "^[[:space:]]*[#|@][[:space:]]*(import|include)[[:space:]]*[\"|<].*\\/?[>|\"][[:space:]]*$"
 
     - statement: "([.:;,+*|=!\\%\\[\\]]|<|>|/|-|&)"
 
@@ -32,6 +30,15 @@ rules:
     - constant: "\\b(nil|NULL|YES|NO|TRUE|true|FALSE|false|self)\\b"
     - constant: "\\bk[[:alnum]]*\\b"
     - constant.string: "'.'"
+
+      # #include lines are a region so that the header name (e.g. <float.h>)
+      # is not matched by the type rules above
+    - special:
+        start: "^[[:space:]]*#[[:space:]]*(include(_next)?|import)\\b"
+        end: "$"
+        rules:
+            - constant.string: "<[^>]*>|\"[^\"]*\""
+            - comment: "//.*|/\\*.*?\\*/"
 
     - constant.string:
         start: "@\""
