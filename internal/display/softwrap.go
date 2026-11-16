@@ -74,7 +74,7 @@ func (w *BufWindow) getVLocFromLoc(loc buffer.Loc) VLoc {
 		return vloc
 	}
 
-	if w.bufWidth <= 0 {
+	if w.wrapWidth <= 0 {
 		return vloc
 	}
 
@@ -96,7 +96,7 @@ func (w *BufWindow) getVLocFromLoc(loc buffer.Loc) VLoc {
 		switch r {
 		case '\t':
 			ts := tabsize - (totalwidth % tabsize)
-			width = util.Min(ts, w.bufWidth-vloc.VisualX)
+			width = util.Min(ts, w.wrapWidth-vloc.VisualX)
 			totalwidth += ts
 		default:
 			width = runewidth.RuneWidth(r)
@@ -108,7 +108,7 @@ func (w *BufWindow) getVLocFromLoc(loc buffer.Loc) VLoc {
 		// Collect a complete word to know its width.
 		// If wordwrap is off, every single character is a complete "word".
 		if wordwrap {
-			if !util.IsWhitespace(r) && len(line) > 0 && wordwidth < w.bufWidth {
+			if !util.IsWhitespace(r) && len(line) > 0 && wordwidth < w.wrapWidth {
 				if x < loc.X {
 					wordoffset += width
 					x++
@@ -118,7 +118,7 @@ func (w *BufWindow) getVLocFromLoc(loc buffer.Loc) VLoc {
 		}
 
 		// If a word (or just a wide rune) does not fit in the window
-		if vloc.VisualX+wordwidth > w.bufWidth && vloc.VisualX > 0 {
+		if vloc.VisualX+wordwidth > w.wrapWidth && vloc.VisualX > 0 {
 			vloc.Row++
 			vloc.VisualX = 0
 		}
@@ -134,7 +134,7 @@ func (w *BufWindow) getVLocFromLoc(loc buffer.Loc) VLoc {
 		wordwidth = 0
 		wordoffset = 0
 
-		if vloc.VisualX >= w.bufWidth {
+		if vloc.VisualX >= w.wrapWidth {
 			vloc.Row++
 			vloc.VisualX = 0
 		}
@@ -145,7 +145,7 @@ func (w *BufWindow) getVLocFromLoc(loc buffer.Loc) VLoc {
 func (w *BufWindow) getLocFromVLoc(svloc VLoc) buffer.Loc {
 	loc := buffer.Loc{X: 0, Y: svloc.Line}
 
-	if w.bufWidth <= 0 {
+	if w.wrapWidth <= 0 {
 		return loc
 	}
 
@@ -159,7 +159,7 @@ func (w *BufWindow) getLocFromVLoc(svloc VLoc) buffer.Loc {
 
 	var widths []int
 	if wordwrap {
-		widths = make([]int, 0, w.bufWidth)
+		widths = make([]int, 0, w.wrapWidth)
 	} else {
 		widths = make([]int, 0, 1)
 	}
@@ -173,7 +173,7 @@ func (w *BufWindow) getLocFromVLoc(svloc VLoc) buffer.Loc {
 		switch r {
 		case '\t':
 			ts := tabsize - (totalwidth % tabsize)
-			width = util.Min(ts, w.bufWidth-vloc.VisualX)
+			width = util.Min(ts, w.wrapWidth-vloc.VisualX)
 			totalwidth += ts
 		default:
 			width = runewidth.RuneWidth(r)
@@ -186,13 +186,13 @@ func (w *BufWindow) getLocFromVLoc(svloc VLoc) buffer.Loc {
 		// Collect a complete word to know its width.
 		// If wordwrap is off, every single character is a complete "word".
 		if wordwrap {
-			if !util.IsWhitespace(r) && len(line) > 0 && wordwidth < w.bufWidth {
+			if !util.IsWhitespace(r) && len(line) > 0 && wordwidth < w.wrapWidth {
 				continue
 			}
 		}
 
 		// If a word (or just a wide rune) does not fit in the window
-		if vloc.VisualX+wordwidth > w.bufWidth && vloc.VisualX > 0 {
+		if vloc.VisualX+wordwidth > w.wrapWidth && vloc.VisualX > 0 {
 			if vloc.Row == svloc.Row {
 				if wordwrap {
 					// it's a word, not a wide rune
@@ -215,7 +215,7 @@ func (w *BufWindow) getLocFromVLoc(svloc VLoc) buffer.Loc {
 		widths = widths[:0]
 		wordwidth = 0
 
-		if vloc.VisualX >= w.bufWidth {
+		if vloc.VisualX >= w.wrapWidth {
 			vloc.Row++
 			vloc.VisualX = 0
 		}
