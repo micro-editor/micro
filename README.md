@@ -139,6 +139,8 @@ for other operating systems. These packages are not guaranteed to be up-to-date.
     * `choco install micro`.
     * `scoop install micro`.
     * `winget install zyedidia.micro`
+* FreeBSD: Available in the ports tree (`editors/micro`) and also available as a binary package.
+    * `pkg install micro`.
 * OpenBSD: Available in the ports tree and also available as a binary package.
     * `pkg_add -v micro`.
 * NetBSD, macOS, Linux, Illumos, etc. with [pkgsrc](https://www.pkgsrc.org/)-current:
