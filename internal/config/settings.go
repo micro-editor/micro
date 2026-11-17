@@ -21,6 +21,7 @@ type optionValidator func(string, any) error
 
 // a list of settings that need option validators
 var optionValidators = map[string]optionValidator{
+	"ambiguouswidth":  validateChoice,
 	"autosave":        validateNonNegativeValue,
 	"clipboard":       validateChoice,
 	"colorcolumn":     validateNonNegativeValue,
@@ -41,6 +42,7 @@ var optionValidators = map[string]optionValidator{
 
 // a list of settings with pre-defined choices
 var OptionChoices = map[string][]string{
+	"ambiguouswidth":  {"auto", "single", "double"},
 	"clipboard":       {"internal", "external", "terminal"},
 	"fileformat":      {"unix", "dos"},
 	"helpsplit":       {"hsplit", "vsplit"},
@@ -110,6 +112,7 @@ var defaultCommonSettings = map[string]any{
 // a list of settings that should only be globally modified and their
 // default values
 var DefaultGlobalOnlySettings = map[string]any{
+	"ambiguouswidth": "auto",
 	"autosave":       float64(0),
 	"clipboard":      "external",
 	"colorscheme":    "default",
