@@ -52,6 +52,7 @@ but it is only available for certain filetypes:
 * kotlin: `// %s`
 * lua: `-- %s`
 * markdown: `<!-- %s -->`
+* mojo: `# %s`
 * nginx: `# %s`
 * nim: `# %s`
 * objective-c: `// %s`
