@@ -94,6 +94,8 @@ func (eh *EventHandler) DoTextEvent(t *TextEvent, useUndo bool) {
 					loc.Y -= end.Y - start.Y
 				} else if loc.Y == end.Y && loc.GreaterEqual(end) {
 					loc = loc.MoveLA(-DiffLA(start, end, eh.buf.LineArray), eh.buf.LineArray)
+				} else if loc.GreaterThan(start) {
+					loc = start
 				}
 				return loc
 			}
