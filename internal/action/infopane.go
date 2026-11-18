@@ -14,11 +14,13 @@ import (
 type InfoKeyAction func(*InfoPane)
 
 var InfoBindings *KeyTree
+
+// InfoBufBindings aliases the command-bar tree for embedded buffer events.
 var InfoBufBindings *KeyTree
 
 func init() {
 	InfoBindings = NewKeyTree()
-	InfoBufBindings = NewKeyTree()
+	InfoBufBindings = InfoBindings
 }
 
 func InfoMapEvent(k Event, action string) {
@@ -33,17 +35,90 @@ func InfoMapEvent(k Event, action string) {
 }
 
 func infoMapKey(k Event, action string) {
+	if util.IndexAnyUnquoted(action, "&|,") >= 0 {
+		if f := infoKeyChain(action); f != nil && infoKeyboardEvent(k) {
+			InfoBindings.RegisterKeyBinding(k, f)
+		}
+		return
+	}
 	if f, ok := InfoKeyActions[action]; ok {
 		InfoBindings.RegisterKeyBinding(k, InfoKeyActionGeneral(f))
 	} else if f, ok := BufKeyActions[action]; ok {
-		InfoBufBindings.RegisterKeyBinding(k, BufKeyActionGeneral(f))
+		InfoBindings.RegisterKeyBinding(k, BufKeyActionGeneral(f))
+	}
+}
+
+// infoKeyboardEvent identifies bindings dispatched through InfoPane.DoKeyEvent.
+// Raw and mouse events remain single-action bindings in the same tree.
+func infoKeyboardEvent(k Event) bool {
+	switch e := k.(type) {
+	case KeyEvent:
+		return true
+	case KeySequenceEvent:
+		for _, key := range e.keys {
+			if _, ok := key.(KeyEvent); !ok {
+				return false
+			}
+		}
+		return true
+	}
+	return false
+}
+
+// infoKeyChain keeps command-bar actions on the command buffer, even when a
+// buffer action would normally update its target to the current document pane.
+func infoKeyChain(action string) PaneKeyAction {
+	type step struct {
+		run    func(*InfoPane) bool
+		sep    byte
+		closes bool
+	}
+	var steps []step
+	for action != "" {
+		name, sep := action, byte(' ')
+		if idx := util.IndexAnyUnquoted(action, "&|,"); idx >= 0 {
+			name, sep, action = action[:idx], action[idx], action[idx+1:]
+		} else {
+			action = ""
+		}
+		s := step{sep: sep, closes: name == "ExecuteCommand" || name == "AbortCommand"}
+		if f, ok := InfoKeyActions[name]; ok {
+			s.run = func(h *InfoPane) bool {
+				f(h)
+				return true
+			}
+		} else if f, ok := BufKeyActions[name]; ok {
+			s.run = func(h *InfoPane) bool {
+				return h.BufPane.execAction(f, name, nil)
+			}
+		} else {
+			// Do not execute a partial chain containing an unsupported action.
+			return nil
+		}
+		steps = append(steps, s)
+	}
+	return func(p Pane) bool {
+		h := commandInfoPane(p)
+		if h == nil {
+			return false
+		}
+		for _, s := range steps {
+			if !h.HasPrompt || h.HasYN {
+				break
+			}
+			success := s.run(h)
+			if s.closes || (!success && s.sep == '&') || (success && s.sep == '|') {
+				break
+			}
+		}
+		return true
 	}
 }
 
 func infoMapMouse(k MouseEvent, action string) {
 	// TODO: map mouse
 	if f, ok := BufMouseActions[action]; ok {
-		InfoBufBindings.RegisterMouseBinding(k, BufMouseActionGeneral(f))
+		InfoBindings.RegisterMouseBinding(k, BufMouseActionGeneral(f))
 	} else {
 		infoMapKey(k, action)
 	}
@@ -51,9 +126,25 @@ func infoMapMouse(k MouseEvent, action string) {
 
 func InfoKeyActionGeneral(a InfoKeyAction) PaneKeyAction {
 	return func(p Pane) bool {
-		a(p.(*InfoPane))
+		h := commandInfoPane(p)
+		if h == nil {
+			return false
+		}
+		a(h)
 		return true
 	}
+}
+
+// commandInfoPane adapts actions from the embedded command buffer without
+// redirecting them to a document pane. Non-command targets are rejected.
+func commandInfoPane(p Pane) *InfoPane {
+	switch h := p.(type) {
+	case *InfoPane:
+		return h
+	case *BufPane:
+		return h.infoPane
+	}
+	return nil
 }
 
 type InfoPane struct {
@@ -65,7 +156,8 @@ func NewInfoPane(ib *info.InfoBuf, w display.BWindow, tab *Tab) *InfoPane {
 	ip := new(InfoPane)
 	ip.InfoBuf = ib
 	ip.BufPane = NewBufPane(ib.Buffer, w, tab)
-	ip.BufPane.bindings = InfoBufBindings
+	ip.BufPane.bindings = InfoBindings
+	ip.BufPane.infoPane = ip
 
 	return ip
 }
@@ -98,7 +190,6 @@ func (h *InfoPane) HandleEvent(event tcell.Event) {
 				h.DonePrompt(false)
 
 				InfoBindings.ResetEvents()
-				InfoBufBindings.ResetEvents()
 			}
 		}
 		if e.Key() == tcell.KeyRune && !done && !hasYN {
@@ -129,40 +220,12 @@ func (h *InfoPane) HandleEvent(event tcell.Event) {
 func (h *InfoPane) DoKeyEvent(e KeyEvent) bool {
 	action, more := InfoBindings.NextEvent(e, nil)
 	if action != nil && !more {
-		action(h)
+		action(h.BufPane)
 		InfoBindings.ResetEvents()
-
 		return true
 	} else if action == nil && !more {
 		InfoBindings.ResetEvents()
-		// return false //TODO:?
 	}
-
-	if !more {
-		// If no infopane action found, try to find a bufpane action.
-		//
-		// TODO: this is buggy. For example, if the command bar has the following
-		// two bindings:
-		//
-		//   "<Ctrl-x><Ctrl-p>": "HistoryUp",
-		//   "<Ctrl-x><Ctrl-v>": "Paste",
-		//
-		// the 2nd binding (with a bufpane action) doesn't work, since <Ctrl-x>
-		// has been already consumed by the 1st binding (with an infopane action).
-		//
-		// We should either iterate both InfoBindings and InfoBufBindings keytrees
-		// together, or just use the same keytree for both infopane and bufpane
-		// bindings.
-		action, more = InfoBufBindings.NextEvent(e, nil)
-		if action != nil && !more {
-			action(h.BufPane)
-			InfoBufBindings.ResetEvents()
-			return true
-		} else if action == nil && !more {
-			InfoBufBindings.ResetEvents()
-		}
-	}
-
 	return more
 }
 
