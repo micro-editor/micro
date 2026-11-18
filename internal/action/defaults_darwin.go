@@ -103,6 +103,7 @@ var bufdefaults = map[string]string{
 	"MouseLeftRelease": "MouseRelease",
 	"MouseMiddle":      "PastePrimary",
 	"Ctrl-MouseLeft":   "MouseMultiCursor",
+	"Alt-MouseLeft":    "MouseMultiCursor",
 
 	"Alt-n":        "SpawnMultiCursor",
 	"AltShiftUp":   "SpawnMultiCursorUp",
