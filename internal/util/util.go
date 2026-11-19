@@ -398,7 +398,7 @@ func ReplaceHome(path string) (string, error) {
 	var userData *user.User
 	var err error
 
-	homeString := strings.Split(path, "/")[0]
+	homeString := strings.Split(filepath.ToSlash(path), "/")[0]
 	if homeString == "~" {
 		userData, err = user.Current()
 		if err != nil {
