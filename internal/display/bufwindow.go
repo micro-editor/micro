@@ -245,18 +245,56 @@ func (w *BufWindow) Relocate() bool {
 
 	// horizontal relocation (scrolling)
 	if !b.Settings["softwrap"].(bool) {
-		cx := activeC.GetVisualX(false)
-		rw := runewidth.RuneWidth(activeC.RuneUnder(activeC.X))
-		if rw == 0 {
-			rw = 1 // tab or newline
+		cursorX := activeC.GetVisualX(false)
+		rwCursor := runewidth.RuneWidth(activeC.RuneUnder(activeC.X))
+		if rwCursor == 0 {
+			rwCursor = 1 // tab or newline
 		}
 
-		if cx < w.StartCol {
-			w.StartCol = cx
-			ret = true
+		// StartCol values that keep the cursor's rune fully visible. When the
+		// rune is wider than the window it cannot be displayed in full, so the
+		// range collapses to showing it at the left edge.
+		minCol := util.Min(cursorX+rwCursor-w.bufWidth, cursorX)
+		maxCol := cursorX
+
+		if activeC.HasSelection() {
+			x1 := w.VLocFromLoc(activeC.CurSelection[0]).VisualX
+			x2 := w.VLocFromLoc(activeC.CurSelection[1]).VisualX
+			cxStart, cxEnd, endLoc := x1, x2, activeC.CurSelection[1]
+			if x1 > x2 {
+				cxStart, cxEnd, endLoc = x2, x1, activeC.CurSelection[0]
+			}
+			rw := runewidth.RuneWidth(w.Buf.RuneAt(endLoc))
+			if rw == 0 {
+				rw = 1 // tab or newline
+			}
+
+			// StartCol values that make the whole selection visible
+			selMin := cxEnd + rw - w.bufWidth
+			selMax := cxStart
+			if selMin <= selMax {
+				// the selection fits in the window: combine both constraints
+				if selMin > minCol {
+					minCol = selMin
+				}
+				if selMax < maxCol {
+					maxCol = selMax
+				}
+			}
+			if minCol > maxCol {
+				// the selection is wider than the window, or the cursor is
+				// outside it: Relocate() must keep the cursor visible, and the
+				// cursor's end of the selection is then visible
+				minCol = util.Min(cursorX+rwCursor-w.bufWidth, cursorX)
+				maxCol = cursorX
+			}
 		}
-		if cx+rw > w.StartCol+w.bufWidth {
-			w.StartCol = cx - w.bufWidth + rw
+
+		if w.StartCol < minCol {
+			w.StartCol = minCol
+			ret = true
+		} else if w.StartCol > maxCol {
+			w.StartCol = maxCol
 			ret = true
 		}
 	}
