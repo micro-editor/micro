@@ -56,7 +56,7 @@ end
 
 function paste(b)
     if config.GetGlobalOption("paste") then
-        return "PASTE "
+        return ""
     end
-    return ""
+    return "NOBP "
 end

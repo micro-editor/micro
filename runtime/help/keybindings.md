@@ -453,7 +453,6 @@ F61
 F62
 F63
 F64
-CtrlSpace
 Ctrl-a
 Ctrl-b
 Ctrl-c
@@ -480,11 +479,6 @@ Ctrl-w
 Ctrl-x
 Ctrl-y
 Ctrl-z
-CtrlLeftSq
-CtrlBackslash
-CtrlRightSq
-CtrlCarat
-CtrlUnderscore
 Backspace
 OldBackspace
 Tab
