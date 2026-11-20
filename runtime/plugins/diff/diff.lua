@@ -10,7 +10,7 @@ function onBufferOpen(buf)
 		local _, err = os.Stat(buf.AbsPath)
 		if err == nil then
 			local dirName, fileName = filepath.Split(buf.AbsPath)
-			local diffBase, err = shell.ExecCommand("git", "-C", dirName, "show", "HEAD:./" .. fileName)
+			local diffBase, err = shell.ExecCommand("git", "-C", dirName, "cat-file", "--filters", "HEAD:./" .. fileName)
 			if err ~= nil then
 				diffBase = buf:Bytes()
 			end
