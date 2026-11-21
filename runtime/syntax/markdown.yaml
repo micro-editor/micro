@@ -41,7 +41,32 @@ rules:
       # urls
     - underlined: "https?://[^ )>]+"
 
-    - special: "^```$"
+    # indented code blocks
+    - special:
+        start: "^    "
+        end: "$"
+        rules: []
+
+    # fenced code blocks
+    - special:
+        start: "^ {0,3}````"
+        end: "````+[ \\t]*$"
+        rules: []
+
+    - special:
+        start: "^ {0,3}```"
+        end: "```+[ \\t]*$"
+        rules: []
+
+    - special:
+        start: "^ {0,3}~~~~"
+        end: "~~~~+[ \\t]*$"
+        rules: []
+
+    - special:
+        start: "^ {0,3}~~~"
+        end: "~~~+[ \\t]*$"
+        rules: []
 
     - special:
         start: "`"
