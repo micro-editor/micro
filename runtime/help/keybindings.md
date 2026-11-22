@@ -735,11 +735,9 @@ are given below:
 Note: On some old terminal emulators and on Windows machines, `Ctrl-h` should be
 used for backspace.
 
-Additionally, alt keys can be bound by using `Alt-key`. For example `Alt-a` or
-`Alt-Up`. Micro supports an optional `-` between modifiers like `Alt` and
-`Ctrl` so `Alt-a` could be rewritten as `Alta` (case matters for alt bindings).
-This is why in the default keybindings you can see `AltShiftLeft` instead of
-`Alt-ShiftLeft` (they are equivalent).
+Additionally, alt keys can be bound by using `Alt-key`. For example `Alt-a`,
+`Alt-A` or `Alt-Up`. The case matters for alt bindings, because `Alt-A` is
+`Shift-Alt-a`.
 
 Please note that terminal emulators are strange applications and micro only
 receives key events that the terminal decides to send. Some terminal emulators
