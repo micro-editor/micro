@@ -1874,8 +1874,11 @@ func (h *BufPane) ToggleKeyMenu() bool {
 func (h *BufPane) ShellMode() bool {
 	InfoBar.Prompt("$ ", "", "Shell", nil, func(resp string, canceled bool) {
 		if !canceled {
-			// The true here is for openTerm to make the command interactive
-			shell.RunInteractiveShell(resp, true, false)
+			args, err := shellquote.Split(resp)
+			if err == nil && len(args) > 0 {
+				// The true here is for openTerm to make the command interactive
+				shell.RunInteractiveCommand(true, false, args[0], args[1:]...)
+			}
 		}
 	})
 
