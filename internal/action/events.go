@@ -73,6 +73,9 @@ func (k KeyEvent) Name() string {
 	if k.mod&tcell.ModCtrl != 0 {
 		m = append(m, "Ctrl")
 	}
+	if k.mod&tcell.ModHyper != 0 {
+		m = append(m, "Hyper")
+	}
 
 	ok := false
 	if s, ok = tcell.KeyNames[k.code]; !ok {
@@ -140,6 +143,9 @@ func (m MouseEvent) Name() string {
 	}
 	if m.mod&tcell.ModCtrl != 0 {
 		mod = "Ctrl-"
+	}
+	if m.mod&tcell.ModHyper != 0 {
+		mod = "Hyper-"
 	}
 
 	state := ""

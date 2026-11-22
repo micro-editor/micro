@@ -157,6 +157,9 @@ modSearch:
 		case strings.HasPrefix(k, "Shift"):
 			k = k[5:]
 			modifiers |= tcell.ModShift
+		case strings.HasPrefix(k, "Hyper"):
+			k = k[5:]
+			modifiers |= tcell.ModHyper
 		case strings.HasPrefix(k, "\x1b"):
 			return RawEvent{
 				esc: k,
