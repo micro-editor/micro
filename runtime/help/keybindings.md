@@ -35,12 +35,6 @@ following in the `bindings.json` file.
 }
 ```
 
-**Note:** The syntax `<Modifier><key>` is equivalent to `<Modifier>-<key>`. In
-addition, `Ctrl-Shift` bindings are not supported by terminals, and are the same
-as simply `Ctrl` bindings. This means that `CtrlG`, `Ctrl-G`, and `Ctrl-g` all
-mean the same thing. However, for `Alt` this is not the case: `AltG` and `Alt-G`
-mean `Alt-Shift-g`, while `Alt-g` does not require the Shift modifier.
-
 In addition to editing your `~/.config/micro/bindings.json`, you can run
 `>bind <keycombo> <action>` For a list of bindable actions, see below.
 
