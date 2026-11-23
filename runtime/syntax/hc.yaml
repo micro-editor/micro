@@ -9,7 +9,7 @@ rules:
 
     - statement: "\\b(for|if|while|do|else|case|default|switch)\\b"
     - statement: "\\b(try|catch|throw|goto|continue|break|return)\\b"
-    - preproc: "^[[:space:]]*#[[:space:]]*(define|pragma|include|(un|ifn?)def|endif|el(if|se)|if|help_index|ifjit|ifaot|exe)"
+    - preproc: "^[[:space:]]*#[[:space:]]*(define|pragma|(un|ifn?)def|endif|el(if|se)|if|help_index|ifjit|ifaot|exe)"
 
       # Operator Color
     - symbol.operator: "([.:;,+*|=!\\%]|<|>|/|-|&)"
@@ -23,6 +23,16 @@ rules:
     - constant.number: "NULL"
     - constant.number: "TRUE"
     - constant.number: "FALSE"
+
+      # #include lines are a region so that the header name (e.g. <float.h>)
+      # is not matched by the type rules above
+    - preproc:
+        start: "^[[:space:]]*#[[:space:]]*include(_next)?\\b"
+        end: "$"
+        rules:
+            - identifier: "\\b[A-Z_][0-9A-Z_]+\\b"
+            - constant.string: "<[^>]*>|\"[^\"]*\""
+            - comment: "//.*|/\\*.*?\\*/"
 
     - constant.string:
         start: "\""
