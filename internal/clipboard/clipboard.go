@@ -124,11 +124,7 @@ func read(r Register, m Method) (string, error) {
 	case Terminal:
 		switch r {
 		case ClipboardReg:
-			// terminal paste works by sending an esc sequence to the
-			// terminal to trigger a paste event
-			return terminal.read("clipboard")
-		case PrimaryReg:
-			return terminal.read("primary")
+			return terminal.read()
 		default:
 			return internal.read(r), nil
 		}
@@ -152,9 +148,7 @@ func write(text string, r Register, m Method) error {
 	case Terminal:
 		switch r {
 		case ClipboardReg:
-			return terminal.write(text, "c")
-		case PrimaryReg:
-			return terminal.write(text, "p")
+			terminal.write(text)
 		default:
 			internal.write(text, r)
 		}

@@ -35,12 +35,6 @@ following in the `bindings.json` file.
 }
 ```
 
-**Note:** The syntax `<Modifier><key>` is equivalent to `<Modifier>-<key>`. In
-addition, `Ctrl-Shift` bindings are not supported by terminals, and are the same
-as simply `Ctrl` bindings. This means that `CtrlG`, `Ctrl-G`, and `Ctrl-g` all
-mean the same thing. However, for `Alt` this is not the case: `AltG` and `Alt-G`
-mean `Alt-Shift-g`, while `Alt-g` does not require the Shift modifier.
-
 In addition to editing your `~/.config/micro/bindings.json`, you can run
 `>bind <keycombo> <action>` For a list of bindable actions, see below.
 
@@ -453,7 +447,6 @@ F61
 F62
 F63
 F64
-CtrlSpace
 Ctrl-a
 Ctrl-b
 Ctrl-c
@@ -480,11 +473,6 @@ Ctrl-w
 Ctrl-x
 Ctrl-y
 Ctrl-z
-CtrlLeftSq
-CtrlBackslash
-CtrlRightSq
-CtrlCarat
-CtrlUnderscore
 Backspace
 OldBackspace
 Tab
@@ -525,93 +513,88 @@ conventions for text editing defaults.
 
 ```jsonc
 {
-    "Up":             "CursorUp",
-    "Down":           "CursorDown",
-    "Right":          "CursorRight",
-    "Left":           "CursorLeft",
-    "ShiftUp":        "SelectUp",
-    "ShiftDown":      "SelectDown",
-    "ShiftLeft":      "SelectLeft",
-    "ShiftRight":     "SelectRight",
-    "AltLeft":        "WordLeft", (Mac)
-    "AltRight":       "WordRight", (Mac)
-    "AltUp":          "MoveLinesUp",
-    "AltDown":        "MoveLinesDown",
-    "CtrlShiftRight": "SelectWordRight",
-    "CtrlShiftLeft":  "SelectWordLeft",
-    "AltLeft":        "StartOfTextToggle",
-    "AltRight":       "EndOfLine",
-    "AltShiftRight":  "SelectWordRight", (Mac)
-    "AltShiftLeft":   "SelectWordLeft", (Mac)
-    "CtrlLeft":       "StartOfText", (Mac)
-    "CtrlRight":      "EndOfLine", (Mac)
-    "AltShiftLeft":   "SelectToStartOfTextToggle",
-    "CtrlShiftLeft":  "SelectToStartOfTextToggle", (Mac)
-    "ShiftHome":      "SelectToStartOfTextToggle",
-    "AltShiftRight":  "SelectToEndOfLine",
-    "CtrlShiftRight": "SelectToEndOfLine", (Mac)
-    "ShiftEnd":       "SelectToEndOfLine",
-    "CtrlUp":         "CursorStart",
-    "CtrlDown":       "CursorEnd",
-    "CtrlShiftUp":    "SelectToStart",
-    "CtrlShiftDown":  "SelectToEnd",
-    "Alt-{":          "ParagraphPrevious",
-    "Alt-}":          "ParagraphNext",
-    "Enter":          "InsertNewline",
-    "Ctrl-h":         "Backspace",
-    "Backspace":      "Backspace",
-    "Alt-CtrlH":      "DeleteWordLeft",
-    "Alt-Backspace":  "DeleteWordLeft",
-    "Tab":            "Autocomplete|IndentSelection|InsertTab",
-    "Backtab":        "OutdentSelection|OutdentLine",
-    "Ctrl-o":         "OpenFile",
-    "Ctrl-s":         "Save",
-    "Ctrl-f":         "Find",
-    "Alt-F":          "FindLiteral",
-    "Ctrl-n":         "FindNext",
-    "Ctrl-p":         "FindPrevious",
-    "Alt-[":          "DiffPrevious|CursorStart",
-    "Alt-]":          "DiffNext|CursorEnd",
-    "Ctrl-z":         "Undo",
-    "Ctrl-y":         "Redo",
-    "Ctrl-c":         "Copy|CopyLine",
-    "Ctrl-x":         "Cut|CutLine",
-    "Ctrl-k":         "CutLine",
-    "Ctrl-d":         "Duplicate|DuplicateLine",
-    "Ctrl-v":         "Paste",
-    "Ctrl-a":         "SelectAll",
-    "Ctrl-t":         "AddTab",
-    "Alt-,":          "PreviousTab|LastTab",
-    "Alt-.":          "NextTab|FirstTab",
-    "Home":           "StartOfText",
-    "End":            "EndOfLine",
-    "CtrlHome":       "CursorStart",
-    "CtrlEnd":        "CursorEnd",
-    "CtrlShiftHome":  "SelectToStart",
-    "CtrlShiftEnd":   "SelectToEnd",
-    "PageUp":         "CursorPageUp",
-    "PageDown":       "CursorPageDown",
-    "CtrlPageUp":     "PreviousTab|LastTab",
-    "CtrlPageDown":   "NextTab|FirstTab",
-    "ShiftPageUp":    "SelectPageUp",
-    "ShiftPageDown":  "SelectPageDown",
-    "Ctrl-g":         "ToggleHelp",
-    "Alt-g":          "ToggleKeyMenu",
-    "Ctrl-r":         "ToggleRuler",
-    "Ctrl-l":         "command-edit:goto ",
-    "Delete":         "Delete",
-    "Ctrl-b":         "ShellMode",
-    "Ctrl-q":         "Quit",
-    "Ctrl-e":         "CommandMode",
-    "Ctrl-w":         "NextSplit|FirstSplit",
-    "Ctrl-u":         "ToggleMacro",
-    "Ctrl-j":         "PlayMacro",
-    "Insert":         "ToggleOverwriteMode",
+    "Up":               "CursorUp",
+    "Down":             "CursorDown",
+    "Left":             "CursorLeft",
+    "Right":            "CursorRight",
+    "Shift-Up":         "SelectUp",
+    "Shift-Down":       "SelectDown",
+    "Shift-Left":       "SelectLeft",
+    "Shift-Right":      "SelectRight",
+    "Alt-Up":           "MoveLinesUp",
+    "Alt-Down":         "MoveLinesDown",
+    "Alt-Left":         "WordLeft", (Mac)
+    "Alt-Right":        "WordRight", (Mac)
+    "Shift-Alt-Left":   "SelectWordLeft", (Mac)
+    "Shift-Alt-Right":  "SelectWordRight", (Mac)
+    "Ctrl-Left":        "StartOfTextToggle", (Mac)
+    "Ctrl-Right":       "EndOfLine", (Mac)
+    "Shift-Ctrl-Left":  "SelectToStartOfTextToggle", (Mac)
+    "Shift-Ctrl-Right": "SelectToEndOfLine", (Mac)
+    "Shift-Home":       "SelectToStartOfTextToggle",
+    "Shift-End":        "SelectToEndOfLine",
+    "Ctrl-Up":          "CursorStart",
+    "Ctrl-Down":        "CursorEnd",
+    "Shift-Ctrl-Up":    "SelectToStart",
+    "Shift-Ctrl-Down":  "SelectToEnd",
+    "Alt-{":            "ParagraphPrevious",
+    "Alt-}":            "ParagraphNext",
+    "Enter":            "InsertNewline",
+    "Ctrl-h":           "Backspace",
+    "Backspace":        "Backspace",
+    "OldBackspace":     "Backspace",
+    "Alt-Ctrl-h":       "DeleteWordLeft",
+    "Alt-Backspace":    "DeleteWordLeft",
+    "Tab":              "Autocomplete|IndentSelection|InsertTab",
+    "Backtab":          "CycleAutocompleteBack|OutdentSelection|OutdentLine",
+    "Ctrl-o":           "OpenFile",
+    "Ctrl-s":           "Save",
+    "Ctrl-f":           "Find",
+    "Alt-F":            "FindLiteral",
+    "Ctrl-n":           "FindNext",
+    "Ctrl-p":           "FindPrevious",
+    "Alt-[":            "DiffPrevious|CursorStart",
+    "Alt-]":            "DiffNext|CursorEnd",
+    "Ctrl-z":           "Undo",
+    "Ctrl-y":           "Redo",
+    "Ctrl-c":           "Copy|CopyLine",
+    "Ctrl-x":           "Cut|CutLine",
+    "Ctrl-k":           "CutLine",
+    "Ctrl-d":           "Duplicate|DuplicateLine",
+    "Ctrl-v":           "Paste",
+    "Ctrl-a":           "SelectAll",
+    "Ctrl-t":           "AddTab",
+    "Alt-,":            "PreviousTab|LastTab",
+    "Alt-.":            "NextTab|FirstTab",
+    "Home":             "StartOfTextToggle",
+    "End":              "EndOfLine",
+    "Ctrl-Home":        "CursorStart",
+    "Ctrl-End":         "CursorEnd",
+    "Shift-Ctrl-Home":  "SelectToStart",
+    "Shift-Ctrl-End":   "SelectToEnd",
+    "PageUp":           "CursorPageUp",
+    "PageDown":         "CursorPageDown",
+    "Ctrl-PageUp":      "PreviousTab|LastTab",
+    "Ctrl-PageDown":    "NextTab|FirstTab",
+    "Shift-PageUp":     "SelectPageUp",
+    "Shift-PageDown":   "SelectPageDown",
+    "Ctrl-g":           "ToggleHelp",
+    "Alt-g":            "ToggleKeyMenu",
+    "Ctrl-r":           "ToggleRuler",
+    "Ctrl-l":           "command-edit:goto ",
+    "Delete":           "Delete",
+    "Ctrl-b":           "ShellMode",
+    "Ctrl-q":           "Quit",
+    "Ctrl-e":           "CommandMode",
+    "Ctrl-w":           "NextSplit|FirstSplit",
+    "Ctrl-u":           "ToggleMacro",
+    "Ctrl-j":           "PlayMacro",
+    "Insert":           "ToggleOverwriteMode",
 
     // Emacs-style keybindings
     "Alt-f": "WordRight",
     "Alt-b": "WordLeft",
-    "Alt-a": "StartOfLine",
+    "Alt-a": "StartOfText",
     "Alt-e": "EndOfLine",
 
     // Integration with file managers
@@ -620,7 +603,7 @@ conventions for text editing defaults.
     "F4":  "Quit",
     "F7":  "Find",
     "F10": "Quit",
-    "Esc": "Escape",
+    "Esc": "Escape,Deselect,ClearInfo,RemoveAllMultiCursors,UnhighlightSearch",
 
     // Mouse bindings
     "MouseWheelUp":     "ScrollUp",
@@ -632,13 +615,13 @@ conventions for text editing defaults.
     "Ctrl-MouseLeft":   "MouseMultiCursor",
 
     // Multi-cursor bindings
-    "Alt-n":        "SpawnMultiCursor",
-    "AltShiftUp":   "SpawnMultiCursorUp",
-    "AltShiftDown": "SpawnMultiCursorDown",
-    "Alt-m":        "SpawnMultiCursorSelect",
-    "Alt-p":        "RemoveMultiCursor",
-    "Alt-c":        "RemoveAllMultiCursors",
-    "Alt-x":        "SkipMultiCursor",
+    "Alt-n":          "SpawnMultiCursor",
+    "Shift-Alt-Up":   "SpawnMultiCursorUp",
+    "Shift-Alt-Down": "SpawnMultiCursorDown",
+    "Alt-m":          "SpawnMultiCursorSelect",
+    "Alt-p":          "RemoveMultiCursor",
+    "Alt-c":          "RemoveAllMultiCursors",
+    "Alt-x":          "SkipMultiCursor",
 }
 ```
 
@@ -668,63 +651,63 @@ are given below:
     },
 
     "command": {
-        "Up":             "HistoryUp",
-        "Down":           "HistoryDown",
-        "Right":          "CursorRight",
-        "Left":           "CursorLeft",
-        "ShiftUp":        "SelectUp",
-        "ShiftDown":      "SelectDown",
-        "ShiftLeft":      "SelectLeft",
-        "ShiftRight":     "SelectRight",
-        "AltLeft":        "StartOfTextToggle",
-        "AltRight":       "EndOfLine",
-        "AltUp":          "CursorStart",
-        "AltDown":        "CursorEnd",
-        "AltShiftRight":  "SelectWordRight",
-        "AltShiftLeft":   "SelectWordLeft",
-        "CtrlLeft":       "WordLeft",
-        "CtrlRight":      "WordRight",
-        "CtrlShiftLeft":  "SelectToStartOfTextToggle",
-        "ShiftHome":      "SelectToStartOfTextToggle",
-        "CtrlShiftRight": "SelectToEndOfLine",
-        "ShiftEnd":       "SelectToEndOfLine",
-        "CtrlUp":         "CursorStart",
-        "CtrlDown":       "CursorEnd",
-        "CtrlShiftUp":    "SelectToStart",
-        "CtrlShiftDown":  "SelectToEnd",
-        "Enter":          "ExecuteCommand",
-        "CtrlH":          "Backspace",
-        "Backspace":      "Backspace",
-        "OldBackspace":   "Backspace",
-        "Alt-CtrlH":      "DeleteWordLeft",
-        "Alt-Backspace":  "DeleteWordLeft",
-        "Tab":            "CommandComplete",
-        "Backtab":        "CycleAutocompleteBack",
-        "Ctrl-z":         "Undo",
-        "Ctrl-y":         "Redo",
-        "Ctrl-c":         "Copy",
-        "Ctrl-x":         "Cut",
-        "Ctrl-k":         "CutLine",
-        "Ctrl-v":         "Paste",
-        "Home":           "StartOfTextToggle",
-        "End":            "EndOfLine",
-        "CtrlHome":       "CursorStart",
-        "CtrlEnd":        "CursorEnd",
-        "CtrlShiftHome":  "SelectToStart",
-        "CtrlShiftEnd":   "SelectToEnd",
-        "Delete":         "Delete",
-        "Ctrl-q":         "AbortCommand",
-        "Ctrl-e":         "EndOfLine",
-        "Ctrl-a":         "StartOfLine",
-        "Ctrl-w":         "DeleteWordLeft",
-        "Insert":         "ToggleOverwriteMode",
-        "Ctrl-b":         "WordLeft",
-        "Ctrl-f":         "WordRight",
-        "Ctrl-d":         "DeleteWordLeft",
-        "Ctrl-m":         "ExecuteCommand",
-        "Ctrl-n":         "HistoryDown",
-        "Ctrl-p":         "HistoryUp",
-        "Ctrl-u":         "SelectToStart",
+        "Up":               "HistoryUp",
+        "Down":             "HistoryDown",
+        "Left":             "CursorLeft",
+        "Right":            "CursorRight",
+        "Shift-Up":         "SelectUp",
+        "Shift-Down":       "SelectDown",
+        "Shift-Left":       "SelectLeft",
+        "Shift-Right":      "SelectRight",
+        "Alt-Up":           "CursorStart",
+        "Alt-Down":         "CursorEnd",
+        "Alt-Left":         "StartOfTextToggle",
+        "Alt-Right":        "EndOfLine",
+        "Shift-Alt-Left":   "SelectToStartOfTextToggle",
+        "Shift-Alt-Right":  "SelectToEndOfLine",
+        "Ctrl-Left":        "WordLeft",
+        "Ctrl-Right":       "WordRight",
+        "Shift-Ctrl-Left":  "SelectWordLeft",
+        "Shift-Ctrl-Right": "SelectWordRight",
+        "Shift-Home":       "SelectToStartOfTextToggle",
+        "Shift-End":        "SelectToEndOfLine",
+        "Ctrl-Up":          "CursorStart",
+        "Ctrl-Down":        "CursorEnd",
+        "Shift-Ctrl-Up":    "SelectToStart",
+        "Shift-Ctrl-Down":  "SelectToEnd",
+        "Enter":            "ExecuteCommand",
+        "Ctrl-h":           "Backspace",
+        "Backspace":        "Backspace",
+        "OldBackspace":     "Backspace",
+        "Alt-Ctrl-h":       "DeleteWordLeft",
+        "Alt-Backspace":    "DeleteWordLeft",
+        "Tab":              "CommandComplete",
+        "Backtab":          "CycleAutocompleteBack",
+        "Ctrl-z":           "Undo",
+        "Ctrl-y":           "Redo",
+        "Ctrl-c":           "Copy",
+        "Ctrl-x":           "Cut",
+        "Ctrl-k":           "CutLine",
+        "Ctrl-v":           "Paste",
+        "Home":             "StartOfTextToggle",
+        "End":              "EndOfLine",
+        "Ctrl-Home":        "CursorStart",
+        "Ctrl-End":         "CursorEnd",
+        "Shift-Ctrl-Home":  "SelectToStart",
+        "Shift-Ctrl-End":   "SelectToEnd",
+        "Delete":           "Delete",
+        "Ctrl-q":           "AbortCommand",
+        "Ctrl-e":           "EndOfLine",
+        "Ctrl-a":           "StartOfLine",
+        "Ctrl-w":           "DeleteWordLeft",
+        "Insert":           "ToggleOverwriteMode",
+        "Ctrl-b":           "WordLeft",
+        "Ctrl-f":           "WordRight",
+        "Ctrl-d":           "DeleteWordLeft",
+        "Ctrl-m":           "ExecuteCommand",
+        "Ctrl-n":           "HistoryDown",
+        "Ctrl-p":           "HistoryUp",
+        "Ctrl-u":           "SelectToStart",
 
         // Emacs-style keybindings
         "Alt-f": "WordRight",
@@ -742,7 +725,7 @@ are given below:
         "MouseLeft":        "MousePress",
         "MouseLeftDrag":    "MouseDrag",
         "MouseLeftRelease": "MouseRelease",
-        "MouseMiddle":      "PastePrimary"
+        "MouseMiddle":      "PastePrimary",
     }
 }
 ```
@@ -752,11 +735,9 @@ are given below:
 Note: On some old terminal emulators and on Windows machines, `Ctrl-h` should be
 used for backspace.
 
-Additionally, alt keys can be bound by using `Alt-key`. For example `Alt-a` or
-`Alt-Up`. Micro supports an optional `-` between modifiers like `Alt` and
-`Ctrl` so `Alt-a` could be rewritten as `Alta` (case matters for alt bindings).
-This is why in the default keybindings you can see `AltShiftLeft` instead of
-`Alt-ShiftLeft` (they are equivalent).
+Additionally, alt keys can be bound by using `Alt-key`. For example `Alt-a`,
+`Alt-A` or `Alt-Up`. The case matters for alt bindings, because `Alt-A` is
+`Shift-Alt-a`.
 
 Please note that terminal emulators are strange applications and micro only
 receives key events that the terminal decides to send. Some terminal emulators
