@@ -135,7 +135,7 @@ function bar(bp)
 end
 ```
 
-See `> help plugins` for more informations on how to write lua functions.
+See `> help plugins` for more information on how to write lua functions.
 
 For `~/.config/micro/init.lua` the plugin name is `initlua` (so the keybinding
 in this example would be `"Alt-q": "lua:initlua.bar"`).
