@@ -70,6 +70,16 @@ will execute `InsertTab`. To use `,`, `|` or `&` in an action (as an argument
 to a command, for example), escape it with `\` or wrap it in single or double
 quotes.
 
+Chains also work in command-bar bindings. They can combine command-bar actions
+such as `HistoryUp` with built-in editing actions such as `StartOfText`.
+Editing actions in these chains operate on the command bar. `ExecuteCommand`
+and `AbortCommand` end the chain, even if their callback opens another prompt.
+Command-bar-only actions such as `HistoryUp` count as successful.
+Command-bar chains support keyboard keys and keyboard-only key sequences.
+Raw escape sequences, mouse bindings and mixed key/mouse sequences retain their
+existing single-action behavior. Chains do not support `command:`,
+`command-edit:`, `lua:` or mouse actions; an unsupported chain is not bound.
+
 If the action has an `onAction` lua callback, for example `onAutocomplete` (see
 `> help plugins`), then the action is only considered successful if the action
 itself succeeded *and* the callback returned true. If there are multiple
