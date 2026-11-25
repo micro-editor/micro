@@ -5,15 +5,15 @@ detect:
 
 rules:
     # Conditionals and control flow
-    - special: "\\b(break|case|continue|default|go|goto|range|return|println|fallthrough)\\b"
+    - special: "\\b(break|case|continue|default|go|goto|range|return|fallthrough)\\b"
     - statement: "\\b(else|for|if|switch|select)\\b"
-    - preproc: "\\b(package|import|const|var|type|struct|func|defer|iota|make|new|copy|len|cap|panic|append|close|delete|print|recover)\\b"
+    - preproc: "\\b(package|import|const|var|type|struct|func|defer|iota|make|new|copy|len|cap|panic|append|close|delete|print|println|recover|clear|min|max|complex|real|imag)\\b"
     - symbol.operator: "[-+/*=<>!~%&|^]|:="
 
       # Types
     - symbol: "(,|\\.)"
     - type: "\\b(u?int(8|16|32|64)?|float(32|64)|complex(64|128))\\b"
-    - type: "\\b(uintptr|byte|rune|string|interface|bool|map|chan|error)\\b"
+    - type: "\\b(uintptr|byte|rune|string|interface|bool|map|chan|error|any|comparable)\\b"
     - type.keyword: "\\b(struct)\\b"
     - constant.bool: "\\b(true|false|nil)\\b"
 
