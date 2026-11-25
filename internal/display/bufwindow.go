@@ -29,6 +29,10 @@ type BufWindow struct {
 	hasMessage       bool
 	maxLineNumLength int
 	drawDivider      bool
+
+	scrollDragging bool
+	// Y delta between the mouse click position and the top of the thumb.
+	scrollDragOffset int
 }
 
 // NewBufWindow creates a new window at a location in the screen with a width and height
@@ -891,6 +895,72 @@ func (w *BufWindow) displayScrollBar() {
 			screen.SetContent(scrollX, y, scrollBarRune[0], nil, scrollBarStyle)
 		}
 	}
+}
+
+func (w *BufWindow) ScrollBarX() int {
+	if !w.Buf.Settings["scrollbar"].(bool) || w.Buf.LinesNum() <= w.Height {
+		return -1
+	}
+	return w.X + w.Width - 1
+}
+
+// returns the (inclusive) screen Y range [thumbStart, thumbEnd]
+// of the scrollbar thumb, or (-1,-1) when the scrollbar is not visible.
+func (w *BufWindow) ScrollBarBounds() (int, int) {
+	if !w.Buf.Settings["scrollbar"].(bool) || w.Buf.LinesNum() <= w.Height {
+		return -1, -1
+	}
+	barsize := int(float64(w.Height) / float64(w.Buf.LinesNum()) * float64(w.Height))
+	if barsize < 1 {
+		barsize = 1
+	}
+	barstart := w.Y + int(float64(w.StartLine.Line)/float64(w.Buf.LinesNum())*float64(w.Height))
+	barend := util.Min(barstart+barsize, w.Y+w.bufHeight) - 1
+	return barstart, barend
+}
+
+// returns the screen Y range [start, end] of the full
+// scrollbar track column (excluding the status line).
+func (w *BufWindow) ScrollBarTrackBounds() (int, int) {
+	if !w.Buf.Settings["scrollbar"].(bool) || w.Buf.LinesNum() <= w.Height {
+		return -1, -1
+	}
+	return w.Y, w.Y + w.bufHeight - 1
+}
+
+func (w *BufWindow) ScrollPosFromMouse(screenY int) int {
+	trackStart, trackEnd := w.ScrollBarTrackBounds()
+	trackH := trackEnd - trackStart + 1
+	if trackH <= 0 {
+		return 0
+	}
+	ratio := float64(screenY-trackStart) / float64(trackH)
+	line := int(ratio * float64(w.Buf.LinesNum()))
+	if line < 0 {
+		line = 0
+	}
+	if line >= w.Buf.LinesNum() {
+		line = w.Buf.LinesNum() - 1
+	}
+	return line
+}
+
+func (w *BufWindow) BeginScrollDrag(dragY, thumbStart int) {
+	w.scrollDragging = true
+	w.scrollDragOffset = dragY - thumbStart
+}
+
+func (w *BufWindow) EndScrollDrag() {
+	w.scrollDragging = false
+	w.scrollDragOffset = 0
+}
+
+func (w *BufWindow) IsScrollDragging() bool {
+	return w.scrollDragging
+}
+
+func (w *BufWindow) ScrollDragOffset() int {
+	return w.scrollDragOffset
 }
 
 // Display displays the buffer and the statusline
