@@ -7,58 +7,35 @@ rules:
     - default:
         start: "<template.*?>"
         end: "</template.*?>"
-        limit-group: symbol.tag
         rules:
-            - error: "<[^!].*?>"
-            - symbol.tag: "(?i)<[/]?(a|a(bbr|ddress|rea|rticle|side|udio)|b|b(ase|d(i|o)|lockquote|r|utton)|ca(nvas|ption)|center|cite|co(de|l|lgroup)|d(ata|atalist|d|el|etails|fn|ialog|l|t)|em|embed|fieldset|fig(caption|ure)|form|iframe|h[1-6]|hr|i|img|in(put|s)|kbd|keygen|label|legend|li|link|ma(in|p|rk)|menu|menuitem|met(a|er)|nav|noscript|o(bject|l|pt(group|ion)|utput)|p|param|picture|pre|progress|q|r(p|t|uby)|s|samp|se(ction|lect)|svg|small|source|span|strong|su(b|p|mmary)|textarea|time|track|u|ul|var|video|wbr)( .*)*?>"
-            - symbol.tag.extended: "(?i)<[/]?(body|div|html|head(er)?|footer|title|table|t(body|d|h(ead)?|r|foot))( .*)*?>"
-            - preproc: "(?i)<[/]?(script|style)( .*)*?>"
-            - special: "&[^;[[:space:]]]*;"
-
-            - identifier: "(alt|bgcolor|class|height|href|id|label|longdesc|name|on(click|focus|load|mouseover)|placeholder|size|span|src|style|target|type|value|width)="
-            - symbol: "[:=]"
             - constant.string: "\"[^\"]*\""
             - constant.number: "(?i)#[0-9a-fA-F]{6,6}"
-
-            - symbol.tag: "<|>"
-            - constant.string.url: "(ftp(s)?|http(s)?|git|chrome)://[^ 	]+"
-            - comment: "<!--.+?-->"
-            #- preproc: "<!DOCTYPE.+?>"
-            - comment.block:
-                start: "<!\\-\\-"
-                end: "\\-\\->"
-                rules: []
-
-            # Bootstrap
-            - symbol.tag.extended: "(?i)<[/]?(b-alert|b-aspect|b-avatar|b-badge|b-icon|b-breadcrumb|b-button-group|b-button-toolbar|b-button|b-calendar|b-card-text|b-card-input|b-card|b-carousel-slide|b-carousel|b-collapse|b-dropdown|b-dropdown-item|b-dropdown-divider|b-embed|b-form-checkbox-group|b-form-checkbox|b-form-datepicker|b-form-file|b-form-group|b-form-input|b-form-radio|b-form-rating|b-form-select|b-form-spinbutton|b-form-tags|b-form-textarea|b-form|b-form-timepicker|b-img-lazy|b-img|b-input-group|b-jumbotron|b-input|b-container|b-row|b-col|b-link|b-list-group|b-list-group-item|b-media|b-modal|b-nav|b-nav-item|b-nav-item-dropdown|b-nav-text|b-nav-form|b-navbar|b-navbar-brand|b-navbar-toggle|b-navbar-nav|b-overlay|b-pagination|b-pagination-nav|b-popover|b-progress|b-progress-bar|b-sidebar|b-skeleton-wrapper|b-skeleton|b-spinner|b-table|b-table-lite|b-table-simple|b-tabs|b-tab|b-time|b-toast|b-tooltip)\\b"
-            - identifier: "(variant|title|show|shadow|icon|align-h|align-v|label-for|@submit|tag|img-alt|img-src|data-toggle|data-target|aria-controls|aria-expanded|aria-label|aria-disabled|tabindex|:interval|background|img-width|img-height|@sliding-start|@sliding-end|cols|header|@reset)="
-            - symbol: "[:=]"
             # Vue
             - symbol.tag.extended: "(?i)<[/]?(component|transition|transition-group|keep-alive|slot)\\b"
             - identifier: "(v-text|v-html|v-show|v-if|v-else|v-else-if|v-for|v-on|v-bind|v-model|v-slot|v-pre|v-cloak|v-once|key|ref|is|@click)="
             - symbol: "[:=]"
+            
             # Vue-router
-            - symbol.tag.extended: "(?i)<[/]?(router-link|router-view)\\b"
+            - symbol.tag.extended: "(?i)<[/]?(router-link|router-view|RouterLink|RouterView)\\b"
             - identifier: "(to|v-slot)="
             - symbol: "[:=]"
-
+            
+            - include: "html"
 
     - default:
-        start: "<script>"
+        start: "<script(?:[ ]+setup)?>"
         end: "</script>"
-        limit-group: symbol.tag
         rules:
             - include: "javascript"
 
     - default:
-        start: "<script[ ]+lang=(\"ts\"|'ts')>"
+        start: "<script(?:[ ]+setup)?[ ]+lang=(\"ts\"|'ts')>"
         end: "</script>"
         rules:
             - include: "typescript"
 
     - default:
-        start: "<style.*?>"
+        start: "<style(?:[ ]+scoped.*?)?>"
         end: "</style.*?>"
-        limit-group: symbol.tag
         rules:
             - include: "css"
