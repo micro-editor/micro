@@ -297,6 +297,11 @@ func (h *Highlighter) HighlightStates(input LineStates) {
 		line := input.LineBytes(i)
 		// highlights := make(LineMatch)
 
+		h.lastRegion = nil
+		if i > 0 {
+			h.lastRegion = input.State(i - 1)
+		}
+
 		if i == 0 || h.lastRegion == nil {
 			h.highlightEmptyRegion(nil, 0, true, i, line, true)
 		} else {
@@ -314,6 +319,14 @@ func (h *Highlighter) HighlightStates(input LineStates) {
 // It sets all other matches in the buffer to nil to conserve memory
 // This assumes that all the states are set correctly
 func (h *Highlighter) HighlightMatches(input LineStates, startline, endline int) {
+	var curState *region
+	if startline > 0 {
+		input.Lock()
+		if startline-1 < input.LinesNum() {
+			curState = input.State(startline - 1)
+		}
+		input.Unlock()
+	}
 	for i := startline; i <= endline; i++ {
 		input.Lock()
 		if i >= input.LinesNum() {
@@ -325,11 +338,13 @@ func (h *Highlighter) HighlightMatches(input LineStates, startline, endline int)
 		highlights := make(LineMatch)
 
 		var match LineMatch
-		if i == 0 || input.State(i-1) == nil {
+		h.lastRegion = curState
+		if i == 0 || h.lastRegion == nil {
 			match = h.highlightEmptyRegion(highlights, 0, true, i, line, false)
 		} else {
-			match = h.highlightRegion(highlights, 0, true, i, line, input.State(i-1), false)
+			match = h.highlightRegion(highlights, 0, true, i, line, h.lastRegion, false)
 		}
+		curState = h.lastRegion
 
 		input.SetMatch(i, match)
 		input.Unlock()
@@ -342,11 +357,11 @@ func (h *Highlighter) HighlightMatches(input LineStates, startline, endline int)
 func (h *Highlighter) ReHighlightStates(input LineStates, startline int) int {
 	// lines := input.LineData()
 
-	h.lastRegion = nil
+	var curState *region
 	if startline > 0 {
 		input.Lock()
 		if startline-1 < input.LinesNum() {
-			h.lastRegion = input.State(startline - 1)
+			curState = input.State(startline - 1)
 		}
 		input.Unlock()
 	}
@@ -361,12 +376,13 @@ func (h *Highlighter) ReHighlightStates(input LineStates, startline int) int {
 		// highlights := make(LineMatch)
 
 		// var match LineMatch
+		h.lastRegion = curState
 		if i == 0 || h.lastRegion == nil {
 			h.highlightEmptyRegion(nil, 0, true, i, line, true)
 		} else {
 			h.highlightRegion(nil, 0, true, i, line, h.lastRegion, true)
 		}
-		curState := h.lastRegion
+		curState = h.lastRegion
 		lastState := input.State(i)
 
 		input.SetState(i, curState)
