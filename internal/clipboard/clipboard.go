@@ -2,7 +2,6 @@ package clipboard
 
 import (
 	"errors"
-
 	"github.com/zyedidia/clipper"
 )
 
@@ -78,16 +77,27 @@ func Write(text string, r Register) error {
 	return write(text, r, CurrentMethod)
 }
 
-// ReadMulti reads text from a clipboard register for a certain multi-cursor
-func ReadMulti(r Register, num, ncursors int) (string, error) {
+// ReadMulti reads text array from a clipboard register, which can be a multi cursor clipboard
+func ReadMulti(r Register) ([]string, error) {
 	clip, err := Read(r)
-	if err != nil {
-		return "", err
+	multivalid := false
+	if err == nil {
+		multivalid = ValidMulti(r, &clip)
+	} else {
+		multivalid = ValidMulti(r, nil)
 	}
-	if ValidMulti(r, clip, ncursors) {
-		return multi.getText(r, num), nil
+
+	if !multivalid {
+		returnarray := make([]string, 1, 1)
+		if err == nil {
+			returnarray[0] = clip
+		} else {
+			returnarray[0] = ""
+		}
+		return returnarray, err
 	}
-	return clip, nil
+
+	return multi.getAllText(r), nil
 }
 
 // WriteMulti writes text to a clipboard register for a certain multi-cursor
@@ -97,13 +107,20 @@ func WriteMulti(text string, r Register, num int, ncursors int) error {
 
 // ValidMulti checks if the internal multi-clipboard is valid and up-to-date
 // with the system clipboard
-func ValidMulti(r Register, clip string, ncursors int) bool {
-	return multi.isValid(r, clip, ncursors)
+func ValidMulti(r Register, clip *string) bool {
+	return multi.isValid(r, clip)
 }
 
 func writeMulti(text string, r Register, num int, ncursors int, m Method) error {
+	// Write to multi cursor clipboard
 	multi.writeText(text, r, num, ncursors)
-	return write(multi.getAllText(r), r, m)
+
+	// Write to normal cliipboard
+	multitext := multi.getAllTextConcated(r)
+	if multitext == "" {
+		return write("", r, m)
+	}
+	return write(multitext, r, m)
 }
 
 func read(r Register, m Method) (string, error) {
