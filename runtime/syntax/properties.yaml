@@ -1,0 +1,28 @@
+filetype: properties
+
+detect:
+    filename: "\\.properties$"
+
+rules:
+    # Key (Identifier) - Matches everything before the first = or :
+    - identifier: "^[[:space:]]*[^=:[:space:]]+"
+
+    # Assignment operators
+    - statement: "[=:]"
+
+    # Boolean constants
+    - constant.bool.true: "\\b(true|TRUE|yes|ON)\\b"
+    - constant.bool.false: "\\b(false|FALSE|no|OFF)\\b"
+
+    # Strings/Values (Simple match for text after assignment)
+    - constant.string: "([=:][[:space:]]*).*$"
+
+    # Comments - Properties files support both # and !
+    - comment:
+        start: "[#!]"
+        end: "$"
+        rules:
+            - todo: "(TODO|XXX|FIXME):?"
+
+    # Special characters like escaped spaces or newlines
+    - constant.specialChar: "\\\\([ :=tnfr'\"\\\\]|u[0-9a-fA-F]{4})"
