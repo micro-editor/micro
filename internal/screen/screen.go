@@ -152,6 +152,9 @@ func UnregisterRawSeq(r string) {
 	if Screen != nil {
 		Screen.UnregisterRawSeq(r)
 	}
+
+func Show() {
+	Screen.Show()
 }
 
 // TempFini shuts the screen down temporarily
