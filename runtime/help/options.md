@@ -517,6 +517,14 @@ Here are the available options:
 
     default value: `false`
 
+* `writesettings`: controls which sources can persist global option changes to
+   `settings.json`. `set` allows changes made by commands, `plugins` allows
+   changes made through the plugin API, and `set,plugins` allows both. An
+   empty value disables persistence for both sources. This setting itself is
+   always saved when changed by a command so that the policy can be updated.
+
+    default value: `set`
+
 * `xterm`: micro will assume that the terminal it is running in conforms to
   `xterm-256color` regardless of what the `$TERM` variable actually contains.
    Enabling this option may cause unwanted effects if your terminal in fact
@@ -544,10 +552,12 @@ or disable them:
    directory, the diff gutter will show changes with respect to the most
    recent Git commit rather than the diff since opening the file.
 
-Any option you set in the editor will be saved to the file
+Any option you set in the editor will normally be saved to the file
 `~/.config/micro/settings.json` so, in effect, your configuration file will be
-created for you. If you'd like to take your configuration with you to another
-machine, simply copy the `settings.json` to the other machine.
+created for you. The `writesettings` option can disable persistence for command
+changes.
+If you'd like to take your configuration with you to another machine, simply
+copy the `settings.json` to the other machine.
 
 ## Settings.json file
 
@@ -640,6 +650,7 @@ so that you can see what the formatting should look like.
     "tabstospaces": false,
     "useprimary": true,
     "wordwrap": false,
+    "writesettings": "set",
     "xterm": false
 }
 ```
