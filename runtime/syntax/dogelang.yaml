@@ -1,0 +1,74 @@
+filetype: dogelang
+
+detect:
+    filename: "\\.dg$"
+    header: "^#!.*/(env( -S python3?)? -m )?dg$"
+
+rules: # comment convention: 'python' means it was copied from python3.yaml
+      # dogelang: built-in objects
+    - constant: "\\b(self|cls)\\b"
+      # dogelang: user defined constants
+    - constant: "\\b_?[A-Z][A-Z0-9_]*\\b"
+      # python: built-in attributes
+    - constant: "\\b(__bases__|__builtin__|__class__|__debug__|__dict__|__doc__|__file__|__members__|__methods__|__name__|__self__)\\b"
+      # python: built-in functions
+    - identifier: "\\b(abs|all|any|ascii|bin|bool|breakpoint|bytearray|bytes|callable|chr|classmethod|compile|complex|delattr|dir|divmod|eval|exec|format|getattr|globals|hasattr|hash|help|hex|id|input|isinstance|issubclass|iter|len|locals|max|min|next|nonlocal|oct|open|ord|pow|print|repr|round|setattr|sorted|sum|vars|__import__)\\b"
+      # dogelang: built-in functions
+    - identifier: "\\b(chain|exhaust|foldl1?|foldr|scanl1?|scanr|bind|flip|take|takewhile|drop|dropwhile|iterate|head|tail|fst|snd|init|last)\\b"
+      # python: special method names
+    - identifier: "\\b__(abs|add|and|call|cmp|coerce|complex|concat|contains|delattr|delitem|delslice|del|dict|divmod|div|float|getattr|getitem|getslice|hash|hex|iadd|iand|iconcat|ifloordiv|ilshift|imatmul|imod|imul|init|int|invert|inv|ior|ipow|irshift|isub|iter|itruediv|ixor|len|long|lshift|mod|mul|neg|next|nonzero|oct|or|pos|pow|radd|rand|rcmp|rdivmod|rdiv|repeat|repr|rlshift|rmod|rmul|ror|rpow|rrshift|rshift|rsub|rxor|setattr|setitem|setslice|str|sub|xor)__\\b"
+      # python: types
+    - type: "\\b(bool|bytearray|bytes|classmethod|complex|dict|enumerate|filter|float|frozenset|int|list|map|memoryview|object|property|range|reversed|set|slice|staticmethod|str|super|tuple|type|zip)\\b"
+      # dogelang: built-in type macros
+    - type: "\\b(list'|tuple'|dict'|set')"
+      # dogelang: Classes
+    - type: "\\b_?[A-Z][a-zA-Z_0-9]*\\b"
+      # dogelang: keywords
+    - statement: "\\b(and|assert|async|await|break|subclass|continue|except|finally|for|if|import|in|is|not|or|raise|return|while|with|yield(\\s+from)?|where|otherwise)\\b"
+      # dogelang: operators
+    - symbol.operator: "([~^.:;,+*|=!\\%@?]|<|>|/|-|&)+"
+    - symbol.operator: "[$]" # split of from the above regex to mitigate the impact of https://github.com/zyedidia/micro/issues/1457
+      # python: parentheses
+    - symbol.brackets: "([(){}]|\\[|\\])"
+      # dogelang: attributes
+    - identifier: "(\\s|^)@[a-zA-Z_][a-zA-Z_0-9]*"
+      # python: numbers
+    - constant.number: "\\b[1-9](_?[0-9])*(\\.([0-9](_?[0-9])*)?)?(e[0-9](_?[0-9])*)?\\b" # decimal
+    - constant.number: "\\b0b(_?[01])+\\b"     # bin
+    - constant.number: "\\b0o(_?[0-7])+\\b"    # oct
+    - constant.number: "\\b0x(_?[0-9a-f])+\\b" # hex
+
+    # python
+    - constant.string:
+        start: "\"\"\""
+        end: "\"\"\""
+        rules: []
+
+    # dogelang
+    - constant.string:
+        start: "(\\B|\\b(r|b|rb))'''" # the ' is also valid at the end of identifiers
+        end: "'''"
+        rules: []
+
+    # python
+    - constant.string:
+        start: "\""
+        end: "(\"|$)"
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\."
+
+    # dogelang
+    - constant.string:
+        start: "(\\B|\\b(r|b|rb))'" # the ' is also valid at the end of identifiers
+        end: "('|$)"
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\."
+
+    # python
+    - comment:
+        start: "#"
+        end: "$"
+        rules:
+            - todo: "(TODO|FIXME):?"
