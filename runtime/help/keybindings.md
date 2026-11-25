@@ -342,6 +342,8 @@ JumpLine
 Deselect
 ClearInfo
 None
+JumpToOpeningBrace
+JumpToClosingBrace
 ```
 
 The `StartOfTextToggle` and `SelectToStartOfTextToggle` actions toggle between
@@ -607,6 +609,8 @@ conventions for text editing defaults.
     "Ctrl-u":         "ToggleMacro",
     "Ctrl-j":         "PlayMacro",
     "Insert":         "ToggleOverwriteMode",
+    "Alt-<":          "JumpToOpeningBrace",
+    "Alt->":          "JumpToClosingBrace",
 
     // Emacs-style keybindings
     "Alt-f": "WordRight",
