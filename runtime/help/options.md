@@ -382,7 +382,7 @@ Here are the available options:
     default value: `|`
 
 * `scrollmargin`: margin at which the view starts scrolling when the cursor
-   approaches the edge of the view.
+   approaches the edge of the view. A value between `0` and `1` will be scaled to the buffer height.
 
     default value: `3`
 

@@ -222,7 +222,14 @@ func (w *BufWindow) Relocate() bool {
 	height := w.bufHeight
 	ret := false
 	activeC := w.Buf.GetActiveCursor()
-	scrollmargin := int(b.Settings["scrollmargin"].(float64))
+
+	scrollmargin := 0
+	rawScrollmargin := b.Settings["scrollmargin"].(float64)
+	if rawScrollmargin >= 1 {
+		scrollmargin = int(rawScrollmargin)
+	} else {
+		scrollmargin = int(float64(height) * rawScrollmargin)
+	}
 
 	c := w.SLocFromLoc(activeC.Loc)
 	bStart := SLoc{0, 0}
