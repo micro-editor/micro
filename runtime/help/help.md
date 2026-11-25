@@ -1,6 +1,6 @@
 # Micro help text
 
-Micro is an easy to use, intuitive, text editor that takes advantage of the
+Micro is an easy to use, intuitive text editor that takes advantage of the
 full capabilities of modern terminals.
 
 Micro can be controlled by commands entered on the command bar, or with
