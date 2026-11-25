@@ -629,6 +629,13 @@ func String(s []byte) string {
 	return string(s)
 }
 
+// Extraction size limits for Unzip, guarding against zip bombs: archives
+// whose contents decompress to a size vastly larger than the archive itself.
+const (
+	maxUnzipEntrySize int64 = 256 << 20 // 256 MiB per archive entry
+	maxUnzipTotalSize int64 = 512 << 20 // 512 MiB across all entries
+)
+
 // Unzip unzips a file to given folder
 func Unzip(src, dest string) error {
 	r, err := zip.OpenReader(src)
@@ -638,6 +645,8 @@ func Unzip(src, dest string) error {
 	defer r.Close()
 
 	os.MkdirAll(dest, 0755)
+
+	var totalExtracted int64
 
 	// Closure to address file descriptors issue with all the deferred .Close() methods
 	extractAndWriteFile := func(f *zip.File) error {
@@ -658,15 +667,27 @@ func Unzip(src, dest string) error {
 			os.MkdirAll(path, f.Mode())
 		} else {
 			os.MkdirAll(filepath.Dir(path), f.Mode())
-			f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+			name := f.Name
+			out, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 			if err != nil {
 				return err
 			}
-			defer f.Close()
+			defer out.Close()
 
-			_, err = io.Copy(f, rc)
+			// Read at most one byte past the per-entry limit so that
+			// oversized entries can be detected and rejected.
+			written, err := io.Copy(out, io.LimitReader(rc, maxUnzipEntrySize+1))
 			if err != nil {
 				return err
+			}
+			if written > maxUnzipEntrySize {
+				out.Close()
+				os.Remove(path)
+				return fmt.Errorf("archive entry %s exceeds maximum size of %d bytes", name, maxUnzipEntrySize)
+			}
+			totalExtracted += written
+			if totalExtracted > maxUnzipTotalSize {
+				return fmt.Errorf("archive contents exceed maximum total size of %d bytes", maxUnzipTotalSize)
 			}
 		}
 		return nil
