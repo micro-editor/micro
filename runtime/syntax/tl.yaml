@@ -1,0 +1,29 @@
+filetype: typelanguage
+
+detect:
+    filename: "\\.tl"
+
+rules:
+    - symbol: "[:=]"
+    - special: "[{}[\\];]"
+
+    - identifier.class: ":(?:flags[0-9]?\\.[0-9]+\\?)?([a-zA-Z0-9_!<>]+)"
+
+    - type: "=\\s*(.*);"
+
+    - constant.bool: "(#|flags\\.\\d*\\?)"
+    - constant.specialChar: "#[a-fA-F0-9]+"
+
+    - preproc: "---(functions|types)---"
+
+    - comment:
+        start: "//"
+        end: "$"
+        rules:
+            - todo: "(TODO|XXX|FIXME):?"
+
+    - comment:
+        start: "/\\*"
+        end: "\\*/"
+        rules:
+            - todo: "(TODO|XXX|FIXME):?"
