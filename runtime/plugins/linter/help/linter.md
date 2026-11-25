@@ -32,6 +32,14 @@ following filetypes and linters:
 * **swift**: swiftc (MacOS and Linux only)
 * **yaml**: yamllint
 
+You can easily enable linting in your `settings.json` file:
+
+```json
+{
+    "linter": true
+}
+```
+
 If the linter plugin is enabled and the file corresponds to one of
 these filetypes, each time the buffer is saved, or when the `> lint`
 command is executed, micro will run the corresponding utility in the
