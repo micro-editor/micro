@@ -6,7 +6,7 @@ description: |
   terminals.
 confinement: classic
 adopt-info: micro
-base: core20
+base: core24
 
 apps:
   micro:
@@ -17,15 +17,16 @@ parts:
     source: .
     source-type: git
     plugin: go
+    build-snaps: [go]
     build-packages: [make]
     build-attributes: [no-patchelf]
     override-pull: |
-      snapcraftctl pull
-      version="$(go run $SNAPCRAFT_PART_SRC/tools/build-version.go)"
+      craftctl default
+      version="$(go run $CRAFT_PART_SRC/tools/build-version.go)"
       [ -n "$(echo $version | grep "dev")" ] && grade=devel || grade=stable
-      snapcraftctl set-version "$version"
-      snapcraftctl set-grade "$grade"
+      craftctl set version="$version"
+      craftctl set grade="$grade"
     override-build: |
       make build-tags
-      mkdir $SNAPCRAFT_PART_INSTALL/bin
-      mv ./micro $SNAPCRAFT_PART_INSTALL/bin/
+      mkdir $CRAFT_PART_INSTALL/bin
+      mv ./micro $CRAFT_PART_INSTALL/bin/
