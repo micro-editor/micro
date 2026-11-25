@@ -2,6 +2,7 @@ package buffer
 
 import (
 	"regexp"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/micro-editor/micro/v2/internal/util"
@@ -16,6 +17,114 @@ const (
 	padStart = 1 << iota
 	padEnd
 )
+
+func normalizeSearchBounds(b *Buffer, start, end Loc) (Loc, Loc) {
+	lastcn := util.CharacterCount(b.LineBytes(b.LinesNum() - 1))
+	if start.Y > b.LinesNum()-1 {
+		start.X = lastcn - 1
+	}
+	if end.Y > b.LinesNum()-1 {
+		end.X = lastcn
+	}
+	start.Y = util.Clamp(start.Y, 0, b.LinesNum()-1)
+	end.Y = util.Clamp(end.Y, 0, b.LinesNum()-1)
+
+	if start.GreaterThan(end) {
+		start, end = end, start
+	}
+	return start, end
+}
+
+func regexPatternContainsEscapedNewline(s string) bool {
+	slashes := 0
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\\' {
+			slashes++
+			continue
+		}
+		if s[i] == 'n' && slashes%2 == 1 {
+			return true
+		}
+		slashes = 0
+	}
+	return false
+}
+
+func shouldUseMultilineSearch(s string, useRegex bool) bool {
+	if useRegex {
+		return regexPatternContainsEscapedNewline(s) || strings.Contains(s, "\n")
+	}
+	return strings.Contains(s, "\n")
+}
+
+func shouldUseMultilineRegexPattern(pattern string) bool {
+	return regexPatternContainsEscapedNewline(pattern) || strings.Contains(pattern, "\n")
+}
+
+// CompileSearchRegex compiles a search pattern according to regex mode and
+// buffer settings. It returns the normalized pattern and compiled regexp.
+func (b *Buffer) CompileSearchRegex(s string, useRegex bool, multiline bool) (string, *regexp.Regexp, error) {
+	pattern := s
+	if !useRegex {
+		pattern = regexp.QuoteMeta(pattern)
+	}
+
+	flags := ""
+	if b.Settings["ignorecase"].(bool) {
+		flags += "i"
+	}
+	if multiline {
+		flags += "m"
+	}
+
+	if flags != "" {
+		r, err := regexp.Compile("(?"+flags+")" + pattern)
+		return pattern, r, err
+	}
+
+	r, err := regexp.Compile(pattern)
+	return pattern, r, err
+}
+
+func (b *Buffer) inclusiveSearchEnd(end Loc) Loc {
+	searchEnd := end
+	endLineCharCount := util.CharacterCount(b.LineBytes(end.Y))
+	if end.X < endLineCharCount {
+		searchEnd = end.Move(1, b)
+	}
+	return searchEnd
+}
+
+func (b *Buffer) findDownMultiline(r *regexp.Regexp, start, end Loc) ([2]Loc, bool) {
+	start, end = normalizeSearchBounds(b, start, end)
+	searchEnd := b.inclusiveSearchEnd(end)
+
+	joined := b.Substr(start, searchEnd)
+	match := r.FindIndex(joined)
+	if match == nil {
+		return [2]Loc{}, false
+	}
+
+	matchStart := start.Move(util.RunePos(joined, match[0]), b)
+	matchEnd := start.Move(util.RunePos(joined, match[1]), b)
+	return [2]Loc{matchStart, matchEnd}, true
+}
+
+func (b *Buffer) findUpMultiline(r *regexp.Regexp, start, end Loc) ([2]Loc, bool) {
+	start, end = normalizeSearchBounds(b, start, end)
+	searchEnd := b.inclusiveSearchEnd(end)
+
+	joined := b.Substr(start, searchEnd)
+	allMatches := r.FindAllIndex(joined, -1)
+	if len(allMatches) == 0 {
+		return [2]Loc{}, false
+	}
+	match := allMatches[len(allMatches)-1]
+
+	matchStart := start.Move(util.RunePos(joined, match[0]), b)
+	matchEnd := start.Move(util.RunePos(joined, match[1]), b)
+	return [2]Loc{matchStart, matchEnd}, true
+}
 
 func findLineParams(b *Buffer, start, end Loc, i int, r *regexp.Regexp) ([]byte, int, int, *regexp.Regexp) {
 	l := b.LineBytes(i)
@@ -62,19 +171,7 @@ func findLineParams(b *Buffer, start, end Loc, i int, r *regexp.Regexp) ([]byte,
 }
 
 func (b *Buffer) findDown(r *regexp.Regexp, start, end Loc) ([2]Loc, bool) {
-	lastcn := util.CharacterCount(b.LineBytes(b.LinesNum() - 1))
-	if start.Y > b.LinesNum()-1 {
-		start.X = lastcn - 1
-	}
-	if end.Y > b.LinesNum()-1 {
-		end.X = lastcn
-	}
-	start.Y = util.Clamp(start.Y, 0, b.LinesNum()-1)
-	end.Y = util.Clamp(end.Y, 0, b.LinesNum()-1)
-
-	if start.GreaterThan(end) {
-		start, end = end, start
-	}
+	start, end = normalizeSearchBounds(b, start, end)
 
 	for i := start.Y; i <= end.Y; i++ {
 		l, charpos, padMode, rPadded := findLineParams(b, start, end, i, r)
@@ -99,19 +196,7 @@ func (b *Buffer) findDown(r *regexp.Regexp, start, end Loc) ([2]Loc, bool) {
 }
 
 func (b *Buffer) findUp(r *regexp.Regexp, start, end Loc) ([2]Loc, bool) {
-	lastcn := util.CharacterCount(b.LineBytes(b.LinesNum() - 1))
-	if start.Y > b.LinesNum()-1 {
-		start.X = lastcn - 1
-	}
-	if end.Y > b.LinesNum()-1 {
-		end.X = lastcn
-	}
-	start.Y = util.Clamp(start.Y, 0, b.LinesNum()-1)
-	end.Y = util.Clamp(end.Y, 0, b.LinesNum()-1)
-
-	if start.GreaterThan(end) {
-		start, end = end, start
-	}
+	start, end = normalizeSearchBounds(b, start, end)
 
 	for i := end.Y; i >= start.Y; i-- {
 		charCount := util.CharacterCount(b.LineBytes(i))
@@ -156,18 +241,8 @@ func (b *Buffer) FindNext(s string, start, end, from Loc, down bool, useRegex bo
 		return [2]Loc{}, false, nil
 	}
 
-	var r *regexp.Regexp
-	var err error
-
-	if !useRegex {
-		s = regexp.QuoteMeta(s)
-	}
-
-	if b.Settings["ignorecase"].(bool) {
-		r, err = regexp.Compile("(?i)" + s)
-	} else {
-		r, err = regexp.Compile(s)
-	}
+	multiline := shouldUseMultilineSearch(s, useRegex)
+	_, r, err := b.CompileSearchRegex(s, useRegex, false)
 
 	if err != nil {
 		return [2]Loc{}, false, err
@@ -176,28 +251,56 @@ func (b *Buffer) FindNext(s string, start, end, from Loc, down bool, useRegex bo
 	var found bool
 	var l [2]Loc
 	if down {
-		l, found = b.findDown(r, from, end)
+		if multiline {
+			l, found = b.findDownMultiline(r, from, end)
+		} else {
+			l, found = b.findDown(r, from, end)
+		}
 		if !found {
-			l, found = b.findDown(r, start, end)
+			if multiline {
+				l, found = b.findDownMultiline(r, start, end)
+			} else {
+				l, found = b.findDown(r, start, end)
+			}
 		}
 	} else {
-		l, found = b.findUp(r, from, start)
+		if multiline {
+			l, found = b.findUpMultiline(r, from, start)
+		} else {
+			l, found = b.findUp(r, from, start)
+		}
 		if !found {
-			l, found = b.findUp(r, end, start)
+			if multiline {
+				l, found = b.findUpMultiline(r, end, start)
+			} else {
+				l, found = b.findUp(r, end, start)
+			}
 		}
 	}
 	return l, found, nil
 }
 
-// ReplaceRegex replaces all occurrences of 'search' with 'replace' in the given area
-// and returns the number of replacements made and the number of characters
-// added or removed on the last line of the range
-func (b *Buffer) ReplaceRegex(start, end Loc, search *regexp.Regexp, replace []byte, captureGroups bool) (int, int) {
-	if start.GreaterThan(end) {
-		start, end = end, start
+func (b *Buffer) replaceRegexMultiline(start, end Loc, charsEnd int, search *regexp.Regexp, replace []byte, captureGroups bool) (int, int) {
+	searchEnd := b.inclusiveSearchEnd(end)
+	joined := b.Substr(start, searchEnd)
+	matches := search.FindAllIndex(joined, -1)
+	found := len(matches)
+
+	if found > 0 {
+		var newText []byte
+		if captureGroups {
+			newText = search.ReplaceAll(joined, replace)
+		} else {
+			newText = search.ReplaceAllLiteral(joined, replace)
+		}
+
+		b.MultipleReplace([]Delta{{newText, start, searchEnd}})
 	}
 
-	charsEnd := util.CharacterCount(b.LineBytes(end.Y))
+	return found, util.CharacterCount(b.LineBytes(end.Y)) - charsEnd
+}
+
+func (b *Buffer) replaceRegexSingleLine(start, end Loc, charsEnd int, search *regexp.Regexp, replace []byte, captureGroups bool) (int, int) {
 	found := 0
 	var deltas []Delta
 
@@ -242,6 +345,21 @@ func (b *Buffer) ReplaceRegex(start, end Loc, search *regexp.Regexp, replace []b
 	}
 
 	b.MultipleReplace(deltas)
-
 	return found, util.CharacterCount(b.LineBytes(end.Y)) - charsEnd
+}
+
+// ReplaceRegex replaces all occurrences of 'search' with 'replace' in the given area
+// and returns the number of replacements made and the number of characters
+// added or removed on the last line of the range
+func (b *Buffer) ReplaceRegex(start, end Loc, search *regexp.Regexp, replace []byte, captureGroups bool) (int, int) {
+	if start.GreaterThan(end) {
+		start, end = end, start
+	}
+
+	charsEnd := util.CharacterCount(b.LineBytes(end.Y))
+
+	if shouldUseMultilineRegexPattern(search.String()) {
+		return b.replaceRegexMultiline(start, end, charsEnd, search, replace, captureGroups)
+	}
+	return b.replaceRegexSingleLine(start, end, charsEnd, search, replace, captureGroups)
 }
