@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"os/exec"
+	"runtime"
 )
 
 var Jobs chan JobFunction
@@ -54,7 +55,11 @@ func (f *CallbackFile) Write(data []byte) (int, error) {
 // JobStart starts a shell command in the background with the given callbacks
 // It returns an *exec.Cmd as the job id
 func JobStart(cmd string, onStdout, onStderr, onExit func(string, []any), userargs ...any) *Job {
-	return JobSpawn("sh", []string{"-c", cmd}, onStdout, onStderr, onExit, userargs...)
+	if runtime.GOOS == "windows" {
+		return JobSpawn("cmd", []string{"/v:on", "/c", cmd}, onStdout, onStderr, onExit, userargs...)
+	} else {
+		return JobSpawn("sh", []string{"-c", cmd}, onStdout, onStderr, onExit, userargs...)
+	}
 }
 
 // JobSpawn starts a process with args in the background with the given callbacks

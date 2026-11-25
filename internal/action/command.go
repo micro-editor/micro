@@ -886,15 +886,17 @@ func (h *BufPane) UnbindCmd(args []string) {
 
 // RunCmd runs a shell command in the background
 func (h *BufPane) RunCmd(args []string) {
-	runf, err := shell.RunBackgroundShell(shellquote.Join(args...))
-	if err != nil {
-		InfoBar.Error(err)
-	} else {
-		go func() {
-			InfoBar.Message(runf())
-			screen.Redraw()
-		}()
+	if len(args) == 0 {
+		InfoBar.Error("No arguments")
+		return
 	}
+
+	shell.ExecBackgroundCommand(func(output string, runErr error) {
+		if runErr != nil {
+			output = fmt.Sprint(args[0], " exited with error: ", runErr)
+		}
+		InfoBar.Message(output)
+	}, args[0], args[1:]...)
 }
 
 // QuitCmd closes the main view
