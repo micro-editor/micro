@@ -105,6 +105,7 @@ var defaultCommonSettings = map[string]any{
 	"truecolor":       "auto",
 	"useprimary":      true,
 	"wordwrap":        false,
+	"wrapindent":      float64(-1),
 }
 
 // a list of settings that should only be globally modified and their
