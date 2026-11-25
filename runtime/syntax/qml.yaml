@@ -1,0 +1,86 @@
+filetype: qml
+
+detect:
+    filename: "(\\.qml|\\.qmltypes)$"
+
+rules:
+    # QML objects
+    - identifier.var: "\\b\\w*\\s*\\{" # property group
+    - identifier.var: "^[\t ]*\\w+[\t ]*:"
+    - identifier.class: "\\b[A-Z][\\w\\.]*\\s*\\{|$"
+
+    # JavaScript first:
+    - constant.number: "\\b[-+]?([1-9][0-9]*|0[0-7]*|0x[0-9a-fA-F]+)([uU][lL]?|[lL][uU]?)?\\b"
+    - constant.number: "\\b[-+]?([0-9]+\\.[0-9]*|[0-9]*\\.[0-9]+)([EePp][+-]?[0-9]+)?[fFlL]?"
+    - constant.number: "\\b[-+]?([0-9]+[EePp][+-]?[0-9]+)[fFlL]?"
+    #- identifier: "[A-Za-z_][A-Za-z0-9_]*[[:space:]]*[(]"
+    # ^ this is not correct usage of the identifier color
+    - symbol.brackets: "[(){}]|\\[|\\]"
+    - symbol.operator: "([-+/*=<>!~%?:&|]|[.]{3})"
+    - statement: "\\b(async|await|break|case|catch|const|continue|debugger|default)\\b"
+    - statement: "\\b(delete|do|else|export|finally|for|function\\*?|class|extends)\\b"
+    - statement: "\\b(get|if|import|from|in|of|instanceof|let|new|reject|resolve|return)\\b"
+    - statement: "\\b(set|static|super|switch|this|throw|try|typeof|var|void|while|with|yield)\\b"
+    # reserved but unassigned
+    - error: "\\b(enum|implements|interface|package|private|protected|public)\\b"
+    - constant: "\\b(globalThis|Infinity|null|undefined|NaN)\\b"
+    - constant: "\\b(null|undefined|NaN)\\b"
+    - type: "\\b(Array|Boolean|Date|Enumerator|Error|Function|Generator|Map|Math)\\b"
+    - type: "\\b(Number|Object|Promise|Reflect|RegExp|Set|String|Symbol|WeakMap|WeakSet)\\b"
+    - type: "\\b(BigInt64Array|BigUint64Array|Float32Array|Float64Array|Int16Array)\\b"
+
+    # QML-specific
+    - identifier: "\\b(Qt)\\b"
+    - statement: "\\b(pragma|alias|signal|component|readonly|required)\\b"
+    - statement: "\\bproperty\\s*\\w*\\b"
+    - type: "\\b(easingCurve|point|qmlProperty|rect|size)\\b"
+    - type: "\\b(bool|date|double|int|real|string|url|var|variant|void)\\b"
+    - type: "\\b(QtObject)\\b"
+    - type: "\\blist(<[A-Z][A-Za-z0-9]+>)?\\b"
+    - constant: "parent"
+
+    # - constant: "/[^*]([^/]|(\\\\/))*[^\\\\]/[gim]*"
+    - constant: "\\\\[0-7][0-7]?[0-7]?|\\\\x[0-9a-fA-F]+|\\\\[bfnrt'\"\\?\\\\]"
+
+    - identifier: "\\b(escape|eval|isFinite|isNaN|parseFloat|parseInt|unescape|uneval)\\b"
+
+    - constant.string:
+        start: "\""
+        end: "\""
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\."
+
+    - constant.string:
+        start: "'"
+        end: "'"
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\."
+
+    - constant.string:
+        start: "`"
+        end: "`"
+        rules:
+            - constant.specialChar: "\\\\."
+            - identifier: "\\x24\\{.*?\\}"
+
+    - constant.bool: "\\b(true|false)\\b"
+    - constant.bool.false: "\\b(false)\\b"
+    - constant.bool.true: "\\b(true)\\b"
+
+    - comment:
+        start: "//"
+        end: "$"
+        rules:
+            - todo: "(TODO|XXX|FIXME)"
+
+    - comment:
+        start: "/\\*"
+        end: "\\*/"
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\."
+            # function documentation
+            - identifier: "\\s\\*\\s.*"
+            - todo: "(TODO|XXX|FIXME)"

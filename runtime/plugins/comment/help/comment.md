@@ -63,6 +63,7 @@ but it is only available for certain filetypes:
 * proto: `// %s`
 * python: `# %s`
 * python3: `# %s`
+* qml: `// %s`
 * ruby: `# %s`
 * rust: `// %s`
 * scala: `// %s`
