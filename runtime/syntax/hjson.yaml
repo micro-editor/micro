@@ -1,0 +1,19 @@
+filetype: hjson
+
+detect:
+  filename: "\\.hjson$"
+
+rules:
+  - include: "json"
+  - comment:
+      start: "#"
+      end: "$"
+      rules: []
+  - comment:
+      start: "//"
+      end: "$"
+      rules: []
+  - comment:
+      start: "/\\*"
+      end: "\\*/"
+      rules: []
