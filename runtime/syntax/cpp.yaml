@@ -62,8 +62,13 @@ rules:
     - constant.bool: "(\\b(true|false|NULL|nullptr|TRUE|FALSE)\\b)"
 
     - constant.string:
-        start: "\""
-        end: "\""
+        start: '(L|u8?|U)?R"\('
+        end: '\)"'
+        rules: []
+
+    - constant.string:
+        start: '(L|u8?|U)?"'
+        end: '"'
         skip: "\\\\."
         rules:
             - constant.specialChar: "\\\\([\"'abfnrtv\\\\]|[0-3]?[0-7]{1,2}|x[0-9A-Fa-f]{1,2}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})"
