@@ -1,0 +1,41 @@
+filetype: slint
+
+detect:
+  filename: "\\.slint"
+
+rules:
+  - type: "\\b(int|float|bool|string|color|brush|physical-length|length|duration|angle|easing|percent|image)\\b"
+  - statement: "\\b(import|export|struct|from|property|callback|animate|states|transitions|if|for|return|in)\\b"
+  
+  - constant.number: "\\b[0-9]+\\b"
+  - constant.number: "\\b[0-9]+(px|%)\\b"
+  - constant: "\\b(blue|red|green|yellow|red|black|orange|grey|gray|ease|ease_in|ease_out|ease_in_out)\\b"
+  - constant.color: "#[0-9a-fA-F]+"
+  - constant.bool: "\\b(true|false)\\b"
+  - constant.bool.false: "\\b(false)\\b"
+  - constant.bool.true: "\\b(true)\\b"
+
+
+  - symbol.operator.logical: "[!&|]+"
+  - symbol.operator.comparison: "[<=>]+"
+  - symbol.operator.assignment: "[:<=>]+"
+  - symbol.operator: "[!%&()+,/*<=>?|;]+"
+  - symbol.operator: " - "
+  
+  - identifier.var: "[a-zA-Z_][a-zA-Z_0-9-]*:" 
+  - identifier.var: "[a-zA-Z_][a-zA-Z_0-9-]* *<?=>"
+  
+  - constant.string: "\"(\\\\.|[^\"])*\"|'(\\\\.|[^'])*'"
+  
+  - comment:
+        start: "//"
+        end: "$"
+        rules:
+            - todo: "(TODO|XXX|FIXME)"
+  - comment:
+      start: "/\\*"
+      end: "\\*/"
+      rules:
+          # function documentation
+          - identifier: "\\s\\*\\s.*"
+          - todo: "(TODO|XXX|FIXME)"
