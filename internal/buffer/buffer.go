@@ -123,7 +123,14 @@ type SharedBuffer struct {
 	origHash [md5.Size]byte
 }
 
-func (b *SharedBuffer) insert(pos Loc, value []byte) {
+func (b *SharedBuffer) canEdit(permission textEventPermission) bool {
+	return !b.Type.Readonly || permission == internalEdit
+}
+
+func (b *SharedBuffer) insert(pos Loc, value []byte, permission textEventPermission) {
+	if !b.canEdit(permission) {
+		return
+	}
 	b.HasSuggestions = false
 	b.LineArray.insert(pos, value)
 	b.setModified()
@@ -132,7 +139,10 @@ func (b *SharedBuffer) insert(pos Loc, value []byte) {
 	b.MarkModified(pos.Y, pos.Y+inslines)
 }
 
-func (b *SharedBuffer) remove(start, end Loc) []byte {
+func (b *SharedBuffer) remove(start, end Loc, permission textEventPermission) []byte {
+	if !b.canEdit(permission) {
+		return nil
+	}
 	b.HasSuggestions = false
 	defer b.setModified()
 	defer b.MarkModified(start.Y, end.Y)
@@ -563,20 +573,16 @@ func (b *Buffer) SetName(s string) {
 
 // Insert inserts the given string of text at the start location
 func (b *Buffer) Insert(start Loc, text string) {
-	if !b.Type.Readonly {
-		b.EventHandler.cursors = b.cursors
-		b.EventHandler.active = b.curCursor
-		b.EventHandler.Insert(start, text)
-	}
+	b.EventHandler.cursors = b.cursors
+	b.EventHandler.active = b.curCursor
+	b.EventHandler.Insert(start, text)
 }
 
 // Remove removes the characters between the start and end locations
 func (b *Buffer) Remove(start, end Loc) {
-	if !b.Type.Readonly {
-		b.EventHandler.cursors = b.cursors
-		b.EventHandler.active = b.curCursor
-		b.EventHandler.Remove(start, end)
-	}
+	b.EventHandler.cursors = b.cursors
+	b.EventHandler.active = b.curCursor
+	b.EventHandler.Remove(start, end)
 }
 
 // FileType returns the buffer's filetype
@@ -620,7 +626,8 @@ func (b *Buffer) ReOpen() error {
 	if err != nil {
 		return err
 	}
-	b.EventHandler.ApplyDiff(txt)
+	// Reload reflects the file on disk even when user edits are disabled.
+	b.EventHandler.applyDiff(txt, internalEdit)
 
 	err = b.UpdateModTime()
 	if !b.Settings["fastdirty"].(bool) {
@@ -1143,7 +1150,7 @@ func (b *Buffer) MoveLinesUp(start int, end int) {
 				util.CharacterCount(b.lines[end-1].data),
 				end - 1,
 			},
-			[]byte{'\n'},
+			[]byte{'\n'}, userEdit,
 		)
 	}
 	b.Insert(
@@ -1271,11 +1278,13 @@ func (b *Buffer) FindMatchingBrace(start Loc) (Loc, bool, bool) {
 func (b *Buffer) Retab() {
 	toSpaces := b.Settings["tabstospaces"].(bool)
 	tabsize := util.IntOpt(b.Settings["tabsize"])
+	var deltas []Delta
 
 	for i := 0; i < b.LinesNum(); i++ {
 		l := b.LineBytes(i)
 
 		ws := util.GetLeadingWhitespace(l)
+		oldws := ws
 		if len(ws) != 0 {
 			if toSpaces {
 				ws = bytes.ReplaceAll(ws, []byte{'\t'}, bytes.Repeat([]byte{' '}, tabsize))
@@ -1284,16 +1293,14 @@ func (b *Buffer) Retab() {
 			}
 		}
 
-		l = bytes.TrimLeft(l, " \t")
-
-		b.Lock()
-		b.lines[i].data = append(ws, l...)
-		b.Unlock()
-
-		b.MarkModified(i, i)
+		if !bytes.Equal(oldws, ws) {
+			deltas = append(deltas, Delta{ws, Loc{0, i}, Loc{util.CharacterCount(oldws), i}})
+		}
 	}
 
-	b.setModified()
+	if len(deltas) > 0 {
+		b.MultipleReplace(deltas)
+	}
 }
 
 // ParseCursorLocation turns a cursor location like 10:5 (LINE:COL)
@@ -1326,8 +1333,15 @@ func (b *Buffer) Line(i int) string {
 	return string(b.LineBytes(i))
 }
 
+// Write appends output. Only log buffers accept output while read-only.
 func (b *Buffer) Write(bytes []byte) (n int, err error) {
-	b.EventHandler.InsertBytes(b.End(), bytes)
+	permission := userEdit
+	if b.Type.Kind == BTLog.Kind {
+		permission = internalEdit
+	} else if b.Type.Readonly {
+		return 0, errors.New("cannot write to read-only buffer")
+	}
+	b.EventHandler.insertBytes(b.End(), bytes, permission)
 	return len(bytes), nil
 }
 
@@ -1470,7 +1484,7 @@ func (b *Buffer) SearchMatch(pos Loc) bool {
 
 // WriteLog writes a string to the log buffer
 func WriteLog(s string) {
-	LogBuf.EventHandler.Insert(LogBuf.End(), s)
+	LogBuf.Write([]byte(s))
 }
 
 // GetLogBuf returns the log buffer
