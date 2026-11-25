@@ -1,4 +1,4 @@
-VERSION = "1.0.0"
+VERSION = "1.0.0" -- all built-in plugins fixed to 1.0.0
 
 local util = import("micro/util")
 local config = import("micro/config")
