@@ -1,0 +1,91 @@
+filetype: sml
+
+detect:
+    filename: "\\.sml$|\\.sig$|\\.fun$|\\.cm$"
+
+rules:
+    # Comments — region must come first to prevent keyword highlighting inside
+    - comment:
+        start: "\\(\\*"
+        end: "\\*\\)"
+        rules:
+            - todo: "(TODO|FIXME|XXX|HACK|NOTE):?"
+
+    # String literals with escape sequences
+    - constant.string:
+        start: "\""
+        end: "\""
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\[abtnvfr\"\\\\]"
+            - constant.specialChar: "\\\\\\^[@A-Z\\[\\\\\\]\\^_]"
+            - constant.specialChar: "\\\\[0-9]{3}"
+            - constant.specialChar: "\\\\u[0-9A-Fa-f]{4}"
+
+    # Character literals: #"x" or #"\n" etc.
+    - constant.string: "#\"(\\\\.|[^\"\\\\])\""
+
+    # Control flow keywords
+    - statement: "\\b(if|then|else|case|of|fn|raise|handle|while|do)\\b"
+
+    # Declaration keywords
+    - statement: "\\b(val|rec|fun|and|let|local|in|end|datatype|withtype|abstype|type|exception|with|op|as|before)\\b"
+
+    # Module system keywords
+    - preproc: "\\b(struct|sig|structure|signature|functor|open|sharing|where|eqtype|include)\\b"
+
+    # Fixity keywords
+    - statement: "\\b(infix|infixl|infixr|nonfix)\\b"
+
+    # Boolean operators (short-circuit)
+    - statement: "\\b(andalso|orelse)\\b"
+
+    # Boolean constants
+    - constant.bool: "\\b(true|false)\\b"
+
+    # Language constants
+    - constant: "\\b(nil|NONE|SOME|LESS|EQUAL|GREATER)\\b"
+
+    # Built-in exception names
+    - constant: "\\b(Bind|Chr|Div|Domain|Empty|Match|Option|Overflow|Size|Span|Subscript|Fail|Io)\\b"
+
+    # Built-in types
+    - type: "\\b(int|real|char|string|bool|unit|exn|word|list|option|ref|array|vector|order|substring)\\b"
+
+    # Word operators
+    - symbol.operator: "\\b(div|mod|not|o|abs)\\b"
+
+    # Multi-char operators (order matters — longer first)
+    - symbol.operator: "(=>|->|:=|::|:>|<>|>=|<=|\\.\\.\\.|;;)"
+
+    # Single-char operators
+    - symbol.operator: "[=<>@^!#~+\\-*/|]"
+
+    # Semicolon and comma
+    - symbol: "[;,]"
+
+    # Wildcard
+    - symbol: "\\b_\\b"
+
+    # Numeric literals — order matters: most specific first
+    # Hex integers
+    - constant.number: "~?\\b0x[0-9A-Fa-f]+\\b"
+    # Word hex literals
+    - constant.number: "\\b0wx[0-9A-Fa-f]+\\b"
+    # Word literals
+    - constant.number: "\\b0w[0-9]+\\b"
+    # Real with exponent
+    - constant.number: "~?\\b[0-9]+(\\.[0-9]+)?[eE]~?[0-9]+\\b"
+    # Real
+    - constant.number: "~?\\b[0-9]+\\.[0-9]+\\b"
+    # Decimal integers
+    - constant.number: "~?\\b[0-9]+\\b"
+
+    # Type variables: 'a, ''a (equality type var)
+    - type: "'{1,2}[A-Za-z_][A-Za-z0-9_']*"
+
+    # Module paths: Structure.name
+    - identifier.class: "[A-Z][A-Za-z0-9_']*\\."
+
+    # Brackets
+    - symbol.brackets: "[(){}]|\\[|\\]"
