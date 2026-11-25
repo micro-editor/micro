@@ -78,6 +78,9 @@ func (eh *EventHandler) DoTextEvent(t *TextEvent, useUndo bool) {
 	for _, c := range eh.cursors {
 		move := func(loc Loc) Loc {
 			if t.EventType == TextEventInsert {
+				if loc == start && c.Num < t.C.Num {
+					return loc
+				}
 				if start.Y != loc.Y && loc.GreaterThan(start) {
 					loc.Y += end.Y - start.Y
 				} else if loc.Y == start.Y && loc.GreaterEqual(start) {
