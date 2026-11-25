@@ -4,6 +4,7 @@
 	<launchable type="desktop-id">micro.desktop</launchable>
 	<name>Micro Text Editor</name>
 	<summary>A modern and intuitive terminal-based text editor</summary>
+	<summary xml:lang="ru">Современный и понятный текстовый редактор для терминала</summary>
 	<description>
 		<p>
 			micro is a terminal-based text editor that aims to be easy to use and
@@ -11,11 +12,23 @@
 			It comes as a single, batteries-included, static binary with no dependencies;
 			you can download and use it right now!
 		</p>
+		<p xml:lang="ru">
+			Редактор micro работает в терминале и старается быть простым и понятным,
+			не отказываясь при этом от возможностей современных терминалов. Он поставляется
+			одним статическим исполняемым файлом без единой зависимости и со всем нужным
+			внутри: достаточно скачать — и можно работать.
+		</p>
 		<p>
 			As its name indicates, micro aims to be somewhat of a successor to the nano
 			editor by being easy to install and use. It strives to be enjoyable as a full-time
 			editor for people who prefer to work in a terminal, or those who regularly
 			edit files over SSH.
+		</p>
+		<p xml:lang="ru">
+			Как подсказывает название, micro задуман своего рода преемником редактора nano:
+			его так же легко поставить и так же просто освоить. Им должно быть приятно
+			пользоваться каждый день — и тем, кто предпочитает работать в терминале,
+			и тем, кто регулярно правит файлы по SSH.
 		</p>
 	</description>
 	<metadata_license>MIT</metadata_license>
@@ -39,6 +52,7 @@
 	<screenshots>
 		<screenshot type="default">
 			<caption>Micro Text Editor editing its source code</caption>
+			<caption xml:lang="ru">Редактор Micro за правкой собственного исходного кода</caption>
 			<image type="source">https://raw.githubusercontent.com/micro-editor/micro/master/assets/micro-solarized.png</image>
 		</screenshot>
 	</screenshots>
