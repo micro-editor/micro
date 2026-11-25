@@ -466,10 +466,25 @@ Here are the available options:
 
     default value: `false`
 
+* `tabbarchars`: sets what visual characters to be shown for various tabbar options.
+   This option is specified in the form of `key1=value1,key2=value2,...`.
+
+   Here are the list of keys:
+   - `active`: the opening and closing tab characters for the current active tab,
+               where the values are splitted in half for opening and closing characters.
+               For example, value of `[[]]` will have `[[` as opening characters and
+               `]]` as closing characters.
+   - `div`: the characters to be filled between each tab.
+   - `inactive`: the opening and closing tab characters for the inactive tabs.
+                 where the values are splitted in half for opening and closing characters.
+
+    default value: `div=│,active= [] ,inactive=  `
+
 * `tabhighlight`: inverts the tab characters' (filename, save indicator, etc)
    colors with respect to the tab bar.
+   Has no effect if `tabbar.active` is present in the current colorscheme.
 
-    default value: `false`
+    default value: `true`
 
 * `tabmovement`: navigate spaces at the beginning of lines as if they are tabs
    (e.g. move over 4 spaces at once). This option only does anything if
@@ -477,9 +492,9 @@ Here are the available options:
 
     default value: `false`
 
-* `tabreverse`: reverses the tab bar colors when active.
+* `tabreverse`: reverses the tab bar colors.
 
-    default value: `true`
+    default value: `false`
 
 * `tabsize`: the size in spaces that a tab character should be displayed with.
 
@@ -633,7 +648,7 @@ so that you can see what the formatting should look like.
     "sucmd": "sudo",
     "syntax": true,
     "tabalways": false,
-    "tabhighlight": true,
+    "tabhighlight": false,
     "tabmovement": false,
     "tabreverse": false,
     "tabsize": 4,

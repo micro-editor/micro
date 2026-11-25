@@ -217,6 +217,16 @@ func StringToStyle(str string) tcell.Style {
 	return style
 }
 
+func ReverseColor(s tcell.Style) tcell.Style {
+	_, _, attr := s.Decompose()
+	attr = attr ^ tcell.AttrReverse
+	if attr&tcell.AttrReverse == tcell.AttrReverse {
+		return s.Reverse(true)
+	} else {
+		return s.Reverse(false)
+	}
+}
+
 // StringToColor returns a tcell color from a string representation of a color
 // We accept either bright... or light... to mean the brighter version of a color
 func StringToColor(str string) (tcell.Color, bool) {

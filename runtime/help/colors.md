@@ -40,7 +40,7 @@ color support comes in three flavors.
   same regardless of the configured 16-color palette. However, the color
   range is fairly limited due to the small number of colors available.
   Default 256-color colorschemes include `monokai`, `twilight`, `zenburn`,
-  `darcula` and more.
+  `dracula` and more.
 
 * true-color: Some terminals support displaying "true color" with 16 million
   colors using standard RGB values. This mode will be able to support
@@ -184,6 +184,8 @@ Here is a list of the colorscheme groups that you can use:
 * statusline.suggestions (Color of the autocomplete suggestions menu)
 * tabbar (Color of the tabbar that lists open files)
 * tabbar.active (Color of the active tab in the tabbar)
+* tabbar.inactive (Color of the inactive tabs in the tabbar)
+* tabbar.div (Color of the space/divider between each tab in the tabbar)
 * indent-char (Color of the character which indicates tabs if the option is
   enabled)
 * line-number
