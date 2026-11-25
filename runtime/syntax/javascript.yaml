@@ -2,7 +2,7 @@ filetype: javascript
 
 detect:
     filename: "(\\.(m|c)?js$|\\.es[5678]?$)"
-    header: "^#!.*/(env +)?node( |$)"
+    header: "^#!.*/(env +((-S|--split-string(=\\w+)? +)?)?)?node( |$)"
 
 rules:
     - constant.number: "\\b[-+]?([1-9][0-9]*|0[0-7]*|0x[0-9a-fA-F]+)([uU][lL]?|[lL][uU]?)?\\b"
@@ -27,7 +27,7 @@ rules:
 
     # - constant: "/[^*]([^/]|(\\\\/))*[^\\\\]/[gim]*"
     - constant: "\\\\[0-7][0-7]?[0-7]?|\\\\x[0-9a-fA-F]+|\\\\[bfnrt'\"\\?\\\\]"
-    - comment: "^#!.*/(env +)?node( |$)"
+    - comment: "^#!.*/(env +((-S|--split-string(=\\w+)? +)?)?)?node( |$)"
 
     - identifier: "\\b(alert|decodeURI|decodeURIComponent|document|encodeURI|encodeURIComponent|escape|eval|isFinite|isNaN|parseFloat|parseInt|unescape|uneval|window)\\b"
     - identifier: "\\b(Intl|WebAssembly)\\b"

@@ -24,7 +24,7 @@ filetype: shell
 # * bash-fc. (followed by a random string)
 detect:
     filename: "(\\.(sh|bash|ash|ebuild)$|(\\.bash(rc|_aliases|_functions|_profile)|\\.?profile|Pkgfile|pkgmk\\.conf|rc\\.conf|PKGBUILD|APKBUILD)$|bash-fc\\.)"
-    header: "^#!.*/(env +)?(ba)?(a)?(mk)?sh( |$)"
+    header: "^#!.*/(env +((-S|--split-string(=\\w+)? +)?)?)?(ba)?(a)?(mk)?sh( |$)"
 
 rules:
     # Numbers

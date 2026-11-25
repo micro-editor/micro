@@ -2,7 +2,7 @@ filetype: swift
 
 detect:
     filename: "\\.swift$"
-    header: "^#!.*bin/(env +)?swift( |$)"
+    header: "^#!.*bin/(env +((-S|--split-string(=\\w+)? +)?)?)?swift( |$)"
 
 rules:
 

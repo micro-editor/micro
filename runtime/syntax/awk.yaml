@@ -2,7 +2,7 @@ filetype: awk
 
 detect:
     filename: "\\.awk$"
-    header: "^#!.*bin/(env +)?awk( |$)"
+    header: "^#!.*bin/(env +((-S|--split-string(=\\w+)? +)?)?)?awk( |$)"
 
 rules:
     - preproc: "\\$[A-Za-z0-9_!@#$*?\\-]+"

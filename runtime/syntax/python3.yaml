@@ -2,7 +2,7 @@ filetype: python
 
 detect:
     filename: "\\.py(3|w)?$"
-    header: "^#!.*/(env +)?python(3)?$"
+    header: "^#!.*/(env +((-S|--split-string(=\\w+)? +)?)?)?python(3)?$"
 
 rules:
     # built-in objects

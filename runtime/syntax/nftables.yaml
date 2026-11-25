@@ -2,7 +2,7 @@ filetype: nftables
 
 detect:
     filename: "(nftables\\.(conf|rules)$|nftables(\\.rules)?\\.d/)"
-    header: "^(#!.*/(env +)?nft( |$)|flush +ruleset)"
+    header: "^(#!.*/(env +((-S|--split-string(=\\w+)? +)?)?)?nft( |$)|flush +ruleset)"
 
 rules:
     - type: "\\b(chain|counter|map|rule|ruleset|set|table)\\b"

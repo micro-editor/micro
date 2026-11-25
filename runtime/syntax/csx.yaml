@@ -1,7 +1,7 @@
 filetype: csharp-script
 detect:
     filename: "\\.csx$"
-    header: "^#!.*/(env +)?dotnet-script( |$)"
+    header: "^#!.*/(env +((-S|--split-string(=\\w+)? +)?)?)?dotnet-script( |$)"
 
 rules:
     - include: "csharp"

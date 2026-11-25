@@ -2,7 +2,7 @@ filetype: julia
 
 detect:
     filename: "\\.jl$"
-    header: "^#!.*/(env +)?julia( |$)"
+    header: "^#!.*/(env +((-S|--split-string(=\\w+)? +)?)?)?julia( |$)"
 
 rules:
 
