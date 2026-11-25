@@ -83,6 +83,8 @@ func SetStatusInfoFnLua(fn string) {
 			} else {
 				return string(v)
 			}
+		} else {
+			screen.TermMessage(plFn, "failed with error\n"+err.Error())
 		}
 		return ""
 	}
