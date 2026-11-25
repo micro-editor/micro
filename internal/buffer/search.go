@@ -226,6 +226,7 @@ func (b *Buffer) ReplaceRegex(start, end Loc, search *regexp.Regexp, replace []b
 				deltas = append(deltas, Delta{newText, match[0], match[1]})
 			}
 		} else {
+			prevFound := found
 			newLine := search.ReplaceAllFunc(l, func(in []byte) []byte {
 				found++
 				var result []byte
@@ -237,7 +238,10 @@ func (b *Buffer) ReplaceRegex(start, end Loc, search *regexp.Regexp, replace []b
 				}
 				return result
 			})
-			deltas = append(deltas, Delta{newLine, Loc{0, i}, Loc{charCount, i}})
+
+			if prevFound < found {
+				deltas = append(deltas, Delta{newLine, Loc{0, i}, Loc{charCount, i}})
+			}
 		}
 	}
 
