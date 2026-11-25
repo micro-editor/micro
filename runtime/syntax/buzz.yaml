@@ -1,0 +1,48 @@
+filetype: buzz
+
+detect:
+    filename: "\\.buzz$"
+
+rules:
+    # keywords
+    - statement: "\\b(range|namespace|typeof|type|zdef|void|static|var|const|extern|import|export|from|test|as|in|while|if|else|fun|try|catch|throw|constructor|return|switch|default|break|for|foreach|do|until|continue|resolve|resume|yield|any|out)\\b"
+      # special method names
+    - symbol.operator: "\\b(!|and|or|band|bor|xor|\\?\\?)\\b"
+      # definitions
+    - identifier: "def [a-zA-Z_0-9]+"
+      # keywords (declaration)
+    - statement: "\\b(enum|object|protocol)\\b"
+      # constants (true, false, null, this)
+    - constant: "\\b(true|false|null|this)\\b"
+      # constants (types)
+    - type: "\\b(ud|str|int|float|obj|fib|bool|pat|type|any)\\b\\??"
+      # parentheses
+    - symbol.brackets: "([(){}]|\\[|\\])"
+      # extra operators
+    - symbol.operator: "(\\+|\\-|\\/|%|\\*|>>|<<|\\\\|\\^|&|~|!>)"
+      # Comparision operators
+    - symbol.operator: "(==|!=|<=?|>=?|\\bis\\b|\\?\\?)"
+      # numbers
+    - constant.number: "\\b[0-9](_?[0-9])*(\\.([0-9](_?[0-9])*)?)?(e[0-9](_?[0-9])*)?\\b" # decimal
+    - constant.number: "\\b0b(_?[01])+\\b"     # bin
+    - constant.number: "\\b0x(_?[0-9a-fA-F])+\\b" # hex
+
+    - constant.string:
+        start: "\""
+        end: "(\"|$)"
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\."
+
+    - constant.string:
+        start: "'"
+        end: "('|$)"
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\."
+
+    - comment:
+        start: "\\|"
+        end: "$"
+        rules:
+            - todo: "(TODO|FIXME|HACK|BUG|NOTE|FAQ|MNEMONIC|REQ|RFE|IDEA|PORT|\\?\\?\\?|!!!|GLOSS|SEE|TODOC|STAT|RVD|CRED):?"
