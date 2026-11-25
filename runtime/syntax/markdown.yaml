@@ -4,7 +4,10 @@ detect:
     filename: "\\.(livemd|md|mkd|mkdn|markdown)$"
 
 rules:
-    # Tables (Github extension)
+    # Markdown is a superset of HTML
+    {include: "html"}
+
+      # Tables (Github extension)
     - type: ".*[ :]\\|[ :].*"
 
       # quotes
