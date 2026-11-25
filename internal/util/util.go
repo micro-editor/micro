@@ -340,12 +340,7 @@ func IsWhitespace(c rune) bool {
 
 // IsBytesWhitespace returns true if the given bytes are all whitespace
 func IsBytesWhitespace(b []byte) bool {
-	for _, c := range b {
-		if !IsWhitespace(rune(c)) {
-			return false
-		}
-	}
-	return true
+	return len(bytes.TrimSpace(b)) == 0
 }
 
 // RunePos returns the rune index of a given byte index

@@ -96,6 +96,25 @@ func check(t *testing.T, before []string, operations []operation, after []string
 	b.Close()
 }
 
+func TestInsertUnicodeWhitespaceKeepsTrailingWhitespaceStatus(t *testing.T) {
+	for _, test := range []struct{ name, text string }{
+		{"space", " "},
+		{"no-break space", "\u00a0"},
+		{"em space", "\u2003"},
+		{"ideographic space", "\u3000"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			b := NewBufferFromString("text ", "", BTDefault)
+			defer b.Close()
+			cursor := b.GetActiveCursor()
+			cursor.GotoLoc(b.End())
+			b.Insert(cursor.Loc, test.text)
+			assert.Equal(t, "text "+test.text, string(b.Bytes()))
+			assert.Equal(t, -1, cursor.NewTrailingWsY)
+		})
+	}
+}
+
 const maxLineLength = 200
 
 var alphabet = []rune(" abcdeäم📚")
