@@ -1,0 +1,53 @@
+filetype: robot
+
+detect:
+    filename: "\\.robot"
+
+rules:
+    # built-in objects
+    - constant: "\\b()\\b"
+      # built-in functions
+    - identifier: "(?i)\\b(Should Be True|Should be False|Should Not be true|Should Contain|Should Be Equal As Integers|Should Be Equal|Run And Return RC And Output|Run And Return RC|Run And Return Output|Run Keyword And Continue On Failure|Run Keyword|Run|Start Process|Wait for Process)\\b"
+      # types
+    - type: "\\&\\{.*\\}"
+      # definitions
+    - identifier: "\\*\\*\\*.*\\*\\*\\*"
+      # keywords
+    - statement: "(?i)\\b(Library|Documentation|Tags|Sleep|Evaluate|Log|Arguments)\\b"
+      # decorators
+    - preproc: "\\$\\{[\\S]*"
+      # numbers
+    - constant.number: "\\b[0-9](_?[0-9])*(\\.([0-9](_?[0-9])*)?)?(e[0-9](_?[0-9])*)?\\b" # decimal
+    - constant.number: "\\b0b(_?[01])+\\b"     # bin
+    - constant.number: "\\b0o(_?[0-7])+\\b"    # oct
+    - constant.number: "\\b0x(_?[0-9a-fA-F])+\\b" # hex
+
+    - constant.string:
+        start: "\"\"\""
+        end: "\"\"\""
+        rules: []
+
+    - constant.string:
+        start: "'''"
+        end: "'''"
+        rules: []
+
+    - constant.string:
+        start: "\""
+        end: "(\"|$)"
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\."
+
+    - constant.string:
+        start: "'"
+        end: "('|$)"
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\."
+
+    - comment:
+        start: "#"
+        end: "$"
+        rules:  # AKA Code tags (PEP 350)
+            - todo: "(TODO|FIXME|HACK|BUG|NOTE|FAQ|MNEMONIC|REQ|RFE|IDEA|PORT|\\?\\?\\?|!!!|GLOSS|SEE|TODOC|STAT|RVD|CRED):?"
