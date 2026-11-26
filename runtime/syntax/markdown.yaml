@@ -41,7 +41,10 @@ rules:
       # urls
     - underlined: "https?://[^ )>]+"
 
-    - special: "^```$"
+    - special:
+            start: "^```"
+        end: "^```\\s*$"
+        rules: []
 
     - special:
         start: "`"
