@@ -40,6 +40,7 @@ type PluginPackage struct {
 	Name        string
 	Description string
 	Author      string
+	Website     string
 	Tags        []string
 	Versions    PluginVersions
 	Builtin     bool
@@ -213,6 +214,7 @@ func (pp *PluginPackage) UnmarshalJSON(data []byte) error {
 		Name        string
 		Description string
 		Author      string
+		Website     string
 		Tags        []string
 		Versions    PluginVersions
 	}
@@ -222,6 +224,7 @@ func (pp *PluginPackage) UnmarshalJSON(data []byte) error {
 	pp.Name = values.Name
 	pp.Description = values.Description
 	pp.Author = values.Author
+	pp.Website = values.Website
 	pp.Tags = values.Tags
 	pp.Versions = values.Versions
 	for _, v := range pp.Versions {
@@ -341,6 +344,20 @@ pluginLoop:
 		}
 	}
 	return
+}
+
+// Print the list of plugin packages in a human-readable format
+func printPluginList(out io.Writer, plugins PluginPackages) {
+	for i, p := range plugins {
+		if i > 0 {
+			fmt.Fprintln(out)
+		}
+		if p.Website == "" {
+			fmt.Fprintf(out, "%s\n\t%s\n", p.Name, p.Description)
+		} else {
+			fmt.Fprintf(out, "%s - %s\n\t%s\n", p.Name, p.Website, p.Description)
+		}
+	}
 }
 
 func isUnknownCoreVersion() bool {
@@ -717,18 +734,16 @@ func PluginCommand(out io.Writer, cmd string, args []string) {
 		}
 	case "search":
 		plugins := SearchPlugin(out, args)
-		fmt.Fprintln(out, len(plugins), "plugins found")
-		for _, p := range plugins {
-			fmt.Fprintln(out, "----------------")
-			fmt.Fprintln(out, p.String())
+		n := len(plugins)
+		if n == 0 {
+			fmt.Fprintf(out, "No plugins found, check for typos\n")
+			return
 		}
-		fmt.Fprintln(out, "----------------")
+		fmt.Fprintf(out, "%d plugins found:\n", n)
+		printPluginList(out, plugins)
 	case "available":
-		packages := GetAllPluginPackages(out)
-		fmt.Fprintln(out, "Available Plugins:")
-		for _, pkg := range packages {
-			fmt.Fprintln(out, pkg.Name)
-		}
+		plugins := GetAllPluginPackages(out)
+		printPluginList(out, plugins)
 	default:
 		fmt.Fprintln(out, "Invalid plugin command")
 	}
