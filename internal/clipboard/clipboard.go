@@ -2,6 +2,8 @@ package clipboard
 
 import (
 	"errors"
+	"sync"
+	"time"
 
 	"github.com/zyedidia/clipper"
 )
@@ -36,6 +38,36 @@ const (
 )
 
 var clipboard clipper.Clipboard
+
+var (
+	lastWrittenLock sync.Mutex
+	lastWritten     = make(map[Register]string)
+	lastWriteTime   = make(map[Register]time.Time)
+	writeDebounce   time.Duration
+)
+
+// SetWriteDebounce sets the debounce duration for external clipboard writes.
+func SetWriteDebounce(d time.Duration) {
+	lastWrittenLock.Lock()
+	defer lastWrittenLock.Unlock()
+	writeDebounce = d
+}
+
+// ResetCache clears the cached last written clipboard data.
+func ResetCache() {
+	lastWrittenLock.Lock()
+	defer lastWrittenLock.Unlock()
+	lastWritten = make(map[Register]string)
+	lastWriteTime = make(map[Register]time.Time)
+}
+
+// LastWritten returns the last string written to a clipboard register.
+func LastWritten(r Register) (string, bool) {
+	lastWrittenLock.Lock()
+	defer lastWrittenLock.Unlock()
+	val, ok := lastWritten[r]
+	return val, ok
+}
 
 // Initialize attempts to initialize the clipboard using the given method
 func Initialize(m Method) error {
@@ -109,12 +141,25 @@ func writeMulti(text string, r Register, num int, ncursors int, m Method) error 
 func read(r Register, m Method) (string, error) {
 	switch m {
 	case External:
+		if clipboard == nil {
+			return internal.read(r), nil
+		}
 		switch r {
 		case ClipboardReg:
 			b, e := clipboard.ReadAll(clipper.RegClipboard)
+			if e == nil {
+				lastWrittenLock.Lock()
+				lastWritten[r] = string(b)
+				lastWrittenLock.Unlock()
+			}
 			return string(b), e
 		case PrimaryReg:
 			b, e := clipboard.ReadAll(clipper.RegPrimary)
+			if e == nil {
+				lastWrittenLock.Lock()
+				lastWritten[r] = string(b)
+				lastWrittenLock.Unlock()
+			}
 			return string(b), e
 		default:
 			return internal.read(r), nil
@@ -137,8 +182,28 @@ func read(r Register, m Method) (string, error) {
 }
 
 func write(text string, r Register, m Method) error {
+	lastWrittenLock.Lock()
+	prev, exists := lastWritten[r]
+	if exists && prev == text {
+		lastWrittenLock.Unlock()
+		return nil
+	}
+	if writeDebounce > 0 && m == External {
+		if t, ok := lastWriteTime[r]; ok && time.Since(t) < writeDebounce {
+			lastWrittenLock.Unlock()
+			return nil
+		}
+	}
+	lastWritten[r] = text
+	lastWriteTime[r] = time.Now()
+	lastWrittenLock.Unlock()
+
 	switch m {
 	case External:
+		if clipboard == nil {
+			internal.write(text, r)
+			return nil
+		}
 		switch r {
 		case ClipboardReg:
 			return clipboard.WriteAll(clipper.RegClipboard, []byte(text))

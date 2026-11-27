@@ -105,6 +105,55 @@ func (s *StatusLine) FindOpt(opt string) any {
 
 var formatParser = regexp.MustCompile(`\$\(.+?\)`)
 
+// FormatText formats the left and right statusline byte slices.
+func (s *StatusLine) FormatText() ([]byte, []byte) {
+	if s.win == nil || s.win.Buf == nil {
+		return nil, nil
+	}
+	formatter := func(match []byte) []byte {
+		name := match[2 : len(match)-1]
+		if bytes.HasPrefix(name, []byte("opt")) {
+			option := name[4:]
+			return fmt.Append(nil, s.FindOpt(string(option)))
+		} else if bytes.HasPrefix(name, []byte("bind")) {
+			binding := string(name[5:])
+			for k, v := range config.Bindings["buffer"] {
+				if v == binding {
+					return []byte(k)
+				}
+			}
+			return []byte("null")
+		} else {
+			if fn, ok := statusInfo[string(name)]; ok {
+				return []byte(fn(s.win.Buf))
+			}
+			return []byte{}
+		}
+	}
+
+	leftFormat, okL := s.win.Buf.Settings["statusformatl"].(string)
+	if !okL {
+		leftFormat = ""
+	}
+	rightFormat, okR := s.win.Buf.Settings["statusformatr"].(string)
+	if !okR {
+		rightFormat = ""
+	}
+
+	leftText := formatParser.ReplaceAllFunc([]byte(leftFormat), formatter)
+	rightText := formatParser.ReplaceAllFunc([]byte(rightFormat), formatter)
+	return leftText, rightText
+}
+
+// StatusString returns the combined rendered statusline text.
+func (s *StatusLine) StatusString() string {
+	l, r := s.FormatText()
+	if len(l) == 0 && len(r) == 0 {
+		return ""
+	}
+	return string(l) + " | " + string(r)
+}
+
 // Display draws the statusline to the screen
 func (s *StatusLine) Display() {
 	// We'll draw the line at the lowest line in the window
@@ -148,31 +197,7 @@ func (s *StatusLine) Display() {
 		return
 	}
 
-	formatter := func(match []byte) []byte {
-		name := match[2 : len(match)-1]
-		if bytes.HasPrefix(name, []byte("opt")) {
-			option := name[4:]
-			return fmt.Append(nil, s.FindOpt(string(option)))
-		} else if bytes.HasPrefix(name, []byte("bind")) {
-			binding := string(name[5:])
-			for k, v := range config.Bindings["buffer"] {
-				if v == binding {
-					return []byte(k)
-				}
-			}
-			return []byte("null")
-		} else {
-			if fn, ok := statusInfo[string(name)]; ok {
-				return []byte(fn(s.win.Buf))
-			}
-			return []byte{}
-		}
-	}
-
-	leftText := []byte(s.win.Buf.Settings["statusformatl"].(string))
-	leftText = formatParser.ReplaceAllFunc(leftText, formatter)
-	rightText := []byte(s.win.Buf.Settings["statusformatr"].(string))
-	rightText = formatParser.ReplaceAllFunc(rightText, formatter)
+	leftText, rightText := s.FormatText()
 
 	statusLineStyle := config.DefStyle.Reverse(true)
 	if s.win.IsActive() {
