@@ -9,6 +9,11 @@ configuration directory. In the documentation, we use `~/.config/micro` to
 refer to the configuration directory (even if it may in fact be somewhere else
 if you have set either of the above environment variables).
 
+The options are recorded in the file `settings.json` (full example below)
+within your configuration directory, which can be edited directly. They can
+also be set as part of the command line API (see `micro -help`), or within
+Micro by using the `set` or `setlocal` commands (see below).
+
 Here are the available options:
 
 * `autoindent`: when creating a new line, use the same indentation as the
@@ -648,12 +653,14 @@ so that you can see what the formatting should look like.
 
 You can set these settings either globally or locally. Locally means that the
 setting won't be saved to `~/.config/micro/settings.json` and that it will only
-be set in the current buffer. Setting an option globally is the default, and
-will set the option in all buffers. Use the `setlocal` command to set an option
-locally rather than globally.
+be set in the current buffer. Setting an option globally with the `set` command
+is the default, and will set the option in all buffers. For example, press
+`Ctrl-e` for command mode and enter `set colorscheme twilight` to change the
+color scheme. Use the `setlocal` command to set an option locally rather than
+globally.
 
 The `colorscheme` option is global only, and the `filetype` option is local
-only. To set an option locally, use `setlocal` instead of `set`.
+only.
 
 In the `settings.json` file you can also put set options locally by specifying
 either a glob or a filetype. Here is an example which has `tabstospaces` on for
