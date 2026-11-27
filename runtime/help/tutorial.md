@@ -94,7 +94,7 @@ function gorun(bp)
     if buf:FileType() == "go" then
         -- the true means run in the foreground
         -- the false means send output to stdout (instead of returning it)
-        shell.RunInteractiveShell("go run " .. buf.Path, true, false)
+        shell.RunInteractiveCommand(true, false, "go", "run", buf.Path)
     end
 end
 ```

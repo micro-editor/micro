@@ -258,12 +258,19 @@ The packages and their contents are listed below (in Go type signatures):
     - `RunBackgroundShell(input string) (func() string, error)`: returns a
        function that will run the given shell command and return its output.
 
+    - `RunInteractiveCommand(wait bool, getOutput bool, name string,
+                            arg ...string) (string, error)`:
+       temporarily closes micro and runs an executable with the given arguments
+       in the terminal, so that it can interact with the user. Arguments do not
+       need to be quoted. `wait` means micro will wait for the user to press
+       enter before resuming, and `getOutput` will capture stdout as the
+       returned string.
+
     - `RunInteractiveShell(input string, wait bool, getOutput bool)
                           (string, error)`:
-       temporarily closes micro and runs the given command in the terminal.
-       If `wait` is true, micro will wait for the user to press enter before
-       returning to text editing. If `getOutput` is true, micro will redirect
-       stdout from the command to the returned string.
+       deprecated: use `RunInteractiveCommand`. Same, except this uses micro's
+       argument parser to parse the command and arguments from the input, so
+       arguments containing spaces or quotes must be quoted.
 
     - `JobStart(cmd string, onStdout, onStderr,
                 onExit func(string, []any), userargs ...any)

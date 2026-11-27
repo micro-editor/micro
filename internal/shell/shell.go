@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"os/signal"
+	"sync"
 
 	shellquote "github.com/kballard/go-shellquote"
 	"github.com/micro-editor/micro/v2/internal/screen"
@@ -68,8 +70,18 @@ func RunBackgroundShell(input string) (func() string, error) {
 	}, nil
 }
 
+// RunInteractiveShell logs that it is deprecated, but only once per session
+var warnRunInteractiveShell sync.Once
+
 // RunInteractiveShell runs a shellcommand interactively
+//
+// Deprecated: Use RunInteractiveCommand, which takes the arguments separately
+// so that they don't need to be quoted.
 func RunInteractiveShell(input string, wait bool, getOutput bool) (string, error) {
+	warnRunInteractiveShell.Do(func() {
+		log.Println("RunInteractiveShell is deprecated: use RunInteractiveCommand")
+	})
+
 	args, err := shellquote.Split(input)
 	if err != nil {
 		return "", err
@@ -77,16 +89,20 @@ func RunInteractiveShell(input string, wait bool, getOutput bool) (string, error
 	if len(args) == 0 {
 		return "", errors.New("No arguments")
 	}
-	inputCmd := args[0]
+	return RunInteractiveCommand(wait, getOutput, args[0], args[1:]...)
+}
 
+// RunInteractiveCommand temporarily closes micro and runs an executable with
+// the given arguments in the terminal. If wait is true, it waits for the user
+// to press enter before returning. If getOutput is true, it also returns what
+// the command wrote to stdout.
+func RunInteractiveCommand(wait bool, getOutput bool, name string, arg ...string) (string, error) {
 	// Shut down the screen because we're going to interact directly with the shell
 	screenb := screen.TempFini()
 
-	args = args[1:]
-
 	// Set up everything for the command
 	outputBytes := &bytes.Buffer{}
-	cmd := exec.Command(inputCmd, args...)
+	cmd := exec.Command(name, arg...)
 	cmd.Stdin = os.Stdin
 	if getOutput {
 		cmd.Stdout = io.MultiWriter(os.Stdout, outputBytes)
@@ -94,6 +110,8 @@ func RunInteractiveShell(input string, wait bool, getOutput bool) (string, error
 		cmd.Stdout = os.Stdout
 	}
 	cmd.Stderr = os.Stderr
+
+	var err error
 
 	// This is a trap for Ctrl-C so that it doesn't kill micro
 	// micro is killed if the signal is ignored only on Windows, so it is
