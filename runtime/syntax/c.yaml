@@ -23,11 +23,19 @@ rules:
     - symbol.operator: "[-+*/%=<>.:;,~&|^!?]|\\b(offsetof|sizeof)\\b"
     - symbol.brackets: "[(){}]|\\[|\\]"
       # Integer Constants
-    - constant.number: "(\\b([1-9][0-9]*|0[0-7]*|0[Xx][0-9A-Fa-f]+|0[Bb][01]+)([Uu][Ll]?[Ll]?|[Ll][Ll]?[Uu]?)?\\b)"
+    - constant.number: "\\b[1-9]('?[0-9])*([Uu](l|L|ll|LL|wb|WB)?|(l|L|ll|LL|wb|WB)?[uU])?\\b"                  # Decimal
+    - constant.number: "\\b0('?[0-7])*([Uu](l|L|ll|LL|wb|WB)?|(l|L|ll|LL|wb|WB)?[uU])?\\b"                      # Octal
+    - constant.number: "\\b0[xX][0-9a-fA-F]('?[0-9a-fA-F])*([Uu](l|L|ll|LL|wb|WB)?|(l|L|ll|LL|wb|WB)?[uU])?\\b" # Hexadecimal
+    - constant.number: "\\b0[bB][01]('?[01])*([Uu](l|L|ll|LL|wb|WB)?|(l|L|ll|LL|wb|WB)?[uU])?\\b"               # Binary
       # Decimal Floating Constants
-    - constant.number: "(\\b(([0-9]*[.][0-9]+|[0-9]+[.][0-9]*)([Ee][+-]?[0-9]+)?|[0-9]+[Ee][+-]?[0-9]+)[FfLl]?\\b)"
+    - constant.number: "\\b[0-9]('?[0-9])*\\.[0-9]('?[0-9])*([eE][-+]?[0-9]('?[0-9])*)?([FfLl]|d[fdl]|D[FDL])?\\b" # digit-sequence . digit-sequence (exponent-part)? (floating-suffix)?
+    - constant.number: "\\.[0-9]('?[0-9])*([eE][-+]?[0-9]('?[0-9])*)?([FfLl]|d[fdl]|D[FDL])?\\b"                   #                . digit-sequence (exponent-part)? (floating-suffix)?
+    - constant.number: "\\b[0-9]('?[0-9])*\\.([eE][-+]?[0-9]('?[0-9])*\\b)?(([FfLl]|d[fdl]|D[FDL])\\b)?"           # digit-sequence .                (exponent-part)? (floating-suffix)?
+    - constant.number: "\\b[0-9]('?[0-9])*[eE][-+]?[0-9]('?[0-9])*([FfLl]|d[fdl]|D[FDL])?\\b"                      # digit-sequence                   exponent-part   (floating-suffix)?
       # Hexadecimal Floating Constants
-    - constant.number: "(\\b0[Xx]([0-9A-Za-z]*[.][0-9A-Za-z]+|[0-9A-Za-z]+[.][0-9A-Za-z]*)[Pp][+-]?[0-9]+[FfLl]?\\b)"
+    - constant.number: "\\b0[xX]([0-9a-fA-F]('?[0-9a-fA-F])*)?\\.[0-9a-fA-F]('?[0-9a-fA-F])*[pP][-+]?[0-9]('?[0-9])*([FfLl]|d[fdl]|D[FDL])?\\b" # hex-prefix (hex-sequence)? .  hex-sequence bin-exponent-part (floating-suffix)?
+    - constant.number: "\\b0[xX]([0-9a-fA-F]('?[0-9a-fA-F])*)\\.?[pP][-+]?[0-9]('?[0-9])*([FfLl]|d[fdl]|D[FDL])?\\b"                            # hex-prefix  hex-sequence   .?              bin-exponent-part (floating-suffix)?
+
     - constant.bool: "(\\b(true|false|NULL|nullptr|TRUE|FALSE)\\b)"
 
     - constant.string:
@@ -40,7 +48,7 @@ rules:
     - constant.string:
         start: "'"
         end: "'"
-        skip: "\\\\."
+        skip: "(\\\\.)|\\b[0-9][0-9a-fA-F\\.'XxUuLlWwPp+-]*\\b" # ignore anything vaguely-number-looking
         rules:
               # TODO: Revert back to - error: "..+" once #3127 is merged
             - error: "[[:graph:]]{2,}'"
