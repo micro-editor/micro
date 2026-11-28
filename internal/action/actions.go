@@ -40,8 +40,8 @@ func (h *BufPane) ScrollDown(n int) {
 func (h *BufPane) ScrollAdjust() {
 	v := h.GetView()
 	end := h.SLocFromLoc(h.Buf.End())
-	if h.Diff(v.StartLine, end) < h.BufView().Height-1 {
-		v.StartLine = h.Scroll(end, -h.BufView().Height+1)
+	if last := h.Scroll(end, -h.BufView().Height+1); last.LessThan(v.StartLine) {
+		v.StartLine = last
 	}
 	h.SetView(v)
 }
@@ -51,7 +51,7 @@ func (h *BufPane) ScrollAdjust() {
 func (h *BufPane) ScrollReachedEnd() bool {
 	v := h.GetView()
 	end := h.SLocFromLoc(h.Buf.End())
-	return h.Diff(v.StartLine, end) < h.BufView().Height
+	return end.LessEqual(h.Scroll(v.StartLine, h.BufView().Height-1))
 }
 
 // MousePress is the event that should happen when a normal click happens
